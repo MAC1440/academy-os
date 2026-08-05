@@ -1,3 +1,25 @@
 {
-  "name":"academy-os","private":true,"workspaces":["apps/*","packages/*"]
+  "name": "academy-os",
+  "version": "0.0.1",
+  "private": true,
+  "description": "AcademyOS Monorepo",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "npm run dev --workspaces --if-present",
+    "build": "npm run build --workspaces --if-present",
+    "lint": "npm run lint --workspaces --if-present",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "clean": "git clean -xdf node_modules"
+  },
+  "devDependencies": {
+    "prettier": "^3.6.2",
+    "typescript": "^5.9.2"
+  },
+  "engines": {
+    "node": ">=22.0.0"
+  }
 }

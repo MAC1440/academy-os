@@ -1,2 +1,2 @@
 # Architecture
-See conversation blueprint.
+Monorepo with apps/web, apps/api and shared packages.

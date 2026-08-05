@@ -1,2 +1,2 @@
-# Academy Platform
-Monorepo scaffold.
+# AcademyOS Starter
+Enterprise starter blueprint.

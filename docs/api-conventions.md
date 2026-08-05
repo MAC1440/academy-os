@@ -1,2 +1,1 @@
-# API Conventions
-Standard response: {success,message,data,meta,errors}
+Standard response: { success, message, data, meta, errors }

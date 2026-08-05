@@ -1,8 +1,10 @@
+import baseEslintConfig from "../../eslint.config.mjs";
 import { defineConfig, globalIgnores } from "eslint/config";
 import nextVitals from "eslint-config-next/core-web-vitals";
 import nextTs from "eslint-config-next/typescript";
 
 const eslintConfig = defineConfig([
+  baseEslintConfig,
   ...nextVitals,
   ...nextTs,
   // Override default ignores of eslint-config-next.

@@ -14,7 +14,10 @@
     "noUncheckedIndexedAccess": true,
     "baseUrl": ".",
     "paths": {
-      "@shared/*": [
+      "@academy-os/shared": [
+        "packages/shared/src/index.ts"
+      ],
+      "@academy-os/shared/*": [
         "packages/shared/src/*"
       ],
       "@config/*": [

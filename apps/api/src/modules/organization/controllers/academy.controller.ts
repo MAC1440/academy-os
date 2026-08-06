@@ -21,9 +21,9 @@ import { UpdateAcademyDto } from '../dto/update-academy.dto';
 import { AcademyService } from '../services/academy.service';
 import { TenantAccessService } from '../services/tenant-access.service';
 
-@ApiTags('Academies')
+@ApiTags('Organizations')
 @ApiBearerAuth('JWT-auth')
-@Controller('academies')
+@Controller('organizations')
 @UseGuards(JwtAuthGuard)
 export class AcademyController {
   constructor(
@@ -35,7 +35,7 @@ export class AcademyController {
   @UseGuards(PlatformAdminGuard)
   async create(@Body() dto: CreateAcademyDto) {
     const academy = await this.academyService.create(dto);
-    return successResponse('Academy created', academy);
+    return successResponse('Organization created', academy);
   }
 
   @Get()
@@ -47,7 +47,7 @@ export class AcademyController {
       query,
       await this.tenantAccess.getAccessibleAcademyIds(user),
     );
-    return successResponse('Academies retrieved', result.items, result.meta);
+    return successResponse('Organizations retrieved', result.items, result.meta);
   }
 
   @Get(':id')
@@ -57,7 +57,7 @@ export class AcademyController {
   ) {
     await this.tenantAccess.assertAcademyAccess(user, id);
     const academy = await this.academyService.findOne(id);
-    return successResponse('Academy retrieved', academy);
+    return successResponse('Organization retrieved', academy);
   }
 
   @Patch(':id')
@@ -68,7 +68,7 @@ export class AcademyController {
   ) {
     await this.tenantAccess.assertAcademyAccess(user, id, true);
     const academy = await this.academyService.update(id, dto);
-    return successResponse('Academy updated', academy);
+    return successResponse('Organization updated', academy);
   }
 
   @Delete(':id')
@@ -78,6 +78,6 @@ export class AcademyController {
   ) {
     await this.tenantAccess.assertAcademyAccess(user, id, true);
     const result = await this.academyService.remove(id);
-    return successResponse('Academy deleted', result);
+    return successResponse('Organization deleted', result);
   }
 }

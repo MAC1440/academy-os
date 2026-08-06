@@ -14,35 +14,48 @@ export default function DashboardPage() {
   }
 
   return (
-    <main className="min-h-screen bg-[#fffdf8] px-6 py-16 text-[#470004]">
-      <div className="mx-auto max-w-6xl rounded-[32px] border border-[#470004]/10 bg-white p-8 shadow-[0_20px_60px_rgba(71,0,4,0.12)]">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <p className="text-sm font-semibold uppercase tracking-[0.3em] text-[#a67c00]">Protected dashboard</p>
-            <h1 className="mt-3 text-3xl font-semibold">Welcome to AcademyOS</h1>
-            <p className="mt-2 max-w-2xl text-sm text-[#5b4a4b]">Your authentication flow is active and protected routes are now reachable after sign in.</p>
-          </div>
-          <button className="rounded-2xl bg-[#470004] px-4 py-3 font-semibold text-white" onClick={logout}>Sign out</button>
-        </div>
+    <main className="min-h-screen bg-background text-foreground transition-colors">
+  <div className="mx-auto max-w-7xl px-6 py-8">
+    <div className="mt-8 grid gap-4 md:grid-cols-3">
+      <div className="rounded-3xl border border-border bg-card p-6 text-card-foreground shadow-sm transition-colors">
+        <p className="text-muted-foreground text-sm font-semibold uppercase tracking-[0.3em]">
+          Signed in as
+        </p>
 
-        <div className="mt-8 grid gap-4 md:grid-cols-3">
-          <div className="rounded-3xl border border-[#470004]/10 bg-[#fffdf8] p-6">
-            <p className="text-sm font-semibold uppercase tracking-[0.3em] text-[#a67c00]">Signed in as</p>
-            <p className="mt-3 text-lg font-semibold text-[#470004]">{user.email}</p>
-          </div>
-          <div className="rounded-3xl border border-[#470004]/10 bg-[#fffdf8] p-6">
-            <p className="text-sm font-semibold uppercase tracking-[0.3em] text-[#a67c00]">Focus</p>
-            <p className="mt-3 text-lg font-semibold text-[#470004]">Organization module</p>
-            <Link href="/organizations" className="mt-4 inline-flex text-sm font-semibold text-[#a67c00]">
-              Manage academies →
-            </Link>
-          </div>
-          <div className="rounded-3xl border border-[#470004]/10 bg-[#fffdf8] p-6">
-            <p className="text-sm font-semibold uppercase tracking-[0.3em] text-[#a67c00]">Status</p>
-            <p className="mt-3 text-lg font-semibold text-[#470004]">Protected route confirmed</p>
-          </div>
-        </div>
+        <p className="mt-3 truncate text-lg font-semibold">
+          {user.email}
+        </p>
       </div>
-    </main>
+
+      <div className="rounded-3xl border border-border bg-card p-6 text-card-foreground shadow-sm transition-colors">
+        <p className="text-muted-foreground text-sm font-semibold uppercase tracking-[0.3em]">
+          Focus
+        </p>
+
+        <p className="mt-3 text-lg font-semibold">
+          Organization module
+        </p>
+
+        <Link
+          href="/organizations"
+          className="mt-4 inline-flex items-center gap-2 font-semibold text-primary transition-colors hover:text-secondary focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+        >
+          Manage organizations
+          <span aria-hidden>→</span>
+        </Link>
+      </div>
+
+      <div className="rounded-3xl border border-border bg-card p-6 text-card-foreground shadow-sm transition-colors">
+        <p className="text-muted-foreground text-sm font-semibold uppercase tracking-[0.3em]">
+          Status
+        </p>
+
+        <p className="mt-3 text-lg font-semibold">
+          Protected route confirmed
+        </p>
+      </div>
+    </div>
+  </div>
+</main>
   );
 }

@@ -94,7 +94,7 @@ export async function listAcademies(params: {
   if (params.search) query.set("search", params.search);
 
   const response = await apiFetch<Academy[]>(
-    `/academies?${query.toString()}`,
+    `/organizations?${query.toString()}`,
   );
   return {
     items: response.data,
@@ -105,7 +105,7 @@ export async function listAcademies(params: {
 export async function getAcademy(id: string) {
   const response = await apiFetch<
     Academy & { branches?: Branch[]; _count?: { branches: number } }
-  >(`/academies/${id}`);
+  >(`/organizations/${id}`);
   return response.data;
 }
 
@@ -118,7 +118,7 @@ export async function createAcademy(data: {
   timezone?: string;
   currency?: string;
 }) {
-  const response = await apiFetch<Academy>("/academies", {
+  const response = await apiFetch<Academy>("/organizations", {
     method: "POST",
     body: JSON.stringify(data),
   });
@@ -139,7 +139,7 @@ export async function updateAcademy(
     status: string;
   }>,
 ) {
-  const response = await apiFetch<Academy>(`/academies/${id}`, {
+  const response = await apiFetch<Academy>(`/organizations/${id}`, {
     method: "PATCH",
     body: JSON.stringify(data),
   });
@@ -147,7 +147,7 @@ export async function updateAcademy(
 }
 
 export async function deleteAcademy(id: string) {
-  await apiFetch<{ id: string }>(`/academies/${id}`, { method: "DELETE" });
+  await apiFetch<{ id: string }>(`/organizations/${id}`, { method: "DELETE" });
 }
 
 export async function listBranches(params: {

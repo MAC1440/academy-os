@@ -16,17 +16,27 @@ function ThemeControl() {
   const { theme, setTheme } = useTheme();
 
   return (
-    <label className="flex items-center justify-between gap-3 rounded-xl border border-white/15 bg-white/8 px-3 py-2 text-xs text-white/80">
-      Appearance
+    <label className="group flex items-center justify-between rounded-2xl border border-white/10 bg-gradient-to-r from-white/5 to-white/10 px-4 py-3 shadow-lg backdrop-blur-md transition-all duration-200 hover:border-cyan-400/30 hover:shadow-cyan-500/10">
+      <div>
+        <p className="text-sm font-semibold text-white">Appearance</p>
+        <p className="text-xs text-white/50">Choose your preferred theme</p>
+      </div>
+
       <select
         aria-label="Theme"
         value={theme}
         onChange={(event) => setTheme(event.target.value as ThemeMode)}
-        className="bg-transparent text-right font-semibold text-white outline-none"
+        className="rounded-xl border border-white/10 bg-black/20 px-3 py-2 text-sm font-medium text-white backdrop-blur-sm outline-none transition-all focus:border-cyan-400 focus:ring-2 focus:ring-cyan-400/30"
       >
-        <option className="text-[#470004]" value="system">System</option>
-        <option className="text-[#470004]" value="light">Light</option>
-        <option className="text-[#470004]" value="dark">Dark</option>
+        <option className="bg-slate-900" value="system">
+          System
+        </option>
+        <option className="bg-slate-900" value="light">
+          Light
+        </option>
+        <option className="bg-slate-900" value="dark">
+          Dark
+        </option>
       </select>
     </label>
   );
@@ -43,65 +53,140 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <div className="min-h-screen bg-[#f7f1ea] text-[#3d1013] transition-colors dark:bg-[#151112] dark:text-[#f7eee8]">
-      <aside className="fixed inset-y-0 left-0 z-30 hidden w-72 flex-col border-r border-white/10 bg-[#470004] px-5 py-6 text-white lg:flex">
-        <Link href="/dashboard" className="group flex items-center gap-3 rounded-2xl px-2 py-2 focus:outline-none focus:ring-2 focus:ring-[#f3d58b]">
-          <span className="grid size-11 place-items-center rounded-2xl bg-[#f3d58b] font-mono text-xs font-black tracking-tighter text-[#470004]">AO</span>
-          <span>
-            <span className="block text-lg font-semibold tracking-tight">AcademyOS</span>
-            <span className="block text-[10px] font-semibold uppercase tracking-[0.22em] text-[#f3d58b]">Operations desk</span>
-          </span>
-        </Link>
+<div className="min-h-screen bg-background text-foreground transition-colors">
+  <aside className="fixed inset-y-0 left-0 z-30 hidden w-72 flex-col border-r border-border bg-sidebar text-sidebar-foreground px-5 py-6 lg:flex">
+    <Link
+      href="/dashboard"
+      className="group flex items-center gap-3 rounded-2xl px-2 py-2 focus:outline-none focus:ring-2 focus:ring-ring"
+    >
+      <span className="grid size-11 place-items-center rounded-2xl bg-secondary font-mono text-xs font-black tracking-tighter text-secondary-foreground">
+        AO
+      </span>
 
-        <div className="mt-10">
-          <p className="px-3 text-[10px] font-semibold uppercase tracking-[0.24em] text-white/45">Workspace</p>
-          <nav className="mt-3 space-y-1" aria-label="Primary navigation">
-            {navigation.map((item) => {
-              const active = pathname === item.href || pathname.startsWith(`${item.href}/`);
-              return (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  className={`flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium transition focus:outline-none focus:ring-2 focus:ring-[#f3d58b] ${active ? "bg-[#f3d58b] text-[#470004] shadow-[0_10px_24px_rgba(0,0,0,0.18)]" : "text-white/72 hover:bg-white/10 hover:text-white"}`}
-                >
-                  <span className={`grid size-7 place-items-center rounded-lg text-[10px] font-bold ${active ? "bg-[#470004]/10" : "bg-white/10"}`}>{item.initials}</span>
-                  {item.label}
-                </Link>
-              );
-            })}
-          </nav>
-        </div>
+      <span>
+        <span className="block text-lg font-semibold tracking-tight">
+          AcademyOS
+        </span>
 
-        <div className="mt-8">
-          <p className="px-3 text-[10px] font-semibold uppercase tracking-[0.24em] text-white/45">Coming next</p>
-          <ul className="mt-3 space-y-1 px-3 text-sm text-white/45">
-            {upcoming.map((item) => <li key={item} className="py-1.5">{item}</li>)}
-          </ul>
-        </div>
+        <span className="block text-[10px] font-semibold uppercase tracking-[0.22em] text-secondary">
+          Operations desk
+        </span>
+      </span>
+    </Link>
 
-        <div className="mt-auto space-y-3">
-          <ThemeControl />
-          <div className="rounded-2xl border border-white/12 bg-white/8 p-3">
-            <p className="truncate text-sm font-semibold">{user.email}</p>
-            <p className="mt-1 text-xs text-white/55">Signed in securely</p>
-            <button type="button" onClick={logout} className="mt-3 text-xs font-semibold text-[#f3d58b] underline-offset-4 hover:underline focus:outline-none focus:ring-2 focus:ring-[#f3d58b]">Sign out</button>
-          </div>
-        </div>
-      </aside>
+    <div className="mt-10">
+      <p className="px-3 text-[10px] font-semibold uppercase tracking-[0.24em] text-sidebar-foreground/50">
+        Workspace
+      </p>
 
-      <header className="sticky top-0 z-20 border-b border-[#470004]/10 bg-[#f7f1ea]/90 px-4 py-3 backdrop-blur dark:border-white/10 dark:bg-[#151112]/90 lg:hidden">
-        <div className="flex items-center justify-between gap-3">
-          <Link href="/dashboard" className="font-semibold text-[#470004] dark:text-[#f7eee8]">AcademyOS</Link>
-          <ThemeControl />
-        </div>
-        <nav className="mt-3 flex gap-2 overflow-x-auto" aria-label="Primary navigation">
-          {navigation.map((item) => (
-            <Link key={item.href} href={item.href} className={`whitespace-nowrap rounded-xl px-3 py-2 text-sm font-semibold ${pathname === item.href || pathname.startsWith(`${item.href}/`) ? "bg-[#470004] text-white" : "bg-[#470004]/5 text-[#470004] dark:bg-white/10 dark:text-white"}`}>{item.label}</Link>
-          ))}
-        </nav>
-      </header>
+      <nav className="mt-3 space-y-1" aria-label="Primary navigation">
+        {navigation.map((item) => {
+          const active =
+            pathname === item.href || pathname.startsWith(`${item.href}/`);
 
-      <div className="lg:pl-72">{children}</div>
+          return (
+            <Link
+              key={item.href}
+              href={item.href}
+              className={`flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-ring ${
+                active
+                  ? "bg-secondary text-secondary-foreground shadow-lg"
+                  : "text-sidebar-foreground/75 hover:bg-sidebar-foreground/10 hover:text-sidebar-foreground"
+              }`}
+            >
+              <span
+                className={`grid size-7 place-items-center rounded-lg text-[10px] font-bold transition-colors ${
+                  active
+                    ? "bg-primary/10 text-secondary-foreground"
+                    : "bg-sidebar-foreground/10 text-sidebar-foreground"
+                }`}
+              >
+                {item.initials}
+              </span>
+
+              {item.label}
+            </Link>
+          );
+        })}
+      </nav>
     </div>
+
+    <div className="mt-8">
+      <p className="px-3 text-[10px] font-semibold uppercase tracking-[0.24em] text-sidebar-foreground/50">
+        Coming next
+      </p>
+
+      <ul className="mt-3 space-y-1 px-3 text-sm text-sidebar-foreground/50">
+        {upcoming.map((item) => (
+          <li
+            key={item}
+            className="rounded-lg py-1.5 transition-colors hover:text-sidebar-foreground"
+          >
+            {item}
+          </li>
+        ))}
+      </ul>
+    </div>
+
+    <div className="mt-auto space-y-3">
+      <ThemeControl />
+
+      <div className="rounded-2xl border border-border bg-card p-3 text-card-foreground shadow-sm">
+        <p className="truncate text-sm font-semibold">{user.email}</p>
+
+        <p className="mt-1 text-xs text-muted-foreground">
+          Signed in securely
+        </p>
+
+        <button
+          type="button"
+          onClick={logout}
+          className="mt-3 text-xs font-semibold text-primary underline-offset-4 transition hover:text-secondary hover:underline focus:outline-none focus:ring-2 focus:ring-ring"
+        >
+          Sign out
+        </button>
+      </div>
+    </div>
+  </aside>
+
+  <header className="sticky top-0 z-20 border-b border-border bg-background/90 px-4 py-3 backdrop-blur lg:hidden">
+    <div className="flex items-center justify-between gap-3">
+      <Link
+        href="/dashboard"
+        className="font-semibold text-foreground"
+      >
+        AcademyOS
+      </Link>
+
+      <ThemeControl />
+    </div>
+
+    <nav
+      className="mt-3 flex gap-2 overflow-x-auto"
+      aria-label="Primary navigation"
+    >
+      {navigation.map((item) => {
+        const active =
+          pathname === item.href || pathname.startsWith(`${item.href}/`);
+
+        return (
+          <Link
+            key={item.href}
+            href={item.href}
+            className={`whitespace-nowrap rounded-xl px-3 py-2 text-sm font-semibold transition-colors ${
+              active
+                ? "bg-primary text-primary-foreground"
+                : "bg-surface text-foreground hover:bg-surface-2"
+            }`}
+          >
+            {item.label}
+          </Link>
+        );
+      })}
+    </nav>
+  </header>
+
+  <div className="lg:pl-72">{children}</div>
+</div>
   );
 }

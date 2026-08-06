@@ -47,21 +47,24 @@ export class AcademyService {
     });
   }
 
-  async findAll(query: ListQueryDto) {
+  async findAll(query: ListQueryDto, academyIds: string[] | null) {
     const page = query.page ?? 1;
     const limit = query.limit ?? 20;
     const skip = (page - 1) * limit;
     const search = query.search?.trim();
 
-    const where: Prisma.AcademyWhereInput = search
-      ? {
-          OR: [
-            { name: { contains: search, mode: 'insensitive' } },
-            { slug: { contains: search, mode: 'insensitive' } },
-            { email: { contains: search, mode: 'insensitive' } },
-          ],
-        }
-      : {};
+    const where: Prisma.AcademyWhereInput = {
+      ...(academyIds ? { id: { in: academyIds } } : {}),
+      ...(search
+        ? {
+            OR: [
+              { name: { contains: search, mode: 'insensitive' } },
+              { slug: { contains: search, mode: 'insensitive' } },
+              { email: { contains: search, mode: 'insensitive' } },
+            ],
+          }
+        : {}),
+    };
 
     const [items, total] = await Promise.all([
       this.prisma.academy.findMany({

@@ -36,13 +36,14 @@ export class BranchService {
     });
   }
 
-  async findAll(query: BranchListQueryDto) {
+  async findAll(query: BranchListQueryDto, branchIds: string[] | null) {
     const page = query.page ?? 1;
     const limit = query.limit ?? 20;
     const skip = (page - 1) * limit;
     const search = query.search?.trim();
 
     const where: Prisma.BranchWhereInput = {
+      ...(branchIds ? { id: { in: branchIds } } : {}),
       ...(query.academyId ? { academyId: query.academyId } : {}),
       ...(search
         ? {

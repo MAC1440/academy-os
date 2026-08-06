@@ -1,36 +1,36 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import {
+  ConflictException,
+  Injectable,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcryptjs';
 import { LoginDto } from '../dto/login.dto';
 import { RegisterDto } from '../dto/register.dto';
+import { PrismaService } from '../../../prisma/prisma.service';
 
 @Injectable()
 export class AuthService {
-  constructor(private readonly jwtService: JwtService) {}
+  constructor(
+    private readonly jwtService: JwtService,
+    private readonly prisma: PrismaService,
+  ) {}
 
   async login(dto: LoginDto) {
     const normalizedEmail = dto.email.toLowerCase();
-    const passwordHash = await bcrypt.hash('Welcome123!', 10);
-    const adminUser = {
-      id: 'user-admin',
-      email: normalizedEmail,
-      passwordHash,
-      firstName: 'School',
-      lastName: 'Admin',
-      phone: '+1-555-0100',
-      status: 'ACTIVE',
-    };
+    const user = await this.prisma.user.findFirst({
+      where: { email: normalizedEmail, deletedAt: null },
+    });
 
-    const isValidPassword = await bcrypt.compare(
-      dto.password,
-      adminUser.passwordHash,
-    );
+    const isValidPassword = user
+      ? await bcrypt.compare(dto.password, user.passwordHash)
+      : false;
 
-    if (!isValidPassword || adminUser.email !== normalizedEmail) {
+    if (!user || user.status !== 'ACTIVE' || !isValidPassword) {
       throw new UnauthorizedException('Invalid credentials');
     }
 
-    const payload = { sub: adminUser.id, email: adminUser.email };
+    const payload = { sub: user.id, email: user.email };
     return {
       accessToken: this.jwtService.sign(payload),
       refreshToken: this.jwtService.sign(
@@ -38,26 +38,35 @@ export class AuthService {
         { expiresIn: '7d' },
       ),
       user: {
-        id: adminUser.id,
-        email: adminUser.email,
-        firstName: adminUser.firstName,
-        lastName: adminUser.lastName,
-        status: adminUser.status,
+        id: user.id,
+        email: user.email,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        status: user.status,
       },
     };
   }
 
   async register(dto: RegisterDto) {
-    const passwordHash = await bcrypt.hash(dto.password, 10);
-    return {
-      message: 'User registered',
-      user: {
-        id: 'new-user',
-        email: dto.email.toLowerCase(),
+    const email = dto.email.toLowerCase();
+    const existingUser = await this.prisma.user.findUnique({
+      where: { email },
+    });
+    if (existingUser)
+      throw new ConflictException('Email is already registered');
+
+    const passwordHash = await bcrypt.hash(dto.password, 12);
+    const user = await this.prisma.user.create({
+      data: {
+        email,
+        passwordHash,
         firstName: dto.firstName ?? 'New',
         lastName: dto.lastName ?? 'User',
-        passwordHash,
       },
+    });
+    return {
+      message: 'User registered',
+      user: { id: user.id, email: user.email },
     };
   }
 }

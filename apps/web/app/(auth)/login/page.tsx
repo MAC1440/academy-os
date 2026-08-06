@@ -7,7 +7,7 @@ import { login } from "@web/lib/api";
 
 export default function LoginPage() {
   const router = useRouter();
-  const [email, setEmail] = useState("admin@academyos.dev");
+  const [email, setEmail] = useState("superadmin@academyos.dev");
   const [password, setPassword] = useState("Welcome123!");
   const [error, setError] = useState<string | null>(null);
 

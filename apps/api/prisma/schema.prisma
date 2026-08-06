@@ -13,6 +13,64 @@ enum EntityStatus {
   SUSPENDED
 }
 
+enum UserStatus {
+  ACTIVE
+  INACTIVE
+  SUSPENDED
+}
+
+enum MembershipStatus {
+  ACTIVE
+  INACTIVE
+}
+
+model User {
+  id              String                   @id @default(cuid())
+  email           String                   @unique
+  passwordHash    String
+  firstName       String
+  lastName        String
+  isPlatformAdmin Boolean                  @default(false)
+  status          UserStatus               @default(ACTIVE)
+  createdAt       DateTime                 @default(now())
+  updatedAt       DateTime                 @updatedAt
+  deletedAt       DateTime?
+  memberships     OrganizationMembership[]
+
+  @@index([status])
+}
+
+model OrganizationMembership {
+  id                String             @id @default(cuid())
+  userId            String
+  academyId         String
+  isOwner           Boolean            @default(false)
+  status            MembershipStatus  @default(ACTIVE)
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+  deletedAt         DateTime?
+  user              User               @relation(fields: [userId], references: [id])
+  academy           Academy            @relation(fields: [academyId], references: [id])
+  branchAssignments BranchAssignment[]
+
+  @@unique([userId, academyId])
+  @@index([academyId, status])
+}
+
+model BranchAssignment {
+  id             String                 @id @default(cuid())
+  membershipId   String
+  branchId       String
+  createdAt      DateTime               @default(now())
+  updatedAt      DateTime               @updatedAt
+  deletedAt      DateTime?
+  membership     OrganizationMembership @relation(fields: [membershipId], references: [id])
+  branch         Branch                 @relation(fields: [branchId], references: [id])
+
+  @@unique([membershipId, branchId])
+  @@index([branchId])
+}
+
 model Academy {
   id        String       @id @default(cuid())
   name      String
@@ -27,6 +85,7 @@ model Academy {
   createdAt DateTime     @default(now())
   updatedAt DateTime     @updatedAt
   branches  Branch[]
+  memberships OrganizationMembership[]
 
   @@index([name])
   @@index([status])
@@ -45,6 +104,7 @@ model Branch {
   createdAt DateTime     @default(now())
   updatedAt DateTime     @updatedAt
   academy   Academy      @relation(fields: [academyId], references: [id], onDelete: Cascade)
+  assignments BranchAssignment[]
 
   @@index([academyId])
   @@index([name])

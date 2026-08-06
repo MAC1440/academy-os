@@ -1,33 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useAuth } from "@web/features/auth/auth-guard";
 import { useRouter } from "next/navigation";
 
 export default function DashboardPage() {
   const router = useRouter();
-  const [user, setUser] = useState<{ email?: string } | null>(null);
-
-  useEffect(() => {
-    const token = localStorage.getItem("accessToken");
-    if (!token) {
-      router.replace("/login");
-      return;
-    }
-
-    fetch("http://localhost:3000/auth/me", {
-      headers: { Authorization: `Bearer ${token}` },
-    })
-      .then(async (response) => {
-        if (!response.ok) {
-          router.replace("/login");
-          return;
-        }
-
-        const data = await response.json();
-        setUser(data.user);
-      })
-      .catch(() => router.replace("/login"));
-  }, []);
+  const { user } = useAuth();
 
   function logout() {
     localStorage.removeItem("accessToken");
@@ -49,11 +27,14 @@ export default function DashboardPage() {
         <div className="mt-8 grid gap-4 md:grid-cols-3">
           <div className="rounded-3xl border border-[#470004]/10 bg-[#fffdf8] p-6">
             <p className="text-sm font-semibold uppercase tracking-[0.3em] text-[#a67c00]">Signed in as</p>
-            <p className="mt-3 text-lg font-semibold text-[#470004]">{user?.email ?? "Secure user"}</p>
+            <p className="mt-3 text-lg font-semibold text-[#470004]">{user.email}</p>
           </div>
           <div className="rounded-3xl border border-[#470004]/10 bg-[#fffdf8] p-6">
             <p className="text-sm font-semibold uppercase tracking-[0.3em] text-[#a67c00]">Focus</p>
-            <p className="mt-3 text-lg font-semibold text-[#470004]">Attendance, fees, and communication</p>
+            <p className="mt-3 text-lg font-semibold text-[#470004]">Organization module</p>
+            <a href="/organizations" className="mt-4 inline-flex text-sm font-semibold text-[#a67c00]">
+              Manage academies →
+            </a>
           </div>
           <div className="rounded-3xl border border-[#470004]/10 bg-[#fffdf8] p-6">
             <p className="text-sm font-semibold uppercase tracking-[0.3em] text-[#a67c00]">Status</p>

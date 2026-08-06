@@ -19,8 +19,12 @@
         "name": "next"
       }
     ],
+    "baseUrl": ".",
     "paths": {
-      "@web/*": ["./*"]
+      "@/*": ["./*"],
+      "@web/*": ["./*"],
+      "@academy-os/shared": ["../../packages/shared/src/index.ts"],
+      "@academy-os/shared/*": ["../../packages/shared/src/*"]
     }
   },
   "include": [

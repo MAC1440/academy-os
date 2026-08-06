@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
+import { login } from "@web/lib/api";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -14,20 +15,13 @@ export default function LoginPage() {
     event.preventDefault();
     setError(null);
 
-    const response = await fetch("http://localhost:3000/auth/login", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, password }),
-    });
-
-    if (!response.ok) {
+    try {
+      const data = await login({ email, password });
+      localStorage.setItem("accessToken", data.accessToken);
+      router.push("/dashboard");
+    } catch {
       setError("Unable to sign in. Please verify your credentials.");
-      return;
     }
-
-    const data = await response.json();
-    localStorage.setItem("accessToken", data.accessToken);
-    router.push("/dashboard");
   }
 
   return (

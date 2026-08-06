@@ -21,14 +21,16 @@ export class AuthController {
     return this.authService.register(dto);
   }
 
-  @UseGuards(JwtAuthGuard)
   @Get('me')
+  @ApiBearerAuth('JWT-auth')
+  @UseGuards(JwtAuthGuard)
   me(@CurrentUser() user: { id: string; email: string }) {
     return { user };
   }
 
-  @UseGuards(JwtAuthGuard)
   @Post('logout')
+  @ApiBearerAuth('JWT-auth')
+  @UseGuards(JwtAuthGuard)
   logout(@Req() req: { user?: { id: string } }) {
     return { ok: true, message: 'Logged out', userId: req.user?.id ?? null };
   }

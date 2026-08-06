@@ -22,10 +22,7 @@ describe('BranchService', () => {
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
-      providers: [
-        BranchService,
-        { provide: PrismaService, useValue: prisma },
-      ],
+      providers: [BranchService, { provide: PrismaService, useValue: prisma }],
     }).compile();
 
     service = module.get(BranchService);
@@ -34,7 +31,10 @@ describe('BranchService', () => {
 
   describe('create', () => {
     it('creates a branch successfully when academy exists', async () => {
-      prisma.academy.findUnique.mockResolvedValue({ id: 'academy-1', name: 'Test Academy' });
+      prisma.academy.findUnique.mockResolvedValue({
+        id: 'academy-1',
+        name: 'Test Academy',
+      });
       prisma.branch.create.mockResolvedValue({
         id: 'branch-1',
         academyId: 'academy-1',

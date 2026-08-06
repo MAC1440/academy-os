@@ -105,8 +105,12 @@ export class BranchService {
         ...(dto.country !== undefined
           ? { country: dto.country?.trim() ?? null }
           : {}),
-        ...(dto.phone !== undefined ? { phone: dto.phone?.trim() ?? null } : {}),
-        ...(dto.email !== undefined ? { email: dto.email?.trim() ?? null } : {}),
+        ...(dto.phone !== undefined
+          ? { phone: dto.phone?.trim() ?? null }
+          : {}),
+        ...(dto.email !== undefined
+          ? { email: dto.email?.trim() ?? null }
+          : {}),
         ...(dto.status !== undefined ? { status: dto.status } : {}),
       },
     });

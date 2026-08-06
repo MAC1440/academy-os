@@ -119,13 +119,19 @@ export class AcademyService {
       data: {
         ...(dto.name !== undefined ? { name: dto.name.trim() } : {}),
         ...(dto.slug !== undefined ? { slug: slugify(dto.slug) } : {}),
-        ...(dto.email !== undefined ? { email: dto.email?.trim() ?? null } : {}),
-        ...(dto.phone !== undefined ? { phone: dto.phone?.trim() ?? null } : {}),
+        ...(dto.email !== undefined
+          ? { email: dto.email?.trim() ?? null }
+          : {}),
+        ...(dto.phone !== undefined
+          ? { phone: dto.phone?.trim() ?? null }
+          : {}),
         ...(dto.website !== undefined
           ? { website: dto.website?.trim() ?? null }
           : {}),
         ...(dto.logo !== undefined ? { logo: dto.logo?.trim() ?? null } : {}),
-        ...(dto.timezone !== undefined ? { timezone: dto.timezone.trim() } : {}),
+        ...(dto.timezone !== undefined
+          ? { timezone: dto.timezone.trim() }
+          : {}),
         ...(dto.currency !== undefined
           ? { currency: dto.currency.trim().toUpperCase() }
           : {}),

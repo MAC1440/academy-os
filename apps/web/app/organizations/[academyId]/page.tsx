@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useParams, useRouter } from "next/navigation";
+import { useParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import type { Academy, Branch } from "@academy-os/shared";
 import { deleteBranch, getAcademy } from "@web/lib/api";
@@ -12,7 +12,6 @@ type AcademyDetail = Academy & {
 };
 
 export default function AcademyDetailPage() {
-  const router = useRouter();
   const params = useParams<{ academyId: string }>();
   const academyId = params.academyId;
 

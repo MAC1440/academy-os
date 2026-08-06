@@ -1,5 +1,5 @@
 import { JwtService } from '@nestjs/jwt';
-import { AuthService } from './auth.service';
+import { AuthService } from './services/auth.service';
 
 describe('AuthService', () => {
   it('logs in the seeded admin user', async () => {

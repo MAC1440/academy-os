@@ -21,7 +21,10 @@ export class AuthService {
       status: 'ACTIVE',
     };
 
-    const isValidPassword = await bcrypt.compare(dto.password, adminUser.passwordHash);
+    const isValidPassword = await bcrypt.compare(
+      dto.password,
+      adminUser.passwordHash,
+    );
 
     if (!isValidPassword || adminUser.email !== normalizedEmail) {
       throw new UnauthorizedException('Invalid credentials');
@@ -30,7 +33,10 @@ export class AuthService {
     const payload = { sub: adminUser.id, email: adminUser.email };
     return {
       accessToken: this.jwtService.sign(payload),
-      refreshToken: this.jwtService.sign({ ...payload, type: 'refresh' }, { expiresIn: '7d' }),
+      refreshToken: this.jwtService.sign(
+        { ...payload, type: 'refresh' },
+        { expiresIn: '7d' },
+      ),
       user: {
         id: adminUser.id,
         email: adminUser.email,

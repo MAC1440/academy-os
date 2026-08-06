@@ -1,6 +1,7 @@
 "use client";
 
 import { useAuth } from "@web/features/auth/auth-guard";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 
 export default function DashboardPage() {
@@ -32,9 +33,9 @@ export default function DashboardPage() {
           <div className="rounded-3xl border border-[#470004]/10 bg-[#fffdf8] p-6">
             <p className="text-sm font-semibold uppercase tracking-[0.3em] text-[#a67c00]">Focus</p>
             <p className="mt-3 text-lg font-semibold text-[#470004]">Organization module</p>
-            <a href="/organizations" className="mt-4 inline-flex text-sm font-semibold text-[#a67c00]">
+            <Link href="/organizations" className="mt-4 inline-flex text-sm font-semibold text-[#a67c00]">
               Manage academies →
-            </a>
+            </Link>
           </div>
           <div className="rounded-3xl border border-[#470004]/10 bg-[#fffdf8] p-6">
             <p className="text-sm font-semibold uppercase tracking-[0.3em] text-[#a67c00]">Status</p>

@@ -10,6 +10,7 @@
   everyone else has access only to assigned branches.
 - Use soft deletion where deletion is supported. Do not use cron jobs for MVP
   attendance calculation.
+- Status key: `[x]` verified complete; `[-]` implemented in part; `[ ]` not started.
 
 ## Checkpoint 0 — Baseline and guardrails
 
@@ -21,12 +22,12 @@
 
 ## Checkpoint 1 — Identity and tenant membership
 
-- [ ] Persist User accounts instead of using development-only login.
-- [ ] Securely hash passwords and teacher PINs.
-- [ ] Implement login, refresh, logout, account status, and current-user data.
-- [ ] Create organization membership and branch assignment records.
-- [ ] Create Platform Super Admin creation of organizations and initial owners.
-- [ ] Enforce organization and branch isolation in the API.
+- [x] Persist User accounts instead of using development-only login.
+- [x] Securely hash passwords and teacher PINs.
+- [-] Implement login, refresh, logout, account status, and current-user data.
+- [x] Create organization membership and branch assignment records.
+- [x] Create Platform Super Admin creation of organizations and initial owners.
+- [x] Enforce organization and branch isolation in the API.
 
 **Exit criteria:** an owner has organization-wide access; branch users cannot
 access another branch's records.
@@ -56,21 +57,21 @@ their own branches without crossing organization boundaries.
 
 ## Checkpoint 4 — Academic calendar and structure
 
-- [ ] Add optional section support and organization academic settings.
-- [ ] Add academic years, configured working weekdays, holidays, and off days.
-- [ ] Add school classes: Nursery, Prep, grades, and HSSC levels.
-- [ ] Add optional sections and class subjects.
-- [ ] Keep vocational courses out of the school MVP data model.
+- [x] Add optional section support and organization academic settings.
+- [x] Add academic years, configured working weekdays, holidays, and off days.
+- [x] Add school classes: Nursery, Prep, grades, and HSSC levels.
+- [-] Add optional sections and class subjects. Sections are complete; subjects remain.
+- [x] Keep vocational courses out of the school MVP data model.
 
 **Exit criteria:** a branch can configure its academic calendar, classes,
 sections, and subjects.
 
 ## Checkpoint 5 — Teachers and staff
 
-- [ ] Create teacher/staff profiles linked to users and branches.
-- [ ] Support activation, deactivation, search, filters, and pagination.
-- [ ] Add teacher PIN setup/reset and class/subject assignments.
-- [ ] Do not restrict branch-wide student-performance viewing by assignment.
+- [x] Create teacher/staff profiles linked to users and branches.
+- [-] Support activation, deactivation, search, filters, and pagination.
+- [-] Add teacher PIN setup/reset and class/subject assignments. PIN setup/reset is complete; class/subject assignments remain.
+- [x] Do not restrict branch-wide student-performance viewing by assignment.
 
 **Exit criteria:** teachers have access only to assigned branches.
 

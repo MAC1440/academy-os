@@ -6,6 +6,8 @@ import {
 import * as bcrypt from 'bcryptjs';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { CreateStaffProfileDto } from '../dto/create-staff-profile.dto';
+import { ResetStaffPinDto } from '../dto/reset-staff-pin.dto';
+import { UpdateStaffProfileDto } from '../dto/update-staff-profile.dto';
 
 const staffInclude = {
   user: { select: { id: true, email: true, firstName: true, lastName: true } },
@@ -94,5 +96,71 @@ export class StaffProfileService {
         );
       throw error;
     }
+  }
+
+  async update(academyId: string, id: string, dto: UpdateStaffProfileDto) {
+    const profile = await this.prisma.staffProfile.findFirst({
+      where: { id, academyId },
+      select: { id: true, userId: true },
+    });
+    if (!profile) throw new NotFoundException('Staff profile not found');
+    if (dto.branchIds) {
+      const branches = await this.prisma.branch.findMany({
+        where: { academyId, id: { in: dto.branchIds } },
+        select: { id: true },
+      });
+      if (branches.length !== dto.branchIds.length)
+        throw new NotFoundException(
+          'One or more branches do not belong to this organization',
+        );
+      await this.prisma.$transaction(async (tx) => {
+        await tx.staffBranchAssignment.deleteMany({ where: { staffId: id } });
+        await tx.staffBranchAssignment.createMany({
+          data: dto.branchIds!.map((branchId) => ({ staffId: id, branchId })),
+        });
+        const membership = await tx.organizationMembership.findFirst({
+          where: { userId: profile.userId, academyId, deletedAt: null },
+          select: { id: true },
+        });
+        if (membership) {
+          await tx.branchAssignment.updateMany({
+            where: { membershipId: membership.id, deletedAt: null },
+            data: { deletedAt: new Date() },
+          });
+          await Promise.all(
+            dto.branchIds!.map((branchId) =>
+              tx.branchAssignment.upsert({
+                where: {
+                  membershipId_branchId: {
+                    membershipId: membership.id,
+                    branchId,
+                  },
+                },
+                create: { membershipId: membership.id, branchId },
+                update: { deletedAt: null },
+              }),
+            ),
+          );
+        }
+      });
+    }
+    return this.prisma.staffProfile.update({
+      where: { id },
+      data: dto.status ? { status: dto.status } : {},
+      include: staffInclude,
+    });
+  }
+
+  async resetPin(academyId: string, id: string, dto: ResetStaffPinDto) {
+    const profile = await this.prisma.staffProfile.findFirst({
+      where: { id, academyId },
+      select: { id: true },
+    });
+    if (!profile) throw new NotFoundException('Staff profile not found');
+    return this.prisma.staffProfile.update({
+      where: { id },
+      data: { pinHash: await bcrypt.hash(dto.pin, 12) },
+      include: staffInclude,
+    });
   }
 }

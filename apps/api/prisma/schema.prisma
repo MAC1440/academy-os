@@ -34,6 +34,13 @@ enum StaffType {
   STAFF
 }
 
+enum AuditAction {
+  CREATE
+  UPDATE
+  DELETE
+  ATTENDANCE_OVERRIDE
+}
+
 model User {
   id              String                   @id @default(cuid())
   email           String                   @unique
@@ -47,6 +54,7 @@ model User {
   deletedAt       DateTime?
   memberships     OrganizationMembership[]
   staffProfiles   StaffProfile[]
+  auditLogs       AuditLog[]
 
   @@index([status])
 }
@@ -63,6 +71,7 @@ model OrganizationMembership {
   user              User               @relation(fields: [userId], references: [id])
   academy           Academy            @relation(fields: [academyId], references: [id])
   branchAssignments BranchAssignment[]
+  roleAssignments RoleAssignment[]
 
   @@unique([userId, academyId])
   @@index([academyId, status])
@@ -102,6 +111,8 @@ model Academy {
   workingDays OrganizationWorkingDay[]
   calendarDays AcademicCalendarDay[]
   staffProfiles StaffProfile[]
+  roles Role[]
+  auditLogs AuditLog[]
 
   @@index([name])
   @@index([status])
@@ -123,10 +134,75 @@ model Branch {
   assignments BranchAssignment[]
   schoolClasses SchoolClass[]
   staffAssignments StaffBranchAssignment[]
+  roleAssignments RoleAssignment[]
+  teacherAttendance TeacherAttendance[]
 
   @@index([academyId])
   @@index([name])
   @@index([status])
+}
+
+model Permission {
+  id          String   @id @default(cuid())
+  key         String   @unique
+  group       String
+  label       String
+  createdAt   DateTime @default(now())
+  rolePermissions RolePermission[]
+}
+
+model Role {
+  id          String   @id @default(cuid())
+  academyId   String?
+  name        String
+  isSystem    Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  academy     Academy? @relation(fields: [academyId], references: [id], onDelete: Cascade)
+  permissions RolePermission[]
+  assignments RoleAssignment[]
+
+  @@unique([academyId, name])
+  @@index([academyId])
+}
+
+model RolePermission {
+  roleId       String
+  permissionId String
+  role         Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@id([roleId, permissionId])
+}
+
+model RoleAssignment {
+  id           String                 @id @default(cuid())
+  membershipId String
+  roleId       String
+  branchId     String?
+  createdAt    DateTime               @default(now())
+  membership   OrganizationMembership @relation(fields: [membershipId], references: [id], onDelete: Cascade)
+  role         Role                   @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  branch       Branch?                @relation(fields: [branchId], references: [id], onDelete: Cascade)
+
+  @@unique([membershipId, roleId, branchId])
+  @@index([branchId])
+}
+
+model AuditLog {
+  id          String      @id @default(cuid())
+  academyId   String
+  actorUserId String?
+  action      AuditAction
+  entityType  String
+  entityId    String
+  changes     Json?
+  createdAt   DateTime    @default(now())
+  academy     Academy     @relation(fields: [academyId], references: [id], onDelete: Cascade)
+  actorUser   User?       @relation(fields: [actorUserId], references: [id], onDelete: SetNull)
+
+  @@index([academyId, entityType, entityId])
+  @@index([actorUserId, createdAt])
 }
 
 model StaffProfile {
@@ -142,6 +218,7 @@ model StaffProfile {
   academy   Academy      @relation(fields: [academyId], references: [id], onDelete: Cascade)
   user      User         @relation(fields: [userId], references: [id], onDelete: Cascade)
   branchAssignments StaffBranchAssignment[]
+  attendance TeacherAttendance[]
 
   @@unique([academyId, userId])
   @@index([academyId, type, status])
@@ -158,6 +235,23 @@ model StaffBranchAssignment {
   @@unique([staffId, branchId])
   @@index([branchId])
 }
+
+model TeacherAttendance {
+  id           String       @id @default(cuid())
+  staffId      String
+  branchId     String
+  schoolDate   DateTime
+  checkedInAt  DateTime
+  checkedOutAt DateTime?
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+  staff        StaffProfile @relation(fields: [staffId], references: [id], onDelete: Cascade)
+  branch       Branch       @relation(fields: [branchId], references: [id], onDelete: Cascade)
+
+  @@unique([staffId, branchId, schoolDate])
+  @@index([branchId, schoolDate])
+}
+
 
 model AcademicSettings {
   id              String   @id @default(cuid())

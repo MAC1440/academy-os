@@ -21,6 +21,7 @@ export default function OrganizationDetailPage() {
   const { academyId } = useParams<{ academyId: string }>();
   const [organization, setOrganization] = useState<OrganizationDetail | null>(null);
   const [members, setMembers] = useState<OrganizationMember[]>([]);
+  const [fullName, setFullName] = useState("");
   const [memberEmail, setMemberEmail] = useState("");
   const [branchIds, setBranchIds] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
@@ -63,7 +64,8 @@ export default function OrganizationDetailPage() {
     setSubmitting(true);
     setError(null);
     try {
-      await addOrganizationMember(academyId, { email: memberEmail, branchIds });
+      await addOrganizationMember(academyId, { fullName: fullName.trim(), email: memberEmail.trim() || undefined, branchIds });
+      setFullName("");
       setMemberEmail("");
       setBranchIds([]);
       setMembers(await listOrganizationMembers(academyId));
@@ -146,7 +148,8 @@ export default function OrganizationDetailPage() {
           <p className="mt-1 text-sm text-muted-foreground">Add an existing active user and choose their branch access. Owners retain every branch automatically.</p>
           <form className="mt-6 rounded-2xl bg-surface p-5" onSubmit={handleAddMember}>
             <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_1.4fr_auto] lg:items-end">
-              <label className="block text-sm font-medium">Existing user email<input className="mt-2 w-full rounded-xl border border-border bg-card px-3 py-2.5 text-sm outline-none focus:border-ring" type="email" value={memberEmail} onChange={(event) => setMemberEmail(event.target.value)} placeholder="teacher@example.edu.pk" required /></label>
+              <label className="block text-sm font-medium">Full Name<br/><input className="mt-2 w-full rounded-xl border border-border bg-card px-3 py-2.5 text-sm outline-none focus:border-ring" type="text" value={fullName} onChange={(event) => setFullName(event.target.value)} placeholder="John Doe" required /></label>
+<strong className="block text-sm mt-3 font-medium">Email (optional)<br/><input className="mt-2 w-full rounded-xl border border-border bg-card px-3 py-2.5 text-sm outline-none focus:border-ring" type="email" value={memberEmail} onChange={(event) => setMemberEmail(event.target.value)} placeholder="teacher@example.edu.pk" /></strong>
               <fieldset><legend className="text-sm font-medium">Branch access</legend><div className="mt-2 flex flex-wrap gap-2">{organization.branches.map((branch) => <label key={branch.id} className="inline-flex cursor-pointer items-center gap-2 rounded-xl border border-border bg-card px-3 py-2 text-sm"><input type="checkbox" checked={branchIds.includes(branch.id)} onChange={() => toggleBranch(branch.id)} />{branch.name}</label>)}{organization.branches.length === 0 ? <span className="text-sm text-muted-foreground">Create a branch first.</span> : null}</div></fieldset>
               <button type="submit" disabled={submitting} className="rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground disabled:opacity-50">{submitting ? "Adding..." : "Add member"}</button>
             </div>

@@ -1,0 +1,172 @@
+You are working on a NestJS + Prisma + Next.js monorepo.
+
+Your task is NOT to make quick fixes. First understand the existing architecture, then implement the requested changes while preserving the existing code style and conventions.
+
+## Current Problem
+
+The current organization member creation endpoint expects an already existing ACTIVE user.
+
+Current request:
+
+{
+  "email": "user@example.com",
+  "branchIds": []
+}
+
+Current backend behavior:
+
+1. Search User by email
+2. Require status == ACTIVE
+3. Throw:
+   "Active user not found for this email"
+
+There is no user registration flow anywhere in the project, making it impossible to add new members from the Organization module.
+
+This blocks the MVP.
+
+--------------------------------------------------------
+
+## Desired MVP Behavior
+
+Organizations should be able to create members directly.
+
+The member creation form should contain:
+
+Required:
+- Full Name
+
+Optional:
+- Email
+- Phone
+- Address
+- Date of Birth
+- Academic History
+- CV
+- Branch Assignments
+
+Email should NOT be required.
+
+A member should be creatable even if they never log in.
+
+--------------------------------------------------------
+
+## IMPORTANT
+
+Before modifying anything:
+
+1. Inspect the Prisma schema.
+2. Inspect the authentication flow.
+3. Inspect the Organization module.
+4. Inspect MembershipService.
+5. Inspect DTOs.
+6. Inspect validation decorators.
+7. Inspect frontend forms.
+8. Explain the current architecture and why it fails.
+
+Do NOT modify code until you've completed this analysis.
+
+--------------------------------------------------------
+
+## After analysis
+
+Implement the smallest clean solution.
+
+Preferred solution:
+
+If email is provided:
+    search existing user.
+
+If existing user found:
+    attach membership.
+
+Else:
+    create new user/member record.
+
+Then:
+    create organization membership.
+    assign branches.
+
+--------------------------------------------------------
+
+## Schema changes
+
+If necessary:
+
+- Make email optional if the project architecture allows it.
+- Allow creating a person without authentication credentials.
+- Preserve existing login functionality.
+- Do NOT break authentication.
+
+If a larger refactor is required, explain why before implementing it.
+
+--------------------------------------------------------
+
+## Backend
+
+Update:
+
+- DTOs
+- Validation
+- Service
+- Controller
+- Prisma schema (if required)
+- Prisma migration
+- Repository logic
+- Branch assignment logic
+
+Remove the dependency on:
+
+status == ACTIVE
+
+during organization member creation.
+
+--------------------------------------------------------
+
+## Frontend
+
+Update the Organization → Members page.
+
+Replace the current "Add Member" form with:
+
+Required:
+- Full Name
+
+Optional:
+- Email
+- Phone
+- Address
+- DOB
+- Academic History
+- CV
+- Branch Selection
+
+Update API calls accordingly.
+
+Handle validation and success/error states.
+
+--------------------------------------------------------
+
+## Constraints
+
+- Preserve coding style.
+- Preserve folder structure.
+- Preserve naming conventions.
+- Do not introduce unnecessary dependencies.
+- Keep changes minimal.
+- Do not break existing APIs unless absolutely necessary.
+- If an API contract changes, update every frontend consumer.
+
+--------------------------------------------------------
+
+## Deliverables
+
+After implementation provide:
+
+1. Files modified.
+2. Why each file changed.
+3. Prisma migration summary.
+4. New API request/response examples.
+5. Manual testing steps.
+6. Any remaining technical debt.
+
+Do not stop after analysis. Continue until the feature is fully implemented and builds successfully.

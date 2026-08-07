@@ -48,7 +48,7 @@ export class MembershipController {
     await this.tenantAccess.assertAcademyAccess(user, academyId, true);
     return successResponse(
       'Organization member added',
-      await this.memberships.add(academyId, dto.email, dto.branchIds),
+      await this.memberships.add(academyId, dto.fullName, dto.email, dto.branchIds),
     );
   }
 

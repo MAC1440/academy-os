@@ -11,11 +11,15 @@ export class AddOrganizationMemberDto {
   @Transform(({ value }) => {
     const rawValue: unknown = value;
     return typeof rawValue === 'string'
-      ? rawValue.trim().toLowerCase()
+      ? rawValue.trim()
       : rawValue;
   })
+  @IsOptional()
   @IsEmail()
-  email!: string;
+  email?: string;
+
+  @IsString()
+  fullName!: string;
 
   @IsOptional()
   @IsArray()

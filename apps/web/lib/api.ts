@@ -214,7 +214,7 @@ export async function listOrganizationMembers(academyId: string) {
 
 export async function addOrganizationMember(
   academyId: string,
-  data: { email: string; branchIds: string[] },
+  data: { fullName: string; email?: string; branchIds: string[] },
 ) {
   const response = await apiFetch<OrganizationMember>(
     `/organizations/${academyId}/memberships`,

@@ -11,6 +11,8 @@ import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { successResponse } from '../../../common/api-response';
 import { CurrentUser } from '../../auth/decorators/current-user.decorator';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
+import { PermissionsGuard } from '../../auth/guards/permissions.guard';
+import { RequirePermissions } from '../../auth/decorators/require-permissions.decorator';
 import type { AuthenticatedUser } from '../../auth/types/authenticated-user.type';
 import { CreateStaffProfileDto } from '../dto/create-staff-profile.dto';
 import { ResetStaffPinDto } from '../dto/reset-staff-pin.dto';

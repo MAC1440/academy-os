@@ -7,6 +7,7 @@ import { AuthController } from './controllers/auth.controller';
 import { AuthService } from './services/auth.service';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { PlatformAdminGuard } from './guards/platform-admin.guard';
+import { PermissionsGuard } from './guards/permissions.guard';
 
 @Module({
   imports: [
@@ -18,7 +19,7 @@ import { PlatformAdminGuard } from './guards/platform-admin.guard';
     }),
   ],
   controllers: [AuthController],
-  providers: [AuthService, JwtStrategy, PlatformAdminGuard],
-  exports: [AuthService, PassportModule, JwtModule, PlatformAdminGuard],
+  providers: [AuthService, JwtStrategy, PlatformAdminGuard, PermissionsGuard],
+  exports: [AuthService, PassportModule, JwtModule, PlatformAdminGuard, PermissionsGuard],
 })
 export class AuthModule {}

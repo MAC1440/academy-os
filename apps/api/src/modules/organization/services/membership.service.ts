@@ -1,5 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../../prisma/prisma.service';
+import { randomUUID, randomBytes } from 'crypto';
+import * as bcrypt from 'bcryptjs';
 
 const memberInclude = {
   user: {
@@ -30,13 +32,28 @@ export class MembershipService {
     });
   }
 
-  async add(academyId: string, email: string, branchIds: string[] = []) {
-    const user = await this.prisma.user.findFirst({
-      where: { email, status: 'ACTIVE', deletedAt: null },
+  async add(academyId: string, fullName: string, email?: string, branchIds: string[] = []) {
+    let user = await this.prisma.user.findFirst({
+      where: { email, deletedAt: null },
       select: { id: true },
     });
-    if (!user)
-      throw new NotFoundException('Active user not found for this email');
+    if (!user) {
+      const placeholderEmail = email?.trim() || `${randomUUID()}@placeholder.local`;
+      const randomPassword = randomBytes(12).toString('hex');
+      const passwordHash = await bcrypt.hash(randomPassword, 12);
+      const names = fullName.trim().split(' ');
+      const firstName = names[0] || '';
+      const lastName = names.slice(1).join(' ');
+      user = await this.prisma.user.create({
+        data: {
+          email: placeholderEmail,
+          passwordHash,
+          firstName,
+          lastName,
+        },
+        select: { id: true },
+      });
+    }
 
     const membership = await this.prisma.organizationMembership.upsert({
       where: { userId_academyId: { userId: user.id, academyId } },

@@ -100,6 +100,29 @@ export type OrganizationMember = {
   }>;
 };
 
+export type AcademicSettings = {
+  id: string;
+  academyId: string;
+  sectionsEnabled: boolean;
+};
+
+export type ClassSection = {
+  id: string;
+  name: string;
+  code: string;
+  status: string;
+};
+
+export type SchoolClass = {
+  id: string;
+  branchId: string;
+  name: string;
+  code: string;
+  sortOrder: number;
+  status: string;
+  sections: ClassSection[];
+};
+
 export async function listAcademies(params: {
   page?: number;
   limit?: number;
@@ -194,6 +217,52 @@ export async function updateOrganizationMemberBranches(
     `/organizations/${academyId}/memberships/${membershipId}/branches`,
     { method: "PATCH", body: JSON.stringify({ branchIds }) },
   );
+  return response.data;
+}
+
+export async function getAcademicSettings(academyId: string) {
+  const response = await apiFetch<AcademicSettings>(
+    `/organizations/${academyId}/academic-settings`,
+  );
+  return response.data;
+}
+
+export async function updateAcademicSettings(academyId: string, sectionsEnabled: boolean) {
+  const response = await apiFetch<AcademicSettings>(
+    `/organizations/${academyId}/academic-settings`,
+    { method: "PATCH", body: JSON.stringify({ sectionsEnabled }) },
+  );
+  return response.data;
+}
+
+export async function listSchoolClasses(branchId: string) {
+  const response = await apiFetch<SchoolClass[]>(`/branches/${branchId}/classes`);
+  return response.data;
+}
+
+export async function createSchoolClass(
+  branchId: string,
+  data: { name: string; code: string; sortOrder?: number },
+) {
+  const response = await apiFetch<SchoolClass>(`/branches/${branchId}/classes`, {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+  return response.data;
+}
+
+export async function deleteSchoolClass(id: string) {
+  await apiFetch<{ id: string }>(`/school-classes/${id}`, { method: "DELETE" });
+}
+
+export async function createClassSection(
+  schoolClassId: string,
+  data: { name: string; code: string },
+) {
+  const response = await apiFetch<ClassSection>(`/school-classes/${schoolClassId}/sections`, {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
   return response.data;
 }
 

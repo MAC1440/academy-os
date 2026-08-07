@@ -86,6 +86,7 @@ model Academy {
   updatedAt DateTime     @updatedAt
   branches  Branch[]
   memberships OrganizationMembership[]
+  academicSettings AcademicSettings?
 
   @@index([name])
   @@index([status])
@@ -105,8 +106,48 @@ model Branch {
   updatedAt DateTime     @updatedAt
   academy   Academy      @relation(fields: [academyId], references: [id], onDelete: Cascade)
   assignments BranchAssignment[]
+  schoolClasses SchoolClass[]
 
   @@index([academyId])
   @@index([name])
   @@index([status])
+}
+
+model AcademicSettings {
+  id              String   @id @default(cuid())
+  academyId       String   @unique
+  sectionsEnabled Boolean  @default(false)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  academy         Academy  @relation(fields: [academyId], references: [id], onDelete: Cascade)
+}
+
+model SchoolClass {
+  id        String       @id @default(cuid())
+  branchId  String
+  name      String
+  code      String
+  sortOrder Int          @default(0)
+  status    EntityStatus @default(ACTIVE)
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+  branch    Branch       @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  sections  ClassSection[]
+
+  @@unique([branchId, code])
+  @@index([branchId, status])
+}
+
+model ClassSection {
+  id            String       @id @default(cuid())
+  schoolClassId String
+  name          String
+  code          String
+  status        EntityStatus @default(ACTIVE)
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+  schoolClass   SchoolClass  @relation(fields: [schoolClassId], references: [id], onDelete: Cascade)
+
+  @@unique([schoolClassId, code])
+  @@index([schoolClassId, status])
 }

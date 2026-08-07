@@ -124,6 +124,7 @@ export default function OrganizationDetailPage() {
             <h2 className="mt-3 text-2xl font-semibold">Branch-first design</h2>
             <p className="mt-4 text-sm opacity-80">Every operational module belongs to a branch, never directly to the organization.</p>
             <Link href={`/organizations/${organization.id}/branches/new`} className="mt-6 inline-flex rounded-2xl bg-card px-5 py-3 text-sm font-semibold text-foreground">Add branch</Link>
+            <Link href={`/organizations/${organization.id}/calendar`} className="mt-3 inline-flex text-sm font-semibold text-secondary hover:underline">Manage academic calendar</Link>
           </section>
         </div>
 

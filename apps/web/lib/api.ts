@@ -123,6 +123,12 @@ export type SchoolClass = {
   sections: ClassSection[];
 };
 
+export type AcademicCalendar = {
+  academicYears: Array<{ id: string; name: string; startsOn: string; endsOn: string; status: string }>;
+  weekdays: number[];
+  calendarDays: Array<{ id: string; date: string; type: "HOLIDAY" | "OFF_DAY"; label: string }>;
+};
+
 export async function listAcademies(params: {
   page?: number;
   limit?: number;
@@ -264,6 +270,30 @@ export async function createClassSection(
     body: JSON.stringify(data),
   });
   return response.data;
+}
+
+export async function getAcademicCalendar(academyId: string) {
+  const response = await apiFetch<AcademicCalendar>(`/organizations/${academyId}/academic-calendar`);
+  return response.data;
+}
+
+export async function createAcademicYear(academyId: string, data: { name: string; startsOn: string; endsOn: string }) {
+  const response = await apiFetch<AcademicCalendar["academicYears"][number]>(`/organizations/${academyId}/academic-calendar/years`, { method: "POST", body: JSON.stringify(data) });
+  return response.data;
+}
+
+export async function updateWorkingDays(academyId: string, weekdays: number[]) {
+  const response = await apiFetch<{ weekdays: number[] }>(`/organizations/${academyId}/academic-calendar/working-days`, { method: "PATCH", body: JSON.stringify({ weekdays }) });
+  return response.data;
+}
+
+export async function createCalendarDay(academyId: string, data: { date: string; type: "HOLIDAY" | "OFF_DAY"; label: string }) {
+  const response = await apiFetch<AcademicCalendar["calendarDays"][number]>(`/organizations/${academyId}/academic-calendar/days`, { method: "POST", body: JSON.stringify(data) });
+  return response.data;
+}
+
+export async function deleteCalendarDay(academyId: string, id: string) {
+  await apiFetch<{ id: string }>(`/organizations/${academyId}/academic-calendar/days/${id}`, { method: "DELETE" });
 }
 
 export async function listBranches(params: {

@@ -129,6 +129,15 @@ export type AcademicCalendar = {
   calendarDays: Array<{ id: string; date: string; type: "HOLIDAY" | "OFF_DAY"; label: string }>;
 };
 
+export type StaffProfile = {
+  id: string;
+  type: "TEACHER" | "STAFF";
+  employeeCode: string | null;
+  status: string;
+  user: { id: string; email: string; firstName: string; lastName: string };
+  branchAssignments: Array<{ id: string; branch: { id: string; name: string } }>;
+};
+
 export async function listAcademies(params: {
   page?: number;
   limit?: number;
@@ -294,6 +303,16 @@ export async function createCalendarDay(academyId: string, data: { date: string;
 
 export async function deleteCalendarDay(academyId: string, id: string) {
   await apiFetch<{ id: string }>(`/organizations/${academyId}/academic-calendar/days/${id}`, { method: "DELETE" });
+}
+
+export async function listStaff(academyId: string) {
+  const response = await apiFetch<StaffProfile[]>(`/organizations/${academyId}/staff`);
+  return response.data;
+}
+
+export async function createStaffProfile(academyId: string, data: { email: string; type: "TEACHER" | "STAFF"; employeeCode?: string; pin: string; branchIds: string[] }) {
+  const response = await apiFetch<StaffProfile>(`/organizations/${academyId}/staff`, { method: "POST", body: JSON.stringify(data) });
+  return response.data;
 }
 
 export async function listBranches(params: {

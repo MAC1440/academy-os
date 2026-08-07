@@ -6,6 +6,7 @@ import { MembershipController } from './controllers/membership.controller';
 import { AcademicSettingsController } from './controllers/academic-settings.controller';
 import { SchoolClassController } from './controllers/school-class.controller';
 import { AcademicCalendarController } from './controllers/academic-calendar.controller';
+import { StaffProfileController } from './controllers/staff-profile.controller';
 import { AcademyService } from './services/academy.service';
 import { BranchService } from './services/branch.service';
 import { TenantAccessService } from './services/tenant-access.service';
@@ -13,6 +14,7 @@ import { MembershipService } from './services/membership.service';
 import { AcademicSettingsService } from './services/academic-settings.service';
 import { SchoolClassService } from './services/school-class.service';
 import { AcademicCalendarService } from './services/academic-calendar.service';
+import { StaffProfileService } from './services/staff-profile.service';
 
 @Module({
   imports: [AuthModule],
@@ -23,6 +25,7 @@ import { AcademicCalendarService } from './services/academic-calendar.service';
     AcademicSettingsController,
     SchoolClassController,
     AcademicCalendarController,
+    StaffProfileController,
   ],
   providers: [
     AcademyService,
@@ -31,6 +34,7 @@ import { AcademicCalendarService } from './services/academic-calendar.service';
     AcademicSettingsService,
     SchoolClassService,
     AcademicCalendarService,
+    StaffProfileService,
     TenantAccessService,
   ],
   exports: [
@@ -40,6 +44,7 @@ import { AcademicCalendarService } from './services/academic-calendar.service';
     AcademicSettingsService,
     SchoolClassService,
     AcademicCalendarService,
+    StaffProfileService,
     TenantAccessService,
   ],
 })

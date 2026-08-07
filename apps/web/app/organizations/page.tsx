@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import type { Academy } from "@academy-os/shared";
 import { deleteAcademy, listAcademies } from "@web/lib/api";
+import { Button } from "@web/components/ui/button";
 
 type AcademyRow = Academy & { _count?: { branches: number } };
 
@@ -58,12 +59,9 @@ export default function OrganizationsPage() {
               Manage your organization network. Every module belongs to a branch, never directly to an organization.
             </p>
           </div>
-          <Link
-            href="/organizations/new"
-            className="inline-flex items-center justify-center rounded-2xl bg-[#470004] px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#6a0006]"
-          >
-            Create organization
-          </Link>
+          <Button asChild size="lg">
+            <Link href="/organizations/new">Create organization</Link>
+          </Button>
         </div>
 
         <div className="mt-8 rounded-[32px] border border-border bg-card p-6 shadow-[0_20px_60px_rgba(71,0,4,0.12)]">

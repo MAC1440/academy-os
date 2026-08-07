@@ -33,7 +33,10 @@
   --ring: #f3d58b;
 
   --accent: #f3d58b;
---accent-foreground: #470004;
+  --accent-foreground: #470004;
+  --destructive: #b42318;
+  --input: rgba(71, 0, 4, 0.18);
+  --radius: 0.75rem;
 }
 
 /* -------------------------------------------------------------------------- */
@@ -67,7 +70,10 @@
   --ring: #f3d58b;
 
   --accent: #f3d58b;
---accent-foreground: #151112;
+  --accent-foreground: #151112;
+  --destructive: #f87171;
+  --input: rgba(255, 255, 255, 0.18);
+  --radius: 0.75rem;
 }
 
 /* -------------------------------------------------------------------------- */
@@ -99,6 +105,8 @@
   --color-muted-foreground: var(--muted-foreground);
 
   --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-destructive: var(--destructive);
 
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
@@ -119,4 +127,11 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
+}
+
+@layer base {
+  button:not(:disabled),
+  [role="button"]:not(:disabled) {
+    cursor: pointer;
+  }
 }

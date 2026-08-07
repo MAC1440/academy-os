@@ -29,6 +29,11 @@ enum CalendarDayType {
   OFF_DAY
 }
 
+enum StaffType {
+  TEACHER
+  STAFF
+}
+
 model User {
   id              String                   @id @default(cuid())
   email           String                   @unique
@@ -41,6 +46,7 @@ model User {
   updatedAt       DateTime                 @updatedAt
   deletedAt       DateTime?
   memberships     OrganizationMembership[]
+  staffProfiles   StaffProfile[]
 
   @@index([status])
 }
@@ -95,6 +101,7 @@ model Academy {
   academicYears AcademicYear[]
   workingDays OrganizationWorkingDay[]
   calendarDays AcademicCalendarDay[]
+  staffProfiles StaffProfile[]
 
   @@index([name])
   @@index([status])
@@ -115,10 +122,41 @@ model Branch {
   academy   Academy      @relation(fields: [academyId], references: [id], onDelete: Cascade)
   assignments BranchAssignment[]
   schoolClasses SchoolClass[]
+  staffAssignments StaffBranchAssignment[]
 
   @@index([academyId])
   @@index([name])
   @@index([status])
+}
+
+model StaffProfile {
+  id        String       @id @default(cuid())
+  academyId String
+  userId    String
+  type      StaffType    @default(TEACHER)
+  employeeCode String?
+  pinHash   String?
+  status    EntityStatus @default(ACTIVE)
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+  academy   Academy      @relation(fields: [academyId], references: [id], onDelete: Cascade)
+  user      User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  branchAssignments StaffBranchAssignment[]
+
+  @@unique([academyId, userId])
+  @@index([academyId, type, status])
+}
+
+model StaffBranchAssignment {
+  id        String       @id @default(cuid())
+  staffId   String
+  branchId  String
+  createdAt DateTime     @default(now())
+  staff     StaffProfile @relation(fields: [staffId], references: [id], onDelete: Cascade)
+  branch    Branch       @relation(fields: [branchId], references: [id], onDelete: Cascade)
+
+  @@unique([staffId, branchId])
+  @@index([branchId])
 }
 
 model AcademicSettings {

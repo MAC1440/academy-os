@@ -14,7 +14,7 @@ import { slugify, uniqueSlug } from '../utils/slug.util';
 export class AcademyService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async create(dto: CreateAcademyDto) {
+  async create(dto: CreateAcademyDto, ownerUserId: string) {
     const slug =
       dto.slug?.trim() ||
       (await uniqueSlug(dto.name, async (candidate) =>
@@ -43,6 +43,12 @@ export class AcademyService {
         timezone: dto.timezone?.trim() ?? 'UTC',
         currency: dto.currency?.trim()?.toUpperCase() ?? 'USD',
         status: dto.status,
+        memberships: {
+          create: {
+            userId: ownerUserId,
+            isOwner: true,
+          },
+        },
       },
     });
   }

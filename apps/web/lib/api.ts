@@ -83,6 +83,23 @@ export type PaginatedResult<T> = {
   meta: PaginationMeta;
 };
 
+export type OrganizationMember = {
+  id: string;
+  isOwner: boolean;
+  status: "ACTIVE" | "INACTIVE";
+  user: {
+    id: string;
+    email: string;
+    firstName: string;
+    lastName: string;
+    status: string;
+  };
+  branchAssignments: Array<{
+    id: string;
+    branch: { id: string; name: string; status: string };
+  }>;
+};
+
 export async function listAcademies(params: {
   page?: number;
   limit?: number;
@@ -148,6 +165,36 @@ export async function updateAcademy(
 
 export async function deleteAcademy(id: string) {
   await apiFetch<{ id: string }>(`/organizations/${id}`, { method: "DELETE" });
+}
+
+export async function listOrganizationMembers(academyId: string) {
+  const response = await apiFetch<OrganizationMember[]>(
+    `/organizations/${academyId}/memberships`,
+  );
+  return response.data;
+}
+
+export async function addOrganizationMember(
+  academyId: string,
+  data: { email: string; branchIds: string[] },
+) {
+  const response = await apiFetch<OrganizationMember>(
+    `/organizations/${academyId}/memberships`,
+    { method: "POST", body: JSON.stringify(data) },
+  );
+  return response.data;
+}
+
+export async function updateOrganizationMemberBranches(
+  academyId: string,
+  membershipId: string,
+  branchIds: string[],
+) {
+  const response = await apiFetch<OrganizationMember>(
+    `/organizations/${academyId}/memberships/${membershipId}/branches`,
+    { method: "PATCH", body: JSON.stringify({ branchIds }) },
+  );
+  return response.data;
 }
 
 export async function listBranches(params: {

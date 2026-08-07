@@ -33,8 +33,11 @@ export class AcademyController {
 
   @Post()
   @UseGuards(PlatformAdminGuard)
-  async create(@Body() dto: CreateAcademyDto) {
-    const academy = await this.academyService.create(dto);
+  async create(
+    @CurrentUser() user: AuthenticatedUser,
+    @Body() dto: CreateAcademyDto,
+  ) {
+    const academy = await this.academyService.create(dto, user.id);
     return successResponse('Organization created', academy);
   }
 
@@ -47,7 +50,11 @@ export class AcademyController {
       query,
       await this.tenantAccess.getAccessibleAcademyIds(user),
     );
-    return successResponse('Organizations retrieved', result.items, result.meta);
+    return successResponse(
+      'Organizations retrieved',
+      result.items,
+      result.meta,
+    );
   }
 
   @Get(':id')

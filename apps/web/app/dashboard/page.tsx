@@ -2,16 +2,9 @@
 
 import { useAuth } from "@web/features/auth/auth-guard";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 
 export default function DashboardPage() {
-  const router = useRouter();
   const { user } = useAuth();
-
-  function logout() {
-    localStorage.removeItem("accessToken");
-    router.push("/login");
-  }
 
   return (
     <main className="min-h-screen bg-background text-foreground transition-colors">

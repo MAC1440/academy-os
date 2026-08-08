@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { getCurrentUser, type AuthenticatedUser } from "@web/lib/api";
+import { getCurrentUser, getAccessToken, clearTokens, type AuthenticatedUser } from "@web/lib/api";
 
 type AuthContextValue = {
   user: AuthenticatedUser;
@@ -25,17 +25,19 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
     let active = true;
 
     async function checkSession() {
-      const token = localStorage.getItem("accessToken");
+      const token = getAccessToken();
       if (!token) {
         router.replace("/login");
         return;
       }
 
       try {
+        // If the access token has expired, apiFetch's internal 401 handler
+        // silently refreshes and retries before this ever throws.
         const currentUser = await getCurrentUser();
         if (active) setUser(currentUser);
       } catch {
-        localStorage.removeItem("accessToken");
+        clearTokens();
         router.replace("/login");
       } finally {
         if (active) setChecking(false);
@@ -43,7 +45,7 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
     }
 
     function handleUnauthorized() {
-      localStorage.removeItem("accessToken");
+      clearTokens();
       router.replace("/login");
     }
 

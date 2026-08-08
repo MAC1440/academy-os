@@ -6,6 +6,7 @@ import { CurrentUser } from '../decorators/current-user.decorator';
 import { JwtAuthGuard } from '../guards/jwt-auth.guard';
 import { PlatformAdminGuard } from '../guards/platform-admin.guard';
 import { AuthService } from '../services/auth.service';
+import { RefreshDto } from '../dto/refresh.dto';
 
 @ApiTags('Auth')
 @Controller('auth')
@@ -15,6 +16,10 @@ export class AuthController {
   @Post('login')
   login(@Body() dto: LoginDto) {
     return this.authService.login(dto);
+  }
+  @Post('refresh')
+  refresh(@Body() dto: RefreshDto) {
+    return this.authService.refresh(dto);
   }
 
   @Post('register')

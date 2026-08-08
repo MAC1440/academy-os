@@ -16,8 +16,10 @@ export default function LoginPage() {
     setError(null);
 
     try {
-      const data = await login({ email, password });
-      localStorage.setItem("accessToken", data.accessToken);
+      // login() already persists both accessToken and refreshToken via
+      // storeTokens() internally — do not set localStorage here, or the
+      // refresh token silently never gets saved (this was the bug).
+      await login({ email, password });
       router.push("/dashboard");
     } catch {
       setError("Unable to sign in. Please verify your credentials.");

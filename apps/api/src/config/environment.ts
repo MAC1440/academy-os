@@ -8,3 +8,4 @@ if (existsSync(environmentFile)) {
 }
 
 export const jwtSecret = process.env.JWT_SECRET ?? 'academy-secret';
+export const refreshSecret = process.env.REFRESH_SECRET;

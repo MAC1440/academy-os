@@ -19,6 +19,7 @@ import {
   Users,
   WalletCards,
 } from 'lucide-react';
+import { ForceTheme } from '@/features/theme/theme-provider';
 
 const modules = [
   {
@@ -91,6 +92,7 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
 
 export default function HomePage() {
   return (
+    <ForceTheme theme="light">
     <main className="min-h-screen overflow-hidden bg-background text-foreground">
       {/* Background decoration */}
       <div className="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
@@ -781,5 +783,6 @@ export default function HomePage() {
         </div>
       </footer>
     </main>
+    </ForceTheme>
   );
 }

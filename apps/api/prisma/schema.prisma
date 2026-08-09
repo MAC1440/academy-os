@@ -252,6 +252,7 @@ model Subject {
   deletedAt       DateTime?
   organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   academicOfferings AcademicOfferingSubject[]
+  assessmentMarks StudentAssessmentMark[]
 
   @@unique([organizationId, name])
   @@index([organizationId, status])
@@ -347,6 +348,7 @@ model Student {
   admissionOfficerName  String?
   attendance           StudentAttendance[]
   assessmentMarks      StudentAssessmentMark[]
+  payments             StudentPayment[]
   studentFullName       String
   studentCnic           String
   guardianFullName      String
@@ -364,6 +366,21 @@ model Student {
   @@unique([academicOfferingId, studentCnic])
   @@index([guardianPortalUserId])
   @@index([branchId])
+}
+
+model StudentPayment {
+  id          String   @id @default(cuid())
+  studentId   String
+  amount      Decimal  @db.Decimal(12, 2)
+  receiptNumber String
+  receivedOn  DateTime @db.Date
+  remarks     String?
+  receivedByUserId String
+  createdAt   DateTime @default(now())
+  student     Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@unique([receiptNumber])
+  @@index([studentId, receivedOn])
 }
 
 model Assessment {

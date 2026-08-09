@@ -58,6 +58,12 @@ enum AcademicOfferingType {
   COURSE
 }
 
+enum AdmissionStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
 model Organization {
   id        String   @id @default(cuid())
   name      String
@@ -77,13 +83,14 @@ model Organization {
   schoolClasses SchoolClass[]
   courses     Course[]
   subjects    Subject[]
+  admissionApplications AdmissionApplication[]
 }
 
 model User {
   id                   String        @id @default(cuid())
   accountType          AccountType
   username             String?       @unique
-  contactNumber        String?       @unique
+  contactNumber        String?
   fullName             String
   email                String?
   passwordHash         String
@@ -97,6 +104,7 @@ model User {
   staffProfile         StaffProfile?
   audits               AuditLog[]    @relation("AuditActor")
   createdNotes         SharedNote[]  @relation("SharedNoteAuthor")
+  guardianStudents     Student[]     @relation("GuardianPortalStudent")
 
   @@index([accountType, status])
 }
@@ -118,6 +126,8 @@ model Branch {
   roleAssignments RoleAssignment[]
   staffAttendance StaffAttendance[]
   academicOfferings AcademicOffering[]
+  admissionApplications AdmissionApplication[]
+  students Student[]
 
   @@unique([organizationId, addressKey])
   @@index([status])
@@ -216,6 +226,8 @@ model AcademicOffering {
   course          Course?              @relation(fields: [courseId], references: [id], onDelete: Restrict)
   subjects        AcademicOfferingSubject[]
   teachers        AcademicOfferingTeacher[]
+  admissionApplications AdmissionApplication[]
+  students        Student[]
 
   @@unique([branchId, offeringKey])
   @@index([branchId, status])
@@ -237,6 +249,59 @@ model AcademicOfferingTeacher {
   staffProfile       StaffProfile     @relation(fields: [staffProfileId], references: [id], onDelete: Restrict)
 
   @@id([academicOfferingId, staffProfileId])
+}
+
+model AdmissionApplication {
+  id                    String          @id @default(cuid())
+  organizationId        String
+  branchId              String
+  academicOfferingId    String
+  studentFullName       String
+  studentCnic           String
+  guardianFullName      String
+  guardianContactNumber String
+  previousSchool        String?
+  previousPerformance   String?
+  status                AdmissionStatus @default(PENDING)
+  reviewNote            String?
+  reviewedAt            DateTime?
+  reviewedByUserId      String?
+  createdAt             DateTime        @default(now())
+  updatedAt             DateTime        @updatedAt
+  deletedAt             DateTime?
+  organization          Organization    @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  branch                Branch          @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  academicOffering      AcademicOffering @relation(fields: [academicOfferingId], references: [id], onDelete: Restrict)
+  student               Student?
+
+  @@unique([academicOfferingId, studentCnic])
+  @@index([branchId, status])
+  @@index([organizationId, status])
+}
+
+model Student {
+  id                    String   @id @default(cuid())
+  admissionApplicationId String @unique
+  guardianPortalUserId  String
+  branchId              String
+  academicOfferingId    String
+  studentFullName       String
+  studentCnic           String
+  guardianFullName      String
+  guardianContactNumber String
+  previousSchool        String?
+  previousPerformance   String?
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+  deletedAt             DateTime?
+  admissionApplication  AdmissionApplication @relation(fields: [admissionApplicationId], references: [id], onDelete: Restrict)
+  guardianPortalUser    User     @relation("GuardianPortalStudent", fields: [guardianPortalUserId], references: [id], onDelete: Restrict)
+  branch                Branch   @relation(fields: [branchId], references: [id], onDelete: Restrict)
+  academicOffering      AcademicOffering @relation(fields: [academicOfferingId], references: [id], onDelete: Restrict)
+
+  @@unique([academicOfferingId, studentCnic])
+  @@index([guardianPortalUserId])
+  @@index([branchId])
 }
 
 model AttendanceKioskSettings {

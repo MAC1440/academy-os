@@ -32,15 +32,18 @@ export class AuthService {
 
   async login(dto: LoginDto) {
     const identifier = dto.identifier.trim();
-    const user = await this.prisma.user.findFirst({
+    const users = await this.prisma.user.findMany({
       where: {
         deletedAt: null,
         status: AccountStatus.ACTIVE,
+        ...(dto.accountType ? { accountType: dto.accountType } : {}),
         OR: [{ username: identifier }, { contactNumber: identifier }],
       },
+      take: 2,
     });
 
-    if (!user || !(await bcrypt.compare(dto.password, user.passwordHash))) {
+    const [user] = users;
+    if (!user || users.length !== 1 || !(await bcrypt.compare(dto.password, user.passwordHash))) {
       throw new UnauthorizedException('Invalid credentials');
     }
 

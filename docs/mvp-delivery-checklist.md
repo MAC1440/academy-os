@@ -82,12 +82,14 @@ their structures, and teachers can cover one another using shared material.
 
 ## Checkpoint 5 — Admissions and learner accounts
 
-- [ ] Create the default organization admission form and public submission API.
-- [ ] Store pending applications indefinitely unless explicitly deleted.
-- [ ] Approve/reject applications and retain their decision history.
-- [ ] On approval, create the independent learner account and enrollment.
-- [ ] Allow separate admissions for the same real person across sessions or
-  branches without cross-admission coupling.
+- [x] Create the default organization admission form and public submission API.
+- [x] Store pending applications indefinitely unless explicitly deleted.
+- [x] Approve/reject applications and retain their decision history.
+- [x] On approval, create the independent learner account and independent
+  student record.
+- [x] Allow separate admissions for the same real person across offerings or
+  branches without cross-admission coupling, while sharing a guardian portal by
+  contact number.
 
 **Exit criteria:** admissions move cleanly from pending to approved/rejected,
 and each approved admission yields its own learner record.

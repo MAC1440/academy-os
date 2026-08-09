@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsOptional, IsString, Matches, MaxLength } from 'class-validator';
+import { IsObject, IsOptional, IsString, Matches, MaxLength } from 'class-validator';
 
 export class SubmitAdmissionDto {
   @ApiProperty()
@@ -37,4 +37,12 @@ export class SubmitAdmissionDto {
   @IsString()
   @MaxLength(2_000)
   previousPerformance?: string;
+
+  @ApiPropertyOptional({
+    description: 'Structured details from the approved physical-form contract: father name, date of birth, nationality, addresses, phones, academic history, guardian employment, and siblings.',
+    type: Object,
+  })
+  @IsOptional()
+  @IsObject()
+  formData?: Record<string, unknown>;
 }

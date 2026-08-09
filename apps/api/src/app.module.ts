@@ -7,6 +7,8 @@ import { AdmissionsModule } from './modules/admissions/admissions.module';
 import { AuditModule } from './modules/audit/audit.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { KioskModule } from './modules/kiosk/kiosk.module';
+import { GradesModule } from './modules/grades/grades.module';
+import { FinanceModule } from './modules/finance/finance.module';
 import { NotesModule } from './modules/notes/notes.module';
 import { OrganizationModule } from './modules/organization/organization.module';
 import { RolesModule } from './modules/roles/roles.module';
@@ -15,7 +17,7 @@ import { StudentAttendanceModule } from './modules/student-attendance/student-at
 import { PrismaModule } from './prisma/prisma.module';
 
 @Module({
-  imports: [PrismaModule, AuthModule, AccessModule, AuditModule, OrganizationModule, RolesModule, StaffModule, KioskModule, NotesModule, AcademicsModule, AdmissionsModule, StudentAttendanceModule],
+  imports: [PrismaModule, AuthModule, AccessModule, AuditModule, OrganizationModule, RolesModule, StaffModule, KioskModule, NotesModule, AcademicsModule, AdmissionsModule, StudentAttendanceModule, GradesModule, FinanceModule],
   controllers: [AppController],
   providers: [AppService],
 })

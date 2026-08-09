@@ -26,6 +26,7 @@ export class AdmissionsService {
           studentFullName: dto.studentFullName.trim(), studentCnic: dto.studentCnic,
           guardianFullName: dto.guardianFullName.trim(), guardianContactNumber: dto.guardianContactNumber.trim(),
           previousSchool: dto.previousSchool?.trim(), previousPerformance: dto.previousPerformance?.trim(),
+          formData: dto.formData as Prisma.InputJsonValue | undefined,
         },
         include: this.applicationInclude,
       });

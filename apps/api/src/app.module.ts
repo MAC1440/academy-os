@@ -11,10 +11,11 @@ import { NotesModule } from './modules/notes/notes.module';
 import { OrganizationModule } from './modules/organization/organization.module';
 import { RolesModule } from './modules/roles/roles.module';
 import { StaffModule } from './modules/staff/staff.module';
+import { StudentAttendanceModule } from './modules/student-attendance/student-attendance.module';
 import { PrismaModule } from './prisma/prisma.module';
 
 @Module({
-  imports: [PrismaModule, AuthModule, AccessModule, AuditModule, OrganizationModule, RolesModule, StaffModule, KioskModule, NotesModule, AcademicsModule, AdmissionsModule],
+  imports: [PrismaModule, AuthModule, AccessModule, AuditModule, OrganizationModule, RolesModule, StaffModule, KioskModule, NotesModule, AcademicsModule, AdmissionsModule, StudentAttendanceModule],
   controllers: [AppController],
   providers: [AppService],
 })

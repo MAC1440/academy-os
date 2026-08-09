@@ -53,6 +53,18 @@ enum StaffAttendanceStatus {
   LATE
 }
 
+enum StudentAttendanceStatus {
+  PRESENT
+  ABSENT
+  LATE
+  LEAVE
+}
+
+enum AssessmentType {
+  REGULAR
+  FESTIVAL
+}
+
 enum AcademicOfferingType {
   SCHOOL_CLASS
   COURSE
@@ -261,6 +273,7 @@ model AcademicOffering {
   course          Course?              @relation(fields: [courseId], references: [id], onDelete: Restrict)
   subjects        AcademicOfferingSubject[]
   teachers        AcademicOfferingTeacher[]
+  assessments     Assessment[]
   admissionApplications AdmissionApplication[]
   students        Student[]
 
@@ -332,6 +345,8 @@ model Student {
   balanceDueOn          DateTime? @db.Date
   admissionRemarks      String?
   admissionOfficerName  String?
+  attendance           StudentAttendance[]
+  assessmentMarks      StudentAssessmentMark[]
   studentFullName       String
   studentCnic           String
   guardianFullName      String
@@ -349,6 +364,48 @@ model Student {
   @@unique([academicOfferingId, studentCnic])
   @@index([guardianPortalUserId])
   @@index([branchId])
+}
+
+model Assessment {
+  id                 String         @id @default(cuid())
+  academicOfferingId String
+  title              String
+  assessmentType     AssessmentType
+  heldOn             DateTime       @db.Date
+  createdAt          DateTime       @default(now())
+  updatedAt          DateTime       @updatedAt
+  academicOffering   AcademicOffering @relation(fields: [academicOfferingId], references: [id], onDelete: Cascade)
+  marks              StudentAssessmentMark[]
+}
+
+model StudentAssessmentMark {
+  id           String   @id @default(cuid())
+  assessmentId String
+  studentId    String
+  subjectId    String
+  maximumMarks Decimal  @db.Decimal(8, 2)
+  obtainedMarks Decimal @db.Decimal(8, 2)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  assessment   Assessment @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
+  student      Student    @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  subject      Subject    @relation(fields: [subjectId], references: [id], onDelete: Restrict)
+
+  @@unique([assessmentId, studentId, subjectId])
+}
+
+model StudentAttendance {
+  id          String                  @id @default(cuid())
+  studentId   String
+  attendanceDate DateTime             @db.Date
+  status      StudentAttendanceStatus @default(PRESENT)
+  markedByUserId String
+  createdAt   DateTime                @default(now())
+  updatedAt   DateTime                @updatedAt
+  student     Student                 @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@unique([studentId, attendanceDate])
+  @@index([attendanceDate])
 }
 
 model AttendanceKioskSettings {

@@ -67,6 +67,7 @@ model Organization {
   branches  Branch[]
   roles     Role[]
   audits    AuditLog[]
+  sharedNotes SharedNote[]
   kioskSettings AttendanceKioskSettings?
 }
 
@@ -87,6 +88,7 @@ model User {
   roleAssignments      RoleAssignment[]
   staffProfile         StaffProfile?
   audits               AuditLog[]    @relation("AuditActor")
+  createdNotes         SharedNote[]  @relation("SharedNoteAuthor")
 
   @@index([accountType, status])
 }
@@ -167,6 +169,21 @@ model StaffAttendance {
 
   @@unique([staffProfileId, attendanceDate])
   @@index([branchId, attendanceDate])
+}
+
+model SharedNote {
+  id          String   @id @default(cuid())
+  organizationId String
+  authorUserId String
+  title       String
+  content     String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  deletedAt   DateTime?
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  author      User     @relation("SharedNoteAuthor", fields: [authorUserId], references: [id], onDelete: Restrict)
+
+  @@index([organizationId, deletedAt])
 }
 
 model Permission {

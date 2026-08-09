@@ -74,7 +74,7 @@ manage rules and overrides.
 - [ ] Model regular school classes separately from vocational/academy courses.
 - [ ] Add organization-enabled sections for applicable regular classes.
 - [ ] Add subjects, class/session offerings, and teacher assignment metadata.
-- [ ] Add organization-wide shared notes/materials visible to all teachers.
+- [x] Add organization-wide shared notes/materials visible to all teachers.
 
 **Exit criteria:** a branch can run school and academy offerings without mixing
 their structures, and teachers can cover one another using shared material.

@@ -32,8 +32,12 @@
 - [x] Require active, non-deleted accounts for every authenticated request.
 - [x] Establish permission, role, role-permission, and branch-aware role
   assignment tables.
-- [ ] Add server-side permission decorators/guards and branch-access checks.
-- [ ] Add audit records for mutations, authentication, and attendance overrides.
+- [-] Add server-side permission decorators/guards and branch-access checks.
+  They protect the organization/branch module; remaining modules will adopt them
+  as they are built.
+- [-] Add audit records for mutations, authentication, and attendance overrides.
+  Organization, branch, and session mutations are recorded; authentication and
+  attendance will be added with their modules.
 - [ ] Add password change and profile-completion endpoints.
 
 **Exit criteria:** an administrator can authenticate, roles are enforced by the
@@ -41,10 +45,10 @@ server, and users can access only their assigned branch data.
 
 ## Checkpoint 2 — Organization, branches, and sessions
 
-- [ ] Add singleton organization settings (PKR and Asia/Karachi defaults).
-- [ ] Create, update, archive, and list branches with unique organization
+- [x] Add singleton organization settings (PKR and Asia/Karachi defaults).
+- [x] Create, update, archive, and list branches with unique organization
   addresses.
-- [ ] Create branch sessions with editable 7:00 AM–2:00 PM defaults.
+- [x] Create branch sessions with editable 7:00 AM–2:00 PM defaults.
 - [ ] Support future session-specific staff shifts without changing kiosk data.
 
 **Exit criteria:** an administrator can configure the organization, branches,

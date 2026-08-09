@@ -82,6 +82,7 @@ model Branch {
   deletedAt      DateTime?
   organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   sessions       Session[]
+  roleAssignments RoleAssignment[]
 
   @@unique([organizationId, addressKey])
   @@index([status])
@@ -135,6 +136,7 @@ model RoleAssignment {
   branchId  String?
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   role      Role     @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  branch    Branch?  @relation(fields: [branchId], references: [id], onDelete: Cascade)
   @@unique([userId, roleId, branchId])
 }
 

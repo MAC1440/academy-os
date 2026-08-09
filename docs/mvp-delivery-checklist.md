@@ -56,12 +56,15 @@ and usable default sessions.
 
 ## Checkpoint 3 — Staff and teacher attendance kiosk
 
-- [ ] Create staff records with required full name and unique contact number.
-- [ ] Generate initial staff credentials and four-digit kiosk PINs.
-- [ ] Expose profile-completion state without blocking a staff account.
-- [ ] Build PIN-protected branch kiosk check-in and checkout endpoints.
-- [ ] Add editable late/grace/workday rules and authorised corrections.
-- [ ] Treat a missing checkout as a complete day during report calculation.
+- [x] Create staff records with required full name and unique contact number.
+- [x] Generate initial staff credentials and four-digit kiosk PINs.
+- [-] Expose profile-completion state without blocking a staff account. The
+  state is stored and returned; the self-service completion endpoint remains.
+- [x] Build PIN-protected branch kiosk check-in and checkout endpoints.
+- [x] Add editable default shift, late/grace, working-day rules, and authorised
+  corrections. Defaults are Monday–Saturday, 7:00 AM–2:00 PM, and 15 minutes.
+- [x] Preserve missing checkout for complete-day treatment during report
+  calculation; no cron job changes the source record.
 
 **Exit criteria:** staff can check in/out at a branch, while administrators can
 manage rules and overrides.

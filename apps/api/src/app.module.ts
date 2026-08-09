@@ -12,12 +12,14 @@ import { FinanceModule } from './modules/finance/finance.module';
 import { NotesModule } from './modules/notes/notes.module';
 import { OrganizationModule } from './modules/organization/organization.module';
 import { RolesModule } from './modules/roles/roles.module';
+import { ReportsModule } from './modules/reports/reports.module';
 import { StaffModule } from './modules/staff/staff.module';
+import { SettingsModule } from './modules/settings/settings.module';
 import { StudentAttendanceModule } from './modules/student-attendance/student-attendance.module';
 import { PrismaModule } from './prisma/prisma.module';
 
 @Module({
-  imports: [PrismaModule, AuthModule, AccessModule, AuditModule, OrganizationModule, RolesModule, StaffModule, KioskModule, NotesModule, AcademicsModule, AdmissionsModule, StudentAttendanceModule, GradesModule, FinanceModule],
+  imports: [PrismaModule, AuthModule, AccessModule, AuditModule, OrganizationModule, RolesModule, ReportsModule, StaffModule, SettingsModule, KioskModule, NotesModule, AcademicsModule, AdmissionsModule, StudentAttendanceModule, GradesModule, FinanceModule],
   controllers: [AppController],
   providers: [AppService],
 })

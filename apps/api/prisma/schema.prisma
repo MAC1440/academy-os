@@ -64,6 +64,11 @@ enum AdmissionStatus {
   REJECTED
 }
 
+enum AcademicTermType {
+  YEARLY
+  SEMESTER
+}
+
 model Organization {
   id        String   @id @default(cuid())
   name      String
@@ -84,6 +89,8 @@ model Organization {
   courses     Course[]
   subjects    Subject[]
   admissionApplications AdmissionApplication[]
+  academicTerms AcademicTerm[]
+  admissionRegistrationSettings AdmissionRegistrationSettings?
 }
 
 model User {
@@ -167,6 +174,7 @@ model SchoolClass {
   name            String
   sortOrder       Int          @default(0)
   sectionsEnabled Boolean      @default(false)
+  registrationNumberModifier String?
   status          EntityStatus @default(ACTIVE)
   createdAt       DateTime     @default(now())
   updatedAt       DateTime     @updatedAt
@@ -183,6 +191,7 @@ model Course {
   organizationId  String
   name            String
   description     String?
+  registrationNumberModifier String?
   status          EntityStatus @default(ACTIVE)
   createdAt       DateTime     @default(now())
   updatedAt       DateTime     @updatedAt
@@ -192,6 +201,32 @@ model Course {
 
   @@unique([organizationId, name])
   @@index([organizationId, status])
+}
+
+model AcademicTerm {
+  id             String           @id @default(cuid())
+  organizationId String
+  name           String
+  termType       AcademicTermType
+  startsOn       DateTime         @db.Date
+  endsOn         DateTime         @db.Date
+  isActive       Boolean          @default(true)
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+  organization   Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, name])
+}
+
+model AdmissionRegistrationSettings {
+  id             String       @id @default(cuid())
+  organizationId String       @unique
+  prefix         String       @default("ADM")
+  sequencePadding Int         @default(4)
+  nextSequence   Int          @default(1)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 }
 
 model Subject {

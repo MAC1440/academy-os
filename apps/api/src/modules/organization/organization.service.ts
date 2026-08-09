@@ -3,7 +3,7 @@ import { AuditAction, EntityStatus, Prisma } from '@prisma/client';
 import { AuditService } from '../audit/audit.service';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreateBranchDto } from './dto/create-branch.dto';
-import { CreateSessionDto, UpdateSessionDto } from './dto/create-session.dto';
+import { CreateBranchOperatingHourDto, UpdateBranchOperatingHourDto } from './dto/branch-operating-hours.dto';
 import { UpdateBranchDto } from './dto/update-branch.dto';
 import { UpdateOrganizationDto } from './dto/update-organization.dto';
 
@@ -44,7 +44,7 @@ export class OrganizationService {
         deletedAt: null,
         ...(branchIds ? { id: { in: branchIds } } : {}),
       },
-      include: { sessions: { where: { status: EntityStatus.ACTIVE } } },
+      include: { operatingHours: { where: { status: EntityStatus.ACTIVE } } },
       orderBy: { name: 'asc' },
     });
   }
@@ -52,7 +52,7 @@ export class OrganizationService {
   async getBranch(branchId: string) {
     const branch = await this.prisma.branch.findFirst({
       where: { id: branchId, deletedAt: null },
-      include: { sessions: { orderBy: { name: 'asc' } } },
+      include: { operatingHours: { orderBy: { label: 'asc' } } },
     });
     if (!branch) throw new NotFoundException('Branch not found');
     return branch;
@@ -118,52 +118,52 @@ export class OrganizationService {
     }
   }
 
-  async listSessions(branchId: string) {
+  async listOperatingHours(branchId: string) {
     await this.getBranch(branchId);
-    return this.prisma.session.findMany({ where: { branchId }, orderBy: { name: 'asc' } });
+    return this.prisma.branchOperatingHour.findMany({ where: { branchId }, orderBy: { label: 'asc' } });
   }
 
-  async createSession(branchId: string, dto: CreateSessionDto, actorUserId: string) {
+  async createOperatingHour(branchId: string, dto: CreateBranchOperatingHourDto, actorUserId: string) {
     const branch = await this.getBranch(branchId);
     try {
-      const session = await this.prisma.session.create({
-        data: { branchId, name: dto.name.trim(), startsAt: dto.startsAt, endsAt: dto.endsAt },
+      const operatingHour = await this.prisma.branchOperatingHour.create({
+        data: { branchId, label: dto.label.trim(), opensAt: dto.opensAt, closesAt: dto.closesAt },
       });
       await this.auditService.record({
         organizationId: branch.organizationId,
         actorUserId,
         action: AuditAction.CREATE,
-        entityType: 'Session',
-        entityId: session.id,
+        entityType: 'BranchOperatingHour',
+        entityId: operatingHour.id,
         changes: dto as unknown as Prisma.InputJsonValue,
       });
-      return session;
+      return operatingHour;
     } catch (error) {
-      if (this.isUniqueViolation(error)) throw new ConflictException('A session with this name already exists');
+      if (this.isUniqueViolation(error)) throw new ConflictException('Operating-hour labels must be unique within a branch');
       throw error;
     }
   }
 
-  async updateSession(branchId: string, sessionId: string, dto: UpdateSessionDto, actorUserId: string) {
+  async updateOperatingHour(branchId: string, operatingHourId: string, dto: UpdateBranchOperatingHourDto, actorUserId: string) {
     const branch = await this.getBranch(branchId);
-    const session = await this.prisma.session.findFirst({ where: { id: sessionId, branchId } });
-    if (!session) throw new NotFoundException('Session not found');
+    const operatingHour = await this.prisma.branchOperatingHour.findFirst({ where: { id: operatingHourId, branchId } });
+    if (!operatingHour) throw new NotFoundException('Branch operating hours not found');
     try {
-      const updated = await this.prisma.session.update({
-        where: { id: session.id },
+      const updated = await this.prisma.branchOperatingHour.update({
+        where: { id: operatingHour.id },
         data: this.cleanOptionalFields(dto),
       });
       await this.auditService.record({
         organizationId: branch.organizationId,
         actorUserId,
         action: AuditAction.UPDATE,
-        entityType: 'Session',
+        entityType: 'BranchOperatingHour',
         entityId: updated.id,
         changes: dto as unknown as Prisma.InputJsonValue,
       });
       return updated;
     } catch (error) {
-      if (this.isUniqueViolation(error)) throw new ConflictException('A session with this name already exists');
+      if (this.isUniqueViolation(error)) throw new ConflictException('Operating-hour labels must be unique within a branch');
       throw error;
     }
   }

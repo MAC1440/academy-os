@@ -36,23 +36,24 @@
   They protect the organization/branch module; remaining modules will adopt them
   as they are built.
 - [-] Add audit records for mutations, authentication, and attendance overrides.
-  Organization, branch, and session mutations are recorded; authentication and
+  Organization, branch, and operating-hour mutations are recorded; authentication and
   attendance will be added with their modules.
 - [ ] Add password change and profile-completion endpoints.
 
 **Exit criteria:** an administrator can authenticate, roles are enforced by the
 server, and users can access only their assigned branch data.
 
-## Checkpoint 2 — Organization, branches, and sessions
+## Checkpoint 2 — Organization, branches, and operating hours
 
 - [x] Add singleton organization settings (PKR and Asia/Karachi defaults).
 - [x] Create, update, archive, and list branches with unique organization
   addresses.
-- [x] Create branch sessions with editable 7:00 AM–2:00 PM defaults.
-- [ ] Support future session-specific staff shifts without changing kiosk data.
+- [x] Create branch operating-hour windows with explicit opening and closing
+  times.
+- [x] Keep staff shift defaults separate from branch operating hours.
 
 **Exit criteria:** an administrator can configure the organization, branches,
-and usable default sessions.
+and usable branch operating hours.
 
 ## Checkpoint 3 — Staff and teacher attendance kiosk
 
@@ -71,9 +72,9 @@ manage rules and overrides.
 
 ## Checkpoint 4 — Academic offerings and shared notes
 
-- [ ] Model regular school classes separately from vocational/academy courses.
-- [ ] Add organization-enabled sections for applicable regular classes.
-- [ ] Add subjects, class/session offerings, and teacher assignment metadata.
+- [x] Model regular school classes separately from vocational/academy courses.
+- [x] Add organization-enabled sections for applicable regular classes.
+- [x] Add subjects, academic offerings, and teacher assignment metadata.
 - [x] Add organization-wide shared notes/materials visible to all teachers.
 
 **Exit criteria:** a branch can run school and academy offerings without mixing
@@ -93,7 +94,7 @@ and each approved admission yields its own learner record.
 
 ## Checkpoint 6 — Student attendance and reports
 
-- [ ] List enrolled learners by class/session for one-click attendance marking.
+- [ ] List enrolled learners by academic offering for one-click attendance marking.
 - [ ] Permit authorized teachers or administrators to mark attendance.
 - [ ] Keep unmarked attendance empty; interpret it as absent only in reports.
 - [ ] Configure holidays and working days without creating automatic records.

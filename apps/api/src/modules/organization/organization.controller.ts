@@ -9,7 +9,7 @@ import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import type { AuthenticatedUser } from '../auth/decorators/current-user.decorator';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CreateBranchDto } from './dto/create-branch.dto';
-import { CreateSessionDto, UpdateSessionDto } from './dto/create-session.dto';
+import { CreateBranchOperatingHourDto, UpdateBranchOperatingHourDto } from './dto/branch-operating-hours.dto';
 import { UpdateBranchDto } from './dto/update-branch.dto';
 import { UpdateOrganizationDto } from './dto/update-organization.dto';
 import { OrganizationService } from './organization.service';
@@ -63,36 +63,36 @@ export class OrganizationController {
     return successResponse('Branch updated', await this.organizationService.updateBranch(branchId, dto, user.id));
   }
 
-  @Get('branches/:branchId/sessions')
+  @Get('branches/:branchId/operating-hours')
   @RequirePermissions('branches.read')
   @RequireBranchAccess()
-  async listSessions(@Param('branchId') branchId: string) {
-    return successResponse('Sessions retrieved', await this.organizationService.listSessions(branchId));
+  async listOperatingHours(@Param('branchId') branchId: string) {
+    return successResponse('Branch operating hours retrieved', await this.organizationService.listOperatingHours(branchId));
   }
 
-  @Post('branches/:branchId/sessions')
+  @Post('branches/:branchId/operating-hours')
   @RequirePermissions('branches.manage')
   @RequireBranchAccess()
-  async createSession(
+  async createOperatingHour(
     @Param('branchId') branchId: string,
-    @Body() dto: CreateSessionDto,
+    @Body() dto: CreateBranchOperatingHourDto,
     @CurrentUser() user: AuthenticatedUser,
   ) {
-    return successResponse('Session created', await this.organizationService.createSession(branchId, dto, user.id));
+    return successResponse('Branch operating hours created', await this.organizationService.createOperatingHour(branchId, dto, user.id));
   }
 
-  @Patch('branches/:branchId/sessions/:sessionId')
+  @Patch('branches/:branchId/operating-hours/:operatingHourId')
   @RequirePermissions('branches.manage')
   @RequireBranchAccess()
-  async updateSession(
+  async updateOperatingHour(
     @Param('branchId') branchId: string,
-    @Param('sessionId') sessionId: string,
-    @Body() dto: UpdateSessionDto,
+    @Param('operatingHourId') operatingHourId: string,
+    @Body() dto: UpdateBranchOperatingHourDto,
     @CurrentUser() user: AuthenticatedUser,
   ) {
     return successResponse(
-      'Session updated',
-      await this.organizationService.updateSession(branchId, sessionId, dto, user.id),
+      'Branch operating hours updated',
+      await this.organizationService.updateOperatingHour(branchId, operatingHourId, dto, user.id),
     );
   }
 }

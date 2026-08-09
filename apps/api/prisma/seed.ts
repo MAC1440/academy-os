@@ -6,8 +6,10 @@ const prisma = new PrismaClient();
 const permissions = [
   ['organization.read', 'Organization', 'View organization settings'],
   ['organization.manage', 'Organization', 'Manage organization settings'],
-  ['branches.read', 'Branches', 'View branches and sessions'],
-  ['branches.manage', 'Branches', 'Manage branches and sessions'],
+  ['branches.read', 'Branches', 'View branches and operating hours'],
+  ['branches.manage', 'Branches', 'Manage branches and operating hours'],
+  ['academics.read', 'Academics', 'View academic setup and offerings'],
+  ['academics.manage', 'Academics', 'Manage academic setup and offerings'],
   ['roles.read', 'Roles', 'View roles and permissions'],
   ['roles.manage', 'Roles', 'Manage roles and assignments'],
   ['staff.read', 'Staff', 'View staff'],
@@ -31,6 +33,7 @@ const systemRoles: Record<string, string[]> = {
   Administrator: permissions.map(([key]) => key),
   Teacher: [
     'branches.read',
+    'academics.read',
     'attendance.read',
     'attendance.manage',
     'notes.read',

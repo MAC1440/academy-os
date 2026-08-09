@@ -53,6 +53,11 @@ enum StaffAttendanceStatus {
   LATE
 }
 
+enum AcademicOfferingType {
+  SCHOOL_CLASS
+  COURSE
+}
+
 model Organization {
   id        String   @id @default(cuid())
   name      String
@@ -69,6 +74,9 @@ model Organization {
   audits    AuditLog[]
   sharedNotes SharedNote[]
   kioskSettings AttendanceKioskSettings?
+  schoolClasses SchoolClass[]
+  courses     Course[]
+  subjects    Subject[]
 }
 
 model User {
@@ -106,26 +114,27 @@ model Branch {
   updatedAt      DateTime     @updatedAt
   deletedAt      DateTime?
   organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  sessions       Session[]
+  operatingHours BranchOperatingHour[]
   roleAssignments RoleAssignment[]
   staffAttendance StaffAttendance[]
+  academicOfferings AcademicOffering[]
 
   @@unique([organizationId, addressKey])
   @@index([status])
 }
 
-model Session {
+model BranchOperatingHour {
   id        String       @id @default(cuid())
   branchId  String
-  name      String
-  startsAt  String
-  endsAt    String
+  label     String
+  opensAt   String
+  closesAt  String
   status    EntityStatus @default(ACTIVE)
   createdAt DateTime     @default(now())
   updatedAt DateTime     @updatedAt
   branch    Branch       @relation(fields: [branchId], references: [id], onDelete: Cascade)
 
-  @@unique([branchId, name])
+  @@unique([branchId, label])
 }
 
 model StaffProfile {
@@ -137,15 +146,104 @@ model StaffProfile {
   updatedAt   DateTime  @updatedAt
   user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   attendance  StaffAttendance[]
+  academicOfferingAssignments AcademicOfferingTeacher[]
 
   @@index([staffType])
+}
+
+model SchoolClass {
+  id              String       @id @default(cuid())
+  organizationId  String
+  name            String
+  sortOrder       Int          @default(0)
+  sectionsEnabled Boolean      @default(false)
+  status          EntityStatus @default(ACTIVE)
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+  deletedAt       DateTime?
+  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  academicOfferings AcademicOffering[]
+
+  @@unique([organizationId, name])
+  @@index([organizationId, status, sortOrder])
+}
+
+model Course {
+  id              String       @id @default(cuid())
+  organizationId  String
+  name            String
+  description     String?
+  status          EntityStatus @default(ACTIVE)
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+  deletedAt       DateTime?
+  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  academicOfferings AcademicOffering[]
+
+  @@unique([organizationId, name])
+  @@index([organizationId, status])
+}
+
+model Subject {
+  id              String       @id @default(cuid())
+  organizationId  String
+  name            String
+  code            String?
+  status          EntityStatus @default(ACTIVE)
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+  deletedAt       DateTime?
+  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  academicOfferings AcademicOfferingSubject[]
+
+  @@unique([organizationId, name])
+  @@index([organizationId, status])
+}
+
+model AcademicOffering {
+  id              String               @id @default(cuid())
+  branchId        String
+  offeringType    AcademicOfferingType
+  schoolClassId   String?
+  courseId        String?
+  sectionName     String?
+  offeringKey     String
+  status          EntityStatus         @default(ACTIVE)
+  createdAt       DateTime             @default(now())
+  updatedAt       DateTime             @updatedAt
+  branch          Branch               @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  schoolClass     SchoolClass?         @relation(fields: [schoolClassId], references: [id], onDelete: Restrict)
+  course          Course?              @relation(fields: [courseId], references: [id], onDelete: Restrict)
+  subjects        AcademicOfferingSubject[]
+  teachers        AcademicOfferingTeacher[]
+
+  @@unique([branchId, offeringKey])
+  @@index([branchId, status])
+}
+
+model AcademicOfferingSubject {
+  academicOfferingId String
+  subjectId          String
+  academicOffering   AcademicOffering @relation(fields: [academicOfferingId], references: [id], onDelete: Cascade)
+  subject            Subject          @relation(fields: [subjectId], references: [id], onDelete: Restrict)
+
+  @@id([academicOfferingId, subjectId])
+}
+
+model AcademicOfferingTeacher {
+  academicOfferingId String
+  staffProfileId     String
+  academicOffering   AcademicOffering @relation(fields: [academicOfferingId], references: [id], onDelete: Cascade)
+  staffProfile       StaffProfile     @relation(fields: [staffProfileId], references: [id], onDelete: Restrict)
+
+  @@id([academicOfferingId, staffProfileId])
 }
 
 model AttendanceKioskSettings {
   id                String    @id @default(cuid())
   organizationId    String    @unique
-  defaultShiftStart String    @default("07:00")
-  defaultShiftEnd   String    @default("14:00")
+  defaultStaffShiftStart String    @default("07:00")
+  defaultStaffShiftEnd   String    @default("14:00")
   graceMinutes      Int       @default(15)
   workingDays       Weekday[] @default([MONDAY, TUESDAY, WEDNESDAY, THURSDAY, FRIDAY, SATURDAY])
   createdAt         DateTime  @default(now())

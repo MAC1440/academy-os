@@ -7,13 +7,13 @@ export class UpdateKioskSettingsDto {
   @IsOptional()
   @IsString()
   @Matches(/^([01]\d|2[0-3]):[0-5]\d$/)
-  defaultShiftStart?: string;
+  defaultStaffShiftStart?: string;
 
   @ApiPropertyOptional({ example: '14:00' })
   @IsOptional()
   @IsString()
   @Matches(/^([01]\d|2[0-3]):[0-5]\d$/)
-  defaultShiftEnd?: string;
+  defaultStaffShiftEnd?: string;
 
   @ApiPropertyOptional({ example: 15 })
   @IsOptional()

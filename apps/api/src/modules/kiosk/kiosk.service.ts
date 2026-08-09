@@ -62,7 +62,7 @@ export class KioskService {
     const { branch, staff, now, local } = await this.authenticateKioskAction(branchId, dto);
     const settings = await this.getSettings();
     this.ensureWorkingDay(settings.workingDays, local.weekday);
-    const status = this.statusForCheckIn(local.hour, local.minute, settings.defaultShiftStart, settings.graceMinutes);
+    const status = this.statusForCheckIn(local.hour, local.minute, settings.defaultStaffShiftStart, settings.graceMinutes);
     try {
       const attendance = await this.prisma.staffAttendance.create({
         data: {

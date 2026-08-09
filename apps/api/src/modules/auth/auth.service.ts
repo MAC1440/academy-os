@@ -6,6 +6,7 @@ import { jwtSecret, refreshSecret } from '../../config/environment';
 import { PrismaService } from '../../prisma/prisma.service';
 import type { AuthenticatedUser } from './decorators/current-user.decorator';
 import { LoginDto } from './dto/login.dto';
+import { CompleteProfileDto } from './dto/complete-profile.dto';
 
 type PublicUser = Pick<
   User,
@@ -64,6 +65,11 @@ export class AuthService {
 
   async me(authenticatedUser: AuthenticatedUser): Promise<PublicUser> {
     return this.toPublicUser(await this.getActiveUser(authenticatedUser.id));
+  }
+
+  async completeProfile(authenticatedUser: AuthenticatedUser, dto: CompleteProfileDto) {
+    await this.prisma.user.update({ where: { id: authenticatedUser.id }, data: { passwordHash: await bcrypt.hash(dto.newPassword, 12), mustCompleteProfile: false } });
+    return this.me(authenticatedUser);
   }
 
   private async createSession(user: User) {

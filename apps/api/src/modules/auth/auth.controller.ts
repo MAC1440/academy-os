@@ -6,6 +6,7 @@ import { CurrentUser } from './decorators/current-user.decorator';
 import type { AuthenticatedUser } from './decorators/current-user.decorator';
 import { LoginDto } from './dto/login.dto';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
+import { CompleteProfileDto } from './dto/complete-profile.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 
 @ApiTags('Auth')
@@ -29,5 +30,12 @@ export class AuthController {
   @ApiOkResponse({ description: 'Authenticated account' })
   async me(@CurrentUser() user: AuthenticatedUser) {
     return successResponse('Authenticated account retrieved', await this.authService.me(user));
+  }
+
+  @Post('complete-profile')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth('JWT-auth')
+  async completeProfile(@CurrentUser() user: AuthenticatedUser, @Body() dto: CompleteProfileDto) {
+    return successResponse('Profile completed', await this.authService.completeProfile(user, dto));
   }
 }

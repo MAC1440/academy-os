@@ -1,42 +1,53 @@
 import * as bcrypt from 'bcryptjs';
-import { PrismaClient } from '@prisma/client';
+import { AccountType, PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
 const permissions = [
-  ['organization.read', 'Organization', 'View organization'],
-  ['organization.manage', 'Organization', 'Manage organization and branches'],
-  ['people.read', 'People', 'View teachers and staff'],
-  ['people.manage', 'People', 'Manage teachers and staff'],
-  ['academics.read', 'Academics', 'View academic structure'],
-  ['academics.manage', 'Academics', 'Manage academic structure'],
-  ['attendance.read', 'Attendance', 'View attendance'],
-  ['attendance.manage', 'Attendance', 'Manage attendance'],
-  ['reports.read', 'Reports', 'View reports'],
+  ['organization.read', 'Organization', 'View organization settings'],
+  ['organization.manage', 'Organization', 'Manage organization settings'],
+  ['branches.read', 'Branches', 'View branches and sessions'],
+  ['branches.manage', 'Branches', 'Manage branches and sessions'],
+  ['staff.read', 'Staff', 'View staff'],
+  ['staff.manage', 'Staff', 'Manage staff'],
+  ['admissions.read', 'Admissions', 'View admissions'],
+  ['admissions.manage', 'Admissions', 'Manage admissions'],
+  ['kiosk.manage', 'Kiosk', 'Manage teacher attendance kiosk'],
+  ['notes.read', 'Notes', 'View shared notes'],
+  ['notes.manage', 'Notes', 'Manage shared notes'],
+  ['grades.read', 'Grades', 'View grades'],
+  ['grades.manage', 'Grades', 'Manage grades'],
+  ['finance.read', 'Finance', 'View finance records'],
+  ['finance.manage', 'Finance', 'Manage finance records'],
+  ['reports.read', 'Reports', 'View and export reports'],
 ] as const;
 
-const systemRoles: Record<string, string[]> = {
-  Owner: permissions.map(([key]) => key),
-  Administrator: permissions.map(([key]) => key),
-  Manager: ['organization.read', 'people.read', 'people.manage', 'academics.read', 'academics.manage', 'attendance.read', 'attendance.manage', 'reports.read'],
-  Teacher: ['people.read', 'academics.read', 'attendance.read', 'attendance.manage'],
-  Receptionist: ['people.read', 'attendance.read'],
-  Accountant: ['reports.read'],
-  Student: [],
-  Parent: [],
-};
-
 async function main() {
+  const organization =
+    (await prisma.organization.findFirst()) ??
+    (await prisma.organization.create({
+      data: {
+        name: 'Your Organization',
+      },
+    }));
+
   const passwordHash = await bcrypt.hash('Welcome123!', 12);
-  await prisma.user.upsert({
-    where: { email: 'superadmin@academyos.dev' },
-    update: { isPlatformAdmin: true, status: 'ACTIVE', deletedAt: null },
-    create: {
-      email: 'superadmin@academyos.dev',
+  const administrator = await prisma.user.upsert({
+    where: { username: 'admin' },
+    update: {
+      accountType: AccountType.ADMIN,
+      fullName: 'Default Administrator',
       passwordHash,
-      firstName: 'Platform',
-      lastName: 'Administrator',
-      isPlatformAdmin: true,
+      status: 'ACTIVE',
+      deletedAt: null,
+      mustCompleteProfile: true,
+    },
+    create: {
+      accountType: AccountType.ADMIN,
+      username: 'admin',
+      fullName: 'Default Administrator',
+      passwordHash,
+      mustCompleteProfile: true,
     },
   });
 
@@ -48,13 +59,47 @@ async function main() {
     });
   }
 
-  for (const [name, permissionKeys] of Object.entries(systemRoles)) {
-    let role = await prisma.role.findFirst({ where: { academyId: null, name } });
-    if (!role) role = await prisma.role.create({ data: { name, isSystem: true } });
-    const records = await prisma.permission.findMany({ where: { key: { in: permissionKeys } }, select: { id: true } });
-    await prisma.rolePermission.deleteMany({ where: { roleId: role.id } });
-    if (records.length) await prisma.rolePermission.createMany({ data: records.map((permission) => ({ roleId: role!.id, permissionId: permission.id })) });
-  }
+  const administratorRole = await prisma.role.upsert({
+    where: {
+      organizationId_name: {
+        organizationId: organization.id,
+        name: 'Administrator',
+      },
+    },
+    update: { isSystem: true },
+    create: {
+      organizationId: organization.id,
+      name: 'Administrator',
+      isSystem: true,
+    },
+  });
+
+  const permissionRecords = await prisma.permission.findMany({
+    select: { id: true },
+  });
+
+  await prisma.$transaction([
+    prisma.rolePermission.deleteMany({
+      where: { roleId: administratorRole.id },
+    }),
+    prisma.roleAssignment.deleteMany({
+      where: { userId: administrator.id, roleId: administratorRole.id },
+    }),
+  ]);
+
+  await prisma.rolePermission.createMany({
+    data: permissionRecords.map((permission) => ({
+      roleId: administratorRole.id,
+      permissionId: permission.id,
+    })),
+  });
+
+  await prisma.roleAssignment.create({
+    data: {
+      userId: administrator.id,
+      roleId: administratorRole.id,
+    },
+  });
 }
 
 main()

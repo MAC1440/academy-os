@@ -7,326 +7,147 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum AccountType {
+  ADMIN
+  STAFF
+  LEARNER
+}
+
+enum AccountStatus {
+  ACTIVE
+  INACTIVE
+  SUSPENDED
+}
+
 enum EntityStatus {
   ACTIVE
   INACTIVE
-  SUSPENDED
-}
-
-enum UserStatus {
-  ACTIVE
-  INACTIVE
-  SUSPENDED
-}
-
-enum MembershipStatus {
-  ACTIVE
-  INACTIVE
-}
-
-enum CalendarDayType {
-  HOLIDAY
-  OFF_DAY
-}
-
-enum StaffType {
-  TEACHER
-  STAFF
+  ARCHIVED
 }
 
 enum AuditAction {
   CREATE
   UPDATE
   DELETE
-  ATTENDANCE_OVERRIDE
+  LOGIN
+}
+
+model Organization {
+  id        String   @id @default(cuid())
+  name      String
+  logo      String?
+  email     String?
+  phone     String?
+  address   String?
+  timezone  String   @default("Asia/Karachi")
+  currency  String   @default("PKR")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  branches  Branch[]
+  roles     Role[]
+  audits    AuditLog[]
 }
 
 model User {
-  id              String                   @id @default(cuid())
-  email           String                   @unique
-  passwordHash    String
-  firstName       String
-  lastName        String
-  isPlatformAdmin Boolean                  @default(false)
-  status          UserStatus               @default(ACTIVE)
-  createdAt       DateTime                 @default(now())
-  updatedAt       DateTime                 @updatedAt
-  deletedAt       DateTime?
-  memberships     OrganizationMembership[]
-  staffProfiles   StaffProfile[]
-  auditLogs       AuditLog[]
+  id                   String        @id @default(cuid())
+  accountType          AccountType
+  username             String?       @unique
+  contactNumber        String?       @unique
+  fullName             String
+  email                String?
+  passwordHash         String
+  pinHash              String?
+  mustCompleteProfile  Boolean       @default(true)
+  status               AccountStatus @default(ACTIVE)
+  createdAt            DateTime      @default(now())
+  updatedAt            DateTime      @updatedAt
+  deletedAt            DateTime?
+  roleAssignments      RoleAssignment[]
+  audits               AuditLog[]    @relation("AuditActor")
 
-  @@index([status])
-}
-
-model OrganizationMembership {
-  id                String             @id @default(cuid())
-  userId            String
-  academyId         String
-  isOwner           Boolean            @default(false)
-  status            MembershipStatus  @default(ACTIVE)
-  createdAt         DateTime           @default(now())
-  updatedAt         DateTime           @updatedAt
-  deletedAt         DateTime?
-  user              User               @relation(fields: [userId], references: [id])
-  academy           Academy            @relation(fields: [academyId], references: [id])
-  branchAssignments BranchAssignment[]
-  roleAssignments RoleAssignment[]
-
-  @@unique([userId, academyId])
-  @@index([academyId, status])
-}
-
-model BranchAssignment {
-  id             String                 @id @default(cuid())
-  membershipId   String
-  branchId       String
-  createdAt      DateTime               @default(now())
-  updatedAt      DateTime               @updatedAt
-  deletedAt      DateTime?
-  membership     OrganizationMembership @relation(fields: [membershipId], references: [id])
-  branch         Branch                 @relation(fields: [branchId], references: [id])
-
-  @@unique([membershipId, branchId])
-  @@index([branchId])
-}
-
-model Academy {
-  id        String       @id @default(cuid())
-  name      String
-  slug      String       @unique
-  email     String?
-  phone     String?
-  website   String?
-  logo      String?
-  timezone  String       @default("UTC")
-  currency  String       @default("USD")
-  status    EntityStatus @default(ACTIVE)
-  createdAt DateTime     @default(now())
-  updatedAt DateTime     @updatedAt
-  branches  Branch[]
-  memberships OrganizationMembership[]
-  academicSettings AcademicSettings?
-  academicYears AcademicYear[]
-  workingDays OrganizationWorkingDay[]
-  calendarDays AcademicCalendarDay[]
-  staffProfiles StaffProfile[]
-  roles Role[]
-  auditLogs AuditLog[]
-
-  @@index([name])
-  @@index([status])
+  @@index([accountType, status])
 }
 
 model Branch {
-  id        String       @id @default(cuid())
-  academyId String
-  name      String
-  address   String?
-  city      String?
-  country   String?
-  phone     String?
-  email     String?
-  status    EntityStatus @default(ACTIVE)
-  createdAt DateTime     @default(now())
-  updatedAt DateTime     @updatedAt
-  academy   Academy      @relation(fields: [academyId], references: [id], onDelete: Cascade)
-  assignments BranchAssignment[]
-  schoolClasses SchoolClass[]
-  staffAssignments StaffBranchAssignment[]
-  roleAssignments RoleAssignment[]
-  teacherAttendance TeacherAttendance[]
+  id             String       @id @default(cuid())
+  organizationId String
+  name           String
+  address        String
+  addressKey     String
+  city           String?
+  phone          String?
+  status         EntityStatus @default(ACTIVE)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  deletedAt      DateTime?
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  sessions       Session[]
 
-  @@index([academyId])
-  @@index([name])
+  @@unique([organizationId, addressKey])
   @@index([status])
 }
 
+model Session {
+  id        String       @id @default(cuid())
+  branchId  String
+  name      String
+  startsAt  String
+  endsAt    String
+  status    EntityStatus @default(ACTIVE)
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+  branch    Branch       @relation(fields: [branchId], references: [id], onDelete: Cascade)
+
+  @@unique([branchId, name])
+}
+
 model Permission {
-  id          String   @id @default(cuid())
-  key         String   @unique
-  group       String
-  label       String
-  createdAt   DateTime @default(now())
-  rolePermissions RolePermission[]
+  id    String @id @default(cuid())
+  key   String @unique
+  group String
+  label String
+  roles RolePermission[]
 }
 
 model Role {
-  id          String   @id @default(cuid())
-  academyId   String?
-  name        String
-  isSystem    Boolean  @default(false)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  academy     Academy? @relation(fields: [academyId], references: [id], onDelete: Cascade)
-  permissions RolePermission[]
-  assignments RoleAssignment[]
-
-  @@unique([academyId, name])
-  @@index([academyId])
+  id             String       @id @default(cuid())
+  organizationId String
+  name           String
+  isSystem       Boolean      @default(false)
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  permissions    RolePermission[]
+  assignments    RoleAssignment[]
+  @@unique([organizationId, name])
 }
 
 model RolePermission {
-  roleId       String
+  roleId String
   permissionId String
-  role         Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
-  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
-
+  role Role @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
   @@id([roleId, permissionId])
 }
 
 model RoleAssignment {
-  id           String                 @id @default(cuid())
-  membershipId String
-  roleId       String
-  branchId     String?
-  createdAt    DateTime               @default(now())
-  membership   OrganizationMembership @relation(fields: [membershipId], references: [id], onDelete: Cascade)
-  role         Role                   @relation(fields: [roleId], references: [id], onDelete: Cascade)
-  branch       Branch?                @relation(fields: [branchId], references: [id], onDelete: Cascade)
-
-  @@unique([membershipId, roleId, branchId])
-  @@index([branchId])
+  id        String   @id @default(cuid())
+  userId    String
+  roleId    String
+  branchId  String?
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role      Role     @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  @@unique([userId, roleId, branchId])
 }
 
 model AuditLog {
-  id          String      @id @default(cuid())
-  academyId   String
-  actorUserId String?
-  action      AuditAction
-  entityType  String
-  entityId    String
-  changes     Json?
-  createdAt   DateTime    @default(now())
-  academy     Academy     @relation(fields: [academyId], references: [id], onDelete: Cascade)
-  actorUser   User?       @relation(fields: [actorUserId], references: [id], onDelete: SetNull)
-
-  @@index([academyId, entityType, entityId])
-  @@index([actorUserId, createdAt])
-}
-
-model StaffProfile {
-  id        String       @id @default(cuid())
-  academyId String
-  userId    String
-  type      StaffType    @default(TEACHER)
-  employeeCode String?
-  pinHash   String?
-  status    EntityStatus @default(ACTIVE)
-  createdAt DateTime     @default(now())
-  updatedAt DateTime     @updatedAt
-  academy   Academy      @relation(fields: [academyId], references: [id], onDelete: Cascade)
-  user      User         @relation(fields: [userId], references: [id], onDelete: Cascade)
-  branchAssignments StaffBranchAssignment[]
-  attendance TeacherAttendance[]
-
-  @@unique([academyId, userId])
-  @@index([academyId, type, status])
-}
-
-model StaffBranchAssignment {
-  id        String       @id @default(cuid())
-  staffId   String
-  branchId  String
-  createdAt DateTime     @default(now())
-  staff     StaffProfile @relation(fields: [staffId], references: [id], onDelete: Cascade)
-  branch    Branch       @relation(fields: [branchId], references: [id], onDelete: Cascade)
-
-  @@unique([staffId, branchId])
-  @@index([branchId])
-}
-
-model TeacherAttendance {
-  id           String       @id @default(cuid())
-  staffId      String
-  branchId     String
-  schoolDate   DateTime
-  checkedInAt  DateTime
-  checkedOutAt DateTime?
-  createdAt    DateTime     @default(now())
-  updatedAt    DateTime     @updatedAt
-  staff        StaffProfile @relation(fields: [staffId], references: [id], onDelete: Cascade)
-  branch       Branch       @relation(fields: [branchId], references: [id], onDelete: Cascade)
-
-  @@unique([staffId, branchId, schoolDate])
-  @@index([branchId, schoolDate])
-}
-
-
-model AcademicSettings {
-  id              String   @id @default(cuid())
-  academyId       String   @unique
-  sectionsEnabled Boolean  @default(false)
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-  academy         Academy  @relation(fields: [academyId], references: [id], onDelete: Cascade)
-}
-
-model SchoolClass {
-  id        String       @id @default(cuid())
-  branchId  String
-  name      String
-  code      String
-  sortOrder Int          @default(0)
-  status    EntityStatus @default(ACTIVE)
-  createdAt DateTime     @default(now())
-  updatedAt DateTime     @updatedAt
-  branch    Branch       @relation(fields: [branchId], references: [id], onDelete: Cascade)
-  sections  ClassSection[]
-
-  @@unique([branchId, code])
-  @@index([branchId, status])
-}
-
-model ClassSection {
-  id            String       @id @default(cuid())
-  schoolClassId String
-  name          String
-  code          String
-  status        EntityStatus @default(ACTIVE)
-  createdAt     DateTime     @default(now())
-  updatedAt     DateTime     @updatedAt
-  schoolClass   SchoolClass  @relation(fields: [schoolClassId], references: [id], onDelete: Cascade)
-
-  @@unique([schoolClassId, code])
-  @@index([schoolClassId, status])
-}
-
-model AcademicYear {
-  id        String       @id @default(cuid())
-  academyId String
-  name      String
-  startsOn  DateTime
-  endsOn    DateTime
-  status    EntityStatus @default(ACTIVE)
-  createdAt DateTime     @default(now())
-  updatedAt DateTime     @updatedAt
-  academy   Academy      @relation(fields: [academyId], references: [id], onDelete: Cascade)
-
-  @@unique([academyId, name])
-  @@index([academyId, startsOn, endsOn])
-}
-
-model OrganizationWorkingDay {
-  id        String   @id @default(cuid())
-  academyId String
-  weekday   Int
-  createdAt DateTime @default(now())
-  academy   Academy  @relation(fields: [academyId], references: [id], onDelete: Cascade)
-
-  @@unique([academyId, weekday])
-}
-
-model AcademicCalendarDay {
-  id        String          @id @default(cuid())
-  academyId String
-  date      DateTime
-  type      CalendarDayType
-  label     String
-  createdAt DateTime        @default(now())
-  updatedAt DateTime        @updatedAt
-  academy   Academy         @relation(fields: [academyId], references: [id], onDelete: Cascade)
-
-  @@unique([academyId, date])
-  @@index([academyId, date])
+  id             String      @id @default(cuid())
+  organizationId String
+  actorUserId    String?
+  action         AuditAction
+  entityType     String
+  entityId       String
+  changes        Json?
+  createdAt      DateTime    @default(now())
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  actor          User?       @relation("AuditActor", fields: [actorUserId], references: [id], onDelete: SetNull)
+  @@index([entityType, entityId])
 }

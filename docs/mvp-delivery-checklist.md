@@ -2,145 +2,128 @@
 
 ## Delivery rules
 
-- Complete one checkpoint before beginning the next.
-- Every checkpoint includes migration, API validation, authorization, Swagger,
-  automated tests, and a manual verification path.
-- Business rules are enforced in the API; frontend permissions are only UI.
-- Operational data is Branch-scoped. Owners have organization-wide access;
-  everyone else has access only to assigned branches.
-- Use soft deletion where deletion is supported. Do not use cron jobs for MVP
-  attendance calculation.
+- One white-label deployment contains exactly one organization and one isolated
+  database. There is no platform super-admin or tenant picker.
+- Backend modules are completed and verified before their frontend work begins.
+- Authorization is enforced by the API; the frontend only reflects permissions.
+- Staff and learner accounts use a contact number as their login identifier;
+  administrators use a username. Emails are optional.
+- Every admission is independent. A person taking another class, course, or
+  branch session is a separate learner record and admission.
+- Use soft deletion where supported. Avoid cron jobs; attendance is calculated
+  from saved daily records and calendar settings when reports are requested.
 - Status key: `[x]` verified complete; `[-]` implemented in part; `[ ]` not started.
 
-## Checkpoint 0 — Baseline and guardrails
+## Checkpoint 0 — White-label foundation
 
-- [x] Resolve the ESLint flat-config error.
-- [x] Confirm API, web, database, and test commands in the README.
-- [x] Standardize errors, pagination, migrations, seed data, and test data.
+- [x] Archive the retired SaaS-era modules and migrations without deleting them.
+- [x] Replace the schema with a clean one-organization-per-deployment model.
+- [x] Apply the initial PostgreSQL migration.
+- [x] Seed the default organization, administrator, permissions, and
+  Administrator role.
+- [x] Restore API production startup and verify the build.
 
-**Exit criteria:** API and web build, lint runs, and local setup is documented.
+**Exit criteria:** a clean local database can be migrated and seeded repeatedly.
 
-## Checkpoint 1 — Identity and tenant membership
+## Checkpoint 1 — Authentication, RBAC, and audit
 
-- [x] Persist User accounts instead of using development-only login.
-- [x] Securely hash passwords and teacher PINs.
-- [-] Implement login, refresh, logout, account status, and current-user data.
-- [x] Create organization membership and branch assignment records.
-- [x] Create Platform Super Admin creation of organizations and initial owners.
-- [x] Enforce organization and branch isolation in the API.
+- [x] Implement login, refresh, and authenticated current-user endpoints.
+- [x] Support `ADMIN`, `STAFF`, and `LEARNER` account identities.
+- [x] Require active, non-deleted accounts for every authenticated request.
+- [x] Establish permission, role, role-permission, and branch-aware role
+  assignment tables.
+- [ ] Add server-side permission decorators/guards and branch-access checks.
+- [ ] Add audit records for mutations, authentication, and attendance overrides.
+- [ ] Add password change and profile-completion endpoints.
 
-**Exit criteria:** an owner has organization-wide access; branch users cannot
-access another branch's records.
+**Exit criteria:** an administrator can authenticate, roles are enforced by the
+server, and users can access only their assigned branch data.
 
-## Checkpoint 2 — RBAC and audit trail
+## Checkpoint 2 — Organization, branches, and sessions
 
-- [ ] Seed system roles: Owner, Administrator, Manager, Teacher, Receptionist,
-  Accountant, Student, Parent.
-- [ ] Seed grouped permission keys and create organization-custom roles.
-- [ ] Assign roles by organization or branch, never direct user permissions.
-- [ ] Add a permission decorator and server-side permission guard.
-- [ ] Record auditable create, update, delete, role, and attendance overrides.
-- [ ] Build role list, permission matrix, and role-assignment interfaces.
+- [ ] Add singleton organization settings (PKR and Asia/Karachi defaults).
+- [ ] Create, update, archive, and list branches with unique organization
+  addresses.
+- [ ] Create branch sessions with editable 7:00 AM–2:00 PM defaults.
+- [ ] Support future session-specific staff shifts without changing kiosk data.
 
-**Exit criteria:** server-side permission tests return `403` for unauthorized
-requests, while owners can manage organization roles.
+**Exit criteria:** an administrator can configure the organization, branches,
+and usable default sessions.
 
-## Checkpoint 3 — Organization and branch hardening
+## Checkpoint 3 — Staff and teacher attendance kiosk
 
-- [ ] Replace academy and branch hard deletion with soft deletion.
-- [ ] Fix PKR and Asia/Karachi as MVP business rules.
-- [ ] Add normalized address fields and organization-scoped uniqueness.
-- [ ] Add branch activation/deactivation and branch assignment management.
+- [ ] Create staff records with required full name and unique contact number.
+- [ ] Generate initial staff credentials and four-digit kiosk PINs.
+- [ ] Expose profile-completion state without blocking a staff account.
+- [ ] Build PIN-protected branch kiosk check-in and checkout endpoints.
+- [ ] Add editable late/grace/workday rules and authorised corrections.
+- [ ] Treat a missing checkout as a complete day during report calculation.
 
-**Exit criteria:** only Platform Super Admin creates organizations; owners manage
-their own branches without crossing organization boundaries.
+**Exit criteria:** staff can check in/out at a branch, while administrators can
+manage rules and overrides.
 
-## Checkpoint 4 — Academic calendar and structure
+## Checkpoint 4 — Academic offerings and shared notes
 
-- [x] Add optional section support and organization academic settings.
-- [x] Add academic years, configured working weekdays, holidays, and off days.
-- [x] Add school classes: Nursery, Prep, grades, and HSSC levels.
-- [-] Add optional sections and class subjects. Sections are complete; subjects remain.
-- [x] Keep vocational courses out of the school MVP data model.
+- [ ] Model regular school classes separately from vocational/academy courses.
+- [ ] Add organization-enabled sections for applicable regular classes.
+- [ ] Add subjects, class/session offerings, and teacher assignment metadata.
+- [ ] Add organization-wide shared notes/materials visible to all teachers.
 
-**Exit criteria:** a branch can configure its academic calendar, classes,
-sections, and subjects.
+**Exit criteria:** a branch can run school and academy offerings without mixing
+their structures, and teachers can cover one another using shared material.
 
-## Checkpoint 5 — Teachers and staff
+## Checkpoint 5 — Admissions and learner accounts
 
-- [x] Create teacher/staff profiles linked to users and branches.
-- [-] Support activation, deactivation, search, filters, and pagination.
-- [-] Add teacher PIN setup/reset and class/subject assignments. PIN setup/reset is complete; class/subject assignments remain.
-- [x] Do not restrict branch-wide student-performance viewing by assignment.
+- [ ] Create the default organization admission form and public submission API.
+- [ ] Store pending applications indefinitely unless explicitly deleted.
+- [ ] Approve/reject applications and retain their decision history.
+- [ ] On approval, create the independent learner account and enrollment.
+- [ ] Allow separate admissions for the same real person across sessions or
+  branches without cross-admission coupling.
 
-**Exit criteria:** teachers have access only to assigned branches.
+**Exit criteria:** admissions move cleanly from pending to approved/rejected,
+and each approved admission yields its own learner record.
 
-## Checkpoint 6 — Admissions and students
+## Checkpoint 6 — Student attendance and reports
 
-- [ ] Create the default public admission form per organization.
-- [ ] Store applications as `PENDING` applicants.
-- [ ] Build pending, approved, and rejected admissions queues.
-- [ ] Approve into a selected branch/class/section while retaining application
-  history.
-- [ ] Keep rejected applications unless authorized staff explicitly delete them.
-- [ ] Add guardian data, student profiles, deactivation, search, and filters.
+- [ ] List enrolled learners by class/session for one-click attendance marking.
+- [ ] Permit authorized teachers or administrators to mark attendance.
+- [ ] Keep unmarked attendance empty; interpret it as absent only in reports.
+- [ ] Configure holidays and working days without creating automatic records.
+- [ ] Export student and staff attendance for a date range, with working-day
+  totals and highlighted holidays/off days.
 
-**Exit criteria:** applications can be submitted, approved, or rejected; branch
-users cannot access another branch's students.
+**Exit criteria:** daily attendance stays fast to mark, and reports calculate
+correctly without cron jobs.
 
-## Checkpoint 7 — Student attendance
+## Checkpoint 7 — Assessments and grades
 
-- [ ] Let permitted branch teachers and administrators mark attendance.
-- [ ] Show the class/section list without modal-based marking.
-- [ ] Add one-click "Mark all present" and exceptions: Absent, Late, Leave.
-- [ ] Store one record per student, branch, and school day.
-- [ ] Keep students unmarked; never create automatic absence records or jobs.
-- [ ] Prevent marking on configured holidays and off days.
-- [ ] Audit who marked or edited attendance.
+- [ ] Agree the grade-scale/versioning design before schema implementation.
+- [ ] Support regular assessments and festival assessments (midterm, send-ups,
+  finals, test series, and custom labels).
+- [ ] Record per-subject marks and calculated performance/grades.
+- [ ] Allow every branch teacher to view any branch learner's performance.
 
-**Exit criteria:** attendance can be quickly marked, amended by authorized staff,
-and verified by API and UI tests.
+**Exit criteria:** marks and grades are consistent across subjects and assessment
+types, with branch-wide teacher visibility.
 
-## Checkpoint 8 — Teacher attendance kiosk
+## Checkpoint 8 — Lightweight finance
 
-- [ ] Build a branch-specific teacher attendance portal.
-- [ ] Support teacher selection and four-digit PIN verification.
-- [ ] Record check-in and checkout in Pakistan local time.
-- [ ] Apply configured workdays, start time, grace period, and late rules.
-- [ ] Treat missing checkout as complete day; permit authorized override.
-- [ ] Exclude overtime and off-day attendance calculations.
+- [ ] Add fees/charges, payments, and minimal balance calculations tied to an
+  admission/enrollment.
+- [ ] Add lightweight expenses and financial summaries if required by the PRD.
+- [ ] Export finance summaries without introducing SaaS-grade accounting logic.
 
-**Exit criteria:** only valid branch teachers can check in/out; invalid PIN,
-duplicate action, and holiday cases are tested.
+**Exit criteria:** administrators can record core money flows and see reliable
+lightweight balances in PKR.
 
-## Checkpoint 9 — Assessments and performance
+## Checkpoint 9 — Backend hardening and frontend handoff
 
-- [ ] Configure a grade scale.
-- [ ] Support dated regular assessments with maximum marks.
-- [ ] Support festival periods: Midterm, Send-ups, Finals, Test Series, and
-  custom labels.
-- [ ] Record subject marks and calculate percentage/grade consistently.
-- [ ] Show each student's subject performance history.
-- [ ] Permit every branch teacher to view branch student performance.
+- [ ] Add module-level API tests for permissions and business rules.
+- [ ] Complete Swagger documentation and seed/manual verification paths.
+- [ ] Review module boundaries so optional licensing code can be removed safely.
+- [ ] Begin frontend modules, route layouts, sidebar, and light/dark/system theme
+  only after the backend checkpoint is accepted.
 
-**Exit criteria:** authorized staff can enter marks and see correct performance
-by student, subject, and selected assessment period.
-
-## Checkpoint 10 — Attendance exports and MVP dashboard
-
-- [ ] Generate downloadable teacher and student attendance for a date range.
-- [ ] Calculate working days from weekdays minus holidays/off days.
-- [ ] Treat unmarked students as absent only during report calculation.
-- [ ] Highlight holidays and off days in reports.
-- [ ] Add MVP dashboard counts for branches, teachers, students, attendance.
-
-**Exit criteria:** reports match daily source data and calendar configuration,
-without cron-generated attendance data.
-
-## Deferred after the MVP
-
-- [ ] Fees, invoices, payments, expenses, and payroll.
-- [ ] Timetable, rooms, and clash detection.
-- [ ] Parent portal and messaging.
-- [ ] Dynamic admission form builder.
-- [ ] Vocational courses and AI features.
+**Exit criteria:** every required backend endpoint is verified and ready for the
+frontend implementation.

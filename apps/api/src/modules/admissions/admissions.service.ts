@@ -59,6 +59,10 @@ export class AdmissionsService {
       const rejected = await this.prisma.admissionApplication.update({ where: { id }, data: { status: AdmissionStatus.REJECTED, reviewNote: dto.reviewNote?.trim(), reviewedAt: new Date(), reviewedByUserId: actorUserId }, include: this.applicationInclude });
       await this.audit(actorUserId, AuditAction.UPDATE, 'AdmissionApplication', id, dto); return { application: rejected };
     }
+    if (!dto.academicTermId) throw new BadRequestException('An academic term is required for approval');
+    const allocatedOffering = await this.activeOffering(dto.academicOfferingId ?? application.academicOfferingId);
+    const academicTerm = await this.prisma.academicTerm.findFirst({ where: { id: dto.academicTermId, isActive: true } });
+    if (!academicTerm) throw new NotFoundException('Active academic term not found');
     const initialPassword = this.generatePassword();
     const outcome = await this.prisma.$transaction(async (tx) => {
       let portalUser = await tx.user.findFirst({ where: { accountType: AccountType.LEARNER, contactNumber: application.guardianContactNumber, deletedAt: null } });
@@ -68,8 +72,13 @@ export class AdmissionsService {
         credentials = { contactNumber: portalUser.contactNumber!, initialPassword };
       }
       if (portalUser.status !== AccountStatus.ACTIVE) throw new BadRequestException('The guardian portal account is unavailable');
-      const approved = await tx.admissionApplication.update({ where: { id }, data: { status: AdmissionStatus.APPROVED, reviewNote: dto.reviewNote?.trim(), reviewedAt: new Date(), reviewedByUserId: actorUserId }, include: this.applicationInclude });
-      const student = await tx.student.create({ data: { admissionApplicationId: approved.id, guardianPortalUserId: portalUser.id, branchId: approved.branchId, academicOfferingId: approved.academicOfferingId, studentFullName: approved.studentFullName, studentCnic: approved.studentCnic, guardianFullName: approved.guardianFullName, guardianContactNumber: approved.guardianContactNumber, previousSchool: approved.previousSchool, previousPerformance: approved.previousPerformance } });
+      const settings = await tx.admissionRegistrationSettings.upsert({ where: { organizationId: application.organizationId }, update: {}, create: { organizationId: application.organizationId } });
+      await tx.admissionRegistrationSettings.update({ where: { id: settings.id }, data: { nextSequence: { increment: 1 } } });
+      const modifier = allocatedOffering.schoolClass?.registrationNumberModifier ?? allocatedOffering.course?.registrationNumberModifier ?? 'GEN';
+      const registrationNumber = `${settings.prefix}-${modifier}-${String(settings.nextSequence).padStart(settings.sequencePadding, '0')}`;
+      const approved = await tx.admissionApplication.update({ where: { id }, data: { branchId: allocatedOffering.branchId, academicOfferingId: allocatedOffering.id, status: AdmissionStatus.APPROVED, reviewNote: dto.reviewNote?.trim(), reviewedAt: new Date(), reviewedByUserId: actorUserId, physicalDocumentsVerifiedAt: dto.physicalDocumentsVerified ? new Date() : null, physicalDocumentsVerificationNote: dto.physicalDocumentsVerificationNote?.trim() }, include: this.applicationInclude });
+      const officer = await tx.user.findUnique({ where: { id: actorUserId }, select: { fullName: true } });
+      const student = await tx.student.create({ data: { admissionApplicationId: approved.id, guardianPortalUserId: portalUser.id, branchId: approved.branchId, academicOfferingId: approved.academicOfferingId, academicTermId: academicTerm.id, registrationNumber, monthlyFeeAmount: dto.monthlyFeeAmount, amountReceivedWithForm: dto.amountReceivedWithForm, openingBalanceAmount: dto.openingBalanceAmount, receiptNumber: dto.receiptNumber?.trim(), balanceDueOn: dto.balanceDueOn ? new Date(dto.balanceDueOn) : undefined, admissionRemarks: dto.reviewNote?.trim(), admissionOfficerName: officer?.fullName, studentFullName: approved.studentFullName, studentCnic: approved.studentCnic, guardianFullName: approved.guardianFullName, guardianContactNumber: approved.guardianContactNumber, previousSchool: approved.previousSchool, previousPerformance: approved.previousPerformance } });
       return { application: approved, student, credentials };
     });
     await this.audit(actorUserId, AuditAction.UPDATE, 'AdmissionApplication', id, { ...dto, action: 'APPROVE' });
@@ -91,7 +100,7 @@ export class AdmissionsService {
 
   private readonly applicationInclude = { branch: true, academicOffering: { include: { schoolClass: true, course: true } }, student: true } satisfies Prisma.AdmissionApplicationInclude;
   private async organization() { const organization = await this.prisma.organization.findFirst(); if (!organization) throw new NotFoundException('Organization has not been configured'); return organization; }
-  private async activeOffering(id: string) { const offering = await this.prisma.academicOffering.findFirst({ where: { id, status: 'ACTIVE', branch: { deletedAt: null } } }); if (!offering) throw new NotFoundException('Academic offering not found'); return offering; }
+  private async activeOffering(id: string) { const offering = await this.prisma.academicOffering.findFirst({ where: { id, status: 'ACTIVE', branch: { deletedAt: null } }, include: { schoolClass: true, course: true } }); if (!offering) throw new NotFoundException('Academic offering not found'); return offering; }
   private async application(id: string) { const application = await this.prisma.admissionApplication.findFirst({ where: { id, deletedAt: null }, include: this.applicationInclude }); if (!application) throw new NotFoundException('Admission application not found'); return application; }
   private async accessibleBranchIds(userId: string): Promise<string[] | null> { const assignments = await this.prisma.roleAssignment.findMany({ where: { userId }, select: { branchId: true } }); if (assignments.some((assignment) => assignment.branchId === null)) return null; return assignments.flatMap((assignment) => assignment.branchId ? [assignment.branchId] : []); }
   private async ensureBranchAccess(userId: string, branchId: string) { const accessible = await this.accessibleBranchIds(userId); if (accessible && !accessible.includes(branchId)) throw new ForbiddenException('You do not have access to this branch'); }

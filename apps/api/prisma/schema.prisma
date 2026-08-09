@@ -297,6 +297,9 @@ model AdmissionApplication {
   guardianContactNumber String
   previousSchool        String?
   previousPerformance   String?
+  formData              Json?
+  physicalDocumentsVerifiedAt DateTime?
+  physicalDocumentsVerificationNote String?
   status                AdmissionStatus @default(PENDING)
   reviewNote            String?
   reviewedAt            DateTime?
@@ -320,6 +323,15 @@ model Student {
   guardianPortalUserId  String
   branchId              String
   academicOfferingId    String
+  academicTermId        String?
+  registrationNumber    String? @unique
+  monthlyFeeAmount      Decimal? @db.Decimal(12, 2)
+  amountReceivedWithForm Decimal? @db.Decimal(12, 2)
+  openingBalanceAmount  Decimal? @db.Decimal(12, 2)
+  receiptNumber         String?
+  balanceDueOn          DateTime? @db.Date
+  admissionRemarks      String?
+  admissionOfficerName  String?
   studentFullName       String
   studentCnic           String
   guardianFullName      String

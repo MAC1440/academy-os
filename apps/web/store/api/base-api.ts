@@ -72,5 +72,6 @@ export const baseApi = createApi({
   reducerPath: 'api',
   baseQuery: baseQueryWithRefresh,
   tagTypes: ['Session', 'Organization', 'Branch', 'Academic'],
+  refetchOnMountOrArgChange: true,
   endpoints: () => ({}),
 });

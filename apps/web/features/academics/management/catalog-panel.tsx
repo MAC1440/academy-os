@@ -10,6 +10,7 @@ type CatalogInput = {
   code?: string;
   description?: string;
   sectionsEnabled?: boolean;
+  status?: string;
 };
 type CatalogPanelProps = {
   itemName: string;
@@ -57,14 +58,16 @@ export function CatalogPanel({
     <div className="space-y-5">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <p className="max-w-2xl text-sm leading-6 text-muted-foreground">{description}</p>
-        <button
-          type="button"
-          className="button-primary inline-flex items-center gap-2"
-          onClick={() => setCreating(true)}
-        >
-          <Plus size={16} />
-          Add {itemName.toLowerCase()}
-        </button>
+        <div className="flex gap-2">
+          <button
+            type="button"
+            className="button-primary inline-flex items-center gap-2"
+            onClick={() => setCreating(true)}
+          >
+            <Plus size={16} />
+            Add {itemName.toLowerCase()}
+          </button>
+        </div>
       </div>
       {creating ? (
         <form
@@ -172,6 +175,15 @@ function CatalogItem({
       toast.error(`${itemName} could not be updated.`);
     }
   }
+  async function archive() {
+    if (!window.confirm(`Remove ${itemName.toLowerCase()}? Existing history is preserved.`)) return;
+    try {
+      await update(record.id, { ...form, status: 'ARCHIVED' });
+      toast.success(`${itemName} removed.`);
+    } catch {
+      toast.error(`${itemName} could not be removed because it is still in use.`);
+    }
+  }
   if (!editing)
     return (
       <article className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border bg-card p-4">
@@ -188,14 +200,23 @@ function CatalogItem({
                 : 'Active'}
           </p>
         </div>
-        <button
-          type="button"
-          className="button-secondary inline-flex items-center gap-2"
-          onClick={() => setEditing(true)}
-        >
-          <Pencil size={14} />
-          Edit
-        </button>
+        <div className="flex gap-2">
+          <button
+            type="button"
+            className="button-secondary inline-flex items-center gap-2"
+            onClick={() => setEditing(true)}
+          >
+            <Pencil size={14} />
+            Edit
+          </button>
+          <button
+            type="button"
+            className="px-3 text-sm font-semibold text-rose-700 hover:underline"
+            onClick={archive}
+          >
+            Remove
+          </button>
+        </div>
       </article>
     );
   return (

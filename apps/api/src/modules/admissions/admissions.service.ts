@@ -116,6 +116,24 @@ export class AdmissionsService {
 
   async updateStudent(id: string, dto: UpdateStudentDto, actorUserId: string) {
     const student = await this.getStudent(id, actorUserId);
+    const nextOffering = dto.academicOfferingId
+      ? await this.activeOffering(dto.academicOfferingId)
+      : undefined;
+    if (nextOffering && nextOffering.branchId !== student.branchId)
+      throw new BadRequestException(
+        'Move across branches by creating a separate admission',
+      );
+    if (dto.academicTermId) {
+      const organization = await this.organization();
+      const term = await this.prisma.academicTerm.findFirst({
+        where: {
+          id: dto.academicTermId,
+          organizationId: organization.id,
+          isActive: true,
+        },
+      });
+      if (!term) throw new NotFoundException('Active academic term not found');
+    }
     try {
       const updated = await this.prisma.student.update({
         where: { id: student.id },
@@ -130,6 +148,8 @@ export class AdmissionsService {
           ...(dto.previousPerformance !== undefined
             ? { previousPerformance: dto.previousPerformance.trim() || null }
             : {}),
+          ...(nextOffering ? { academicOfferingId: nextOffering.id } : {}),
+          ...(dto.academicTermId ? { academicTermId: dto.academicTermId } : {}),
         },
         include: this.studentInclude,
       });

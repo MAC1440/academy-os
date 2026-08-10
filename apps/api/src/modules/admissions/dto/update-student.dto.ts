@@ -27,4 +27,16 @@ export class UpdateStudentDto {
   @IsString()
   @MaxLength(2_000)
   previousPerformance?: string;
+
+  @ApiPropertyOptional({
+    description: 'Move the student to another offering in the same branch.',
+  })
+  @IsOptional()
+  @IsString()
+  academicOfferingId?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  academicTermId?: string;
 }

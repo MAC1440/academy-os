@@ -94,13 +94,21 @@ async function main() {
     await prisma.rolePermission.deleteMany({ where: { roleId: role.id } });
     if (permissionRecords.length) {
       await prisma.rolePermission.createMany({
-        data: permissionRecords.map((permission) => ({ roleId: role.id, permissionId: permission.id })),
+        data: permissionRecords.map((permission) => ({
+          roleId: role.id,
+          permissionId: permission.id,
+        })),
       });
     }
   }
 
   const administratorRole = await prisma.role.findUniqueOrThrow({
-    where: { organizationId_name: { organizationId: organization.id, name: 'Administrator' } },
+    where: {
+      organizationId_name: {
+        organizationId: organization.id,
+        name: 'Administrator',
+      },
+    },
   });
 
   await prisma.roleAssignment.deleteMany({

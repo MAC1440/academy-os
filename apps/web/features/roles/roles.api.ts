@@ -1,3 +1,37 @@
-import { baseApi, type ApiRecord, unwrap } from "@web/store/api/base-api";
-export const rolesApi = baseApi.injectEndpoints({ endpoints: (build) => ({ listPermissions: build.query<ApiRecord[], void>({ query: () => "/permissions", transformResponse: unwrap }), listRoles: build.query<ApiRecord[], void>({ query: () => "/roles", transformResponse: unwrap }), createRole: build.mutation<ApiRecord, { name: string; permissionKeys: string[] }>({ query: (body) => ({ url: "/roles", method: "POST", body }), transformResponse: unwrap }), updateRole: build.mutation<ApiRecord, { id: string; body: { name?: string; permissionKeys?: string[] } }>({ query: ({ id, body }) => ({ url: `/roles/${id}`, method: "PATCH", body }), transformResponse: unwrap }), assignRole: build.mutation<ApiRecord, { userId: string; roleId: string; branchId?: string }>({ query: (body) => ({ url: "/role-assignments", method: "POST", body }), transformResponse: unwrap }), removeRoleAssignment: build.mutation<{ id: string }, string>({ query: (id) => ({ url: `/role-assignments/${id}`, method: "DELETE" }), transformResponse: unwrap }) }) });
-export const { useListPermissionsQuery, useListRolesQuery, useCreateRoleMutation, useUpdateRoleMutation, useAssignRoleMutation, useRemoveRoleAssignmentMutation } = rolesApi;
+import { baseApi, type ApiRecord, unwrap } from '@web/store/api/base-api';
+export const rolesApi = baseApi.injectEndpoints({
+  endpoints: (build) => ({
+    listPermissions: build.query<ApiRecord[], void>({
+      query: () => '/permissions',
+      transformResponse: unwrap,
+    }),
+    listRoles: build.query<ApiRecord[], void>({ query: () => '/roles', transformResponse: unwrap }),
+    createRole: build.mutation<ApiRecord, { name: string; permissionKeys: string[] }>({
+      query: (body) => ({ url: '/roles', method: 'POST', body }),
+      transformResponse: unwrap,
+    }),
+    updateRole: build.mutation<
+      ApiRecord,
+      { id: string; body: { name?: string; permissionKeys?: string[] } }
+    >({
+      query: ({ id, body }) => ({ url: `/roles/${id}`, method: 'PATCH', body }),
+      transformResponse: unwrap,
+    }),
+    assignRole: build.mutation<ApiRecord, { userId: string; roleId: string; branchId?: string }>({
+      query: (body) => ({ url: '/role-assignments', method: 'POST', body }),
+      transformResponse: unwrap,
+    }),
+    removeRoleAssignment: build.mutation<{ id: string }, string>({
+      query: (id) => ({ url: `/role-assignments/${id}`, method: 'DELETE' }),
+      transformResponse: unwrap,
+    }),
+  }),
+});
+export const {
+  useListPermissionsQuery,
+  useListRolesQuery,
+  useCreateRoleMutation,
+  useUpdateRoleMutation,
+  useAssignRoleMutation,
+  useRemoveRoleAssignmentMutation,
+} = rolesApi;

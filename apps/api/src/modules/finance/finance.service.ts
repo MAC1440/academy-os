@@ -1,5 +1,82 @@
-import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { AuditAction } from '@prisma/client';
 import { AuditService } from '../audit/audit.service';
 import { PrismaService } from '../../prisma/prisma.service';
-@Injectable() export class FinanceService { constructor(private readonly prisma:PrismaService,private readonly audit:AuditService){} async summary(studentId:string,actor:string){const student=await this.prisma.student.findUnique({where:{id:studentId},include:{payments:true}});if(!student)throw new NotFoundException('Student not found');await this.ensureBranchAccess(actor,student.branchId);const paid=student.payments.reduce((sum,p)=>sum+Number(p.amount),Number(student.amountReceivedWithForm??0));return {studentId,monthlyFeeAmount:student.monthlyFeeAmount,openingBalanceAmount:student.openingBalanceAmount,paid,balance:Number(student.openingBalanceAmount??0)-paid,payments:student.payments};} async createPayment(studentId:string,dto:{amount:number;receiptNumber:string;receivedOn:string;remarks?:string},actor:string){const student=await this.prisma.student.findUnique({where:{id:studentId}});if(!student)throw new NotFoundException('Student not found');await this.ensureBranchAccess(actor,student.branchId);const payment=await this.prisma.studentPayment.create({data:{studentId,amount:dto.amount,receiptNumber:dto.receiptNumber,receivedOn:new Date(dto.receivedOn),remarks:dto.remarks,receivedByUserId:actor}});const org=await this.prisma.organization.findFirstOrThrow();await this.audit.record({organizationId:org.id,actorUserId:actor,action:AuditAction.CREATE,entityType:'StudentPayment',entityId:payment.id,changes:{studentId,amount:dto.amount,receiptNumber:dto.receiptNumber}});return payment;} private async ensureBranchAccess(actor:string,branchId:string){const access=await this.prisma.roleAssignment.findFirst({where:{userId:actor,OR:[{branchId:null},{branchId}]}});if(!access)throw new ForbiddenException('You do not have access to this branch');} }
+@Injectable()
+export class FinanceService {
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly audit: AuditService,
+  ) {}
+  async summary(studentId: string, actor: string) {
+    const student = await this.prisma.student.findUnique({
+      where: { id: studentId },
+      include: { payments: true },
+    });
+    if (!student) throw new NotFoundException('Student not found');
+    await this.ensureBranchAccess(actor, student.branchId);
+    const paid = student.payments.reduce(
+      (sum, p) => sum + Number(p.amount),
+      Number(student.amountReceivedWithForm ?? 0),
+    );
+    return {
+      studentId,
+      monthlyFeeAmount: student.monthlyFeeAmount,
+      openingBalanceAmount: student.openingBalanceAmount,
+      paid,
+      balance: Number(student.openingBalanceAmount ?? 0) - paid,
+      payments: student.payments,
+    };
+  }
+  async createPayment(
+    studentId: string,
+    dto: {
+      amount: number;
+      receiptNumber: string;
+      receivedOn: string;
+      remarks?: string;
+    },
+    actor: string,
+  ) {
+    const student = await this.prisma.student.findUnique({
+      where: { id: studentId },
+    });
+    if (!student) throw new NotFoundException('Student not found');
+    await this.ensureBranchAccess(actor, student.branchId);
+    const payment = await this.prisma.studentPayment.create({
+      data: {
+        studentId,
+        amount: dto.amount,
+        receiptNumber: dto.receiptNumber,
+        receivedOn: new Date(dto.receivedOn),
+        remarks: dto.remarks,
+        receivedByUserId: actor,
+      },
+    });
+    const org = await this.prisma.organization.findFirstOrThrow();
+    await this.audit.record({
+      organizationId: org.id,
+      actorUserId: actor,
+      action: AuditAction.CREATE,
+      entityType: 'StudentPayment',
+      entityId: payment.id,
+      changes: {
+        studentId,
+        amount: dto.amount,
+        receiptNumber: dto.receiptNumber,
+      },
+    });
+    return payment;
+  }
+  private async ensureBranchAccess(actor: string, branchId: string) {
+    const access = await this.prisma.roleAssignment.findFirst({
+      where: { userId: actor, OR: [{ branchId: null }, { branchId }] },
+    });
+    if (!access)
+      throw new ForbiddenException('You do not have access to this branch');
+  }
+}

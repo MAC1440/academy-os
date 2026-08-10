@@ -1,6 +1,15 @@
 import { ApiPropertyOptional, ApiProperty } from '@nestjs/swagger';
 import { EntityStatus } from '@prisma/client';
-import { IsBoolean, IsEnum, IsInt, IsOptional, IsString, Max, MaxLength, Min } from 'class-validator';
+import {
+  IsBoolean,
+  IsEnum,
+  IsInt,
+  IsOptional,
+  IsString,
+  Max,
+  MaxLength,
+  Min,
+} from 'class-validator';
 
 export class CreateSchoolClassDto {
   @ApiProperty({ example: 'Grade 10' })

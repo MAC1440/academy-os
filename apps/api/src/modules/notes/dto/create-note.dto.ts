@@ -8,7 +8,9 @@ export class CreateNoteDto {
   @MaxLength(200)
   title!: string;
 
-  @ApiProperty({ example: 'Cover linear equations, then distribute the practice worksheet.' })
+  @ApiProperty({
+    example: 'Cover linear equations, then distribute the practice worksheet.',
+  })
   @IsString()
   @IsNotEmpty()
   @MaxLength(20_000)

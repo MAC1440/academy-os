@@ -1,3 +1,5 @@
-import { DashboardHome } from "@web/features/dashboard";
+import { DashboardHome } from '@web/features/dashboard';
 // Roles: ADMIN, STAFF, LEARNER.
-export default function DashboardPage() { return <DashboardHome />; }
+export default function DashboardPage() {
+  return <DashboardHome />;
+}

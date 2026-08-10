@@ -1,10 +1,17 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { AccountType } from '@prisma/client';
-import { IsEnum, IsNotEmpty, IsOptional, IsString, MinLength } from 'class-validator';
+import {
+  IsEnum,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  MinLength,
+} from 'class-validator';
 
 export class LoginDto {
   @ApiProperty({
-    description: 'Admin username, or staff/learner contact number without country code',
+    description:
+      'Admin username, or staff/learner contact number without country code',
     example: 'admin',
   })
   @IsString()
@@ -14,7 +21,8 @@ export class LoginDto {
   @ApiProperty({
     required: false,
     enum: AccountType,
-    description: 'Required when the same contact number belongs to both a staff and learner portal account.',
+    description:
+      'Required when the same contact number belongs to both a staff and learner portal account.',
   })
   @IsOptional()
   @IsEnum(AccountType)

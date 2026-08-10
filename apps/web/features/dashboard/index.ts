@@ -1,1 +1,1 @@
-export { DashboardHome } from "./dashboard-home";
+export { DashboardHome } from './dashboard-home';

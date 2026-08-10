@@ -18,12 +18,12 @@ The web application expects `NEXT_PUBLIC_API_URL=http://localhost:3000`.
 
 ## Quality commands
 
-| Command | Purpose |
-| --- | --- |
-| `npm run lint` | Lint API and web workspaces. |
-| `npm run test --workspace=api -- --runInBand` | Run API unit tests. |
-| `npm run build` | Build API and web production artifacts. |
-| `npm run format:check` | Check repository formatting. |
+| Command                                       | Purpose                                 |
+| --------------------------------------------- | --------------------------------------- |
+| `npm run lint`                                | Lint API and web workspaces.            |
+| `npm run test --workspace=api -- --runInBand` | Run API unit tests.                     |
+| `npm run build`                               | Build API and web production artifacts. |
+| `npm run format:check`                        | Check repository formatting.            |
 
 ## API conventions
 

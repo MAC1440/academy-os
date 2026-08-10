@@ -14,18 +14,10 @@
     "noUncheckedIndexedAccess": true,
     "baseUrl": ".",
     "paths": {
-      "@academy-os/shared": [
-        "packages/shared/src/index.ts"
-      ],
-      "@academy-os/shared/*": [
-        "packages/shared/src/*"
-      ],
-      "@config/*": [
-        "packages/config/src/*"
-      ],
-      "@ui/*": [
-        "packages/ui/src/*"
-      ]
+      "@academy-os/shared": ["packages/shared/src/index.ts"],
+      "@academy-os/shared/*": ["packages/shared/src/*"],
+      "@config/*": ["packages/config/src/*"],
+      "@ui/*": ["packages/ui/src/*"]
     }
   }
 }

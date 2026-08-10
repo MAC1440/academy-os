@@ -9,7 +9,7 @@
   ],
   "scripts": {
     "dev": "npm run dev --workspaces --if-present",
-        "web": "npm run dev --workspace=apps/web -- -p 3001",
+    "web": "npm run dev --workspace=apps/web -- -p 3001",
     "api": "npm run start:dev --workspace=apps/api -- --port 3000",
     "docker:up": "docker compose up -d",
     "docker:down": "docker compose down",

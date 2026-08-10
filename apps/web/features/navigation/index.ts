@@ -1,1 +1,1 @@
-export { PortalShell } from "./portal-shell";
+export { PortalShell } from './portal-shell';

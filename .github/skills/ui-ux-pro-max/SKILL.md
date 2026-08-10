@@ -11,6 +11,7 @@ Use this skill when the request is about building, refining, or reviewing a user
 ## When to use this skill
 
 Use it for:
+
 - landing pages, marketing sites, and product surfaces
 - dashboard and admin interface redesigns
 - onboarding, booking, and workflow flows
@@ -20,25 +21,30 @@ Use it for:
 ## Core workflow
 
 1. Clarify the product brief
+
 - Identify the page goal, primary audience, and the single action users should take.
 - If the request is vague, state assumptions explicitly before designing.
 
 2. Choose a tailored design direction
+
 - Match the experience to the product category and user context.
 - Pick one strong pattern such as hero-first, trust-driven, feature-led, dashboard-centric, or workflow-driven.
 - Avoid generic "AI-looking" choices unless the brief truly calls for them.
 
 3. Create a compact design system
+
 - Define 4-6 colors, 2+ typography roles, spacing rhythm, surface treatment, and one signature element.
 - Keep decisions purposeful and tied to the product context rather than copied from a stock template.
 - If a design system already exists in the repository, extend it instead of inventing a new one.
 
 4. Implement in the existing stack
+
 - Prefer the Next.js app in apps/web for page-level work.
 - Use TypeScript and Tailwind, and reuse shared primitives from packages/ui when available.
 - Keep accessibility and responsive behavior in mind from the start.
 
 5. Validate before delivery
+
 - Check hierarchy, contrast, spacing, CTA clarity, keyboard focus, reduced motion, empty states, error states, and mobile behavior.
 - Remove decoration that does not support the user goal.
 
@@ -62,6 +68,7 @@ Use it for:
 ## Implementation checklist
 
 Before presenting the UI, confirm:
+
 - [ ] The page has one clear primary job.
 - [ ] Visual choices fit the product context.
 - [ ] The interface is responsive from mobile to desktop.
@@ -74,12 +81,14 @@ Before presenting the UI, confirm:
 ## Prompting pattern
 
 When asked to create or improve a UI, respond with:
+
 1. A short product brief and assumptions.
 2. A recommended layout pattern and design system.
 3. The implementation plan for the current stack.
 4. The completed UI, followed by a quick QA checklist.
 
 Example prompts:
+
 - Build a polished landing page for AcademyOS with a strong hero and clear CTA.
 - Redesign the dashboard experience to feel more premium and easier to scan.
 - Improve the onboarding flow with clearer hierarchy and stronger accessibility.

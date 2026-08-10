@@ -21,7 +21,10 @@ export class CreateAcademicGroupDto {
   @MaxLength(30)
   code?: string;
 
-  @ApiProperty({ type: [String], description: 'School classes that can use this group.' })
+  @ApiProperty({
+    type: [String],
+    description: 'School classes that can use this group.',
+  })
   @IsArray()
   @ArrayUnique()
   @IsString({ each: true })

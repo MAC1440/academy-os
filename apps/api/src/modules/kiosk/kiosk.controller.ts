@@ -1,4 +1,12 @@
-import { Body, Controller, Get, Param, Patch, Post, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  Patch,
+  Post,
+  UseGuards,
+} from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { successResponse } from '../../common/api-response';
 import { RequireBranchAccess } from '../access/decorators/require-branch-access.decorator';
@@ -20,17 +28,29 @@ export class KioskController {
 
   @Get('kiosk/branches/:branchId/staff')
   async listBranchStaff(@Param('branchId') branchId: string) {
-    return successResponse('Kiosk staff retrieved', await this.kioskService.listBranchStaff(branchId));
+    return successResponse(
+      'Kiosk staff retrieved',
+      await this.kioskService.listBranchStaff(branchId),
+    );
   }
 
   @Post('kiosk/branches/:branchId/check-in')
   async checkIn(@Param('branchId') branchId: string, @Body() dto: KioskPinDto) {
-    return successResponse('Check-in recorded', await this.kioskService.checkIn(branchId, dto));
+    return successResponse(
+      'Check-in recorded',
+      await this.kioskService.checkIn(branchId, dto),
+    );
   }
 
   @Post('kiosk/branches/:branchId/check-out')
-  async checkOut(@Param('branchId') branchId: string, @Body() dto: KioskPinDto) {
-    return successResponse('Check-out recorded', await this.kioskService.checkOut(branchId, dto));
+  async checkOut(
+    @Param('branchId') branchId: string,
+    @Body() dto: KioskPinDto,
+  ) {
+    return successResponse(
+      'Check-out recorded',
+      await this.kioskService.checkOut(branchId, dto),
+    );
   }
 
   @Get('attendance-kiosk/settings')
@@ -38,15 +58,24 @@ export class KioskController {
   @UseGuards(JwtAuthGuard, PermissionsGuard)
   @RequirePermissions('kiosk.manage')
   async getSettings() {
-    return successResponse('Attendance kiosk settings retrieved', await this.kioskService.getSettings());
+    return successResponse(
+      'Attendance kiosk settings retrieved',
+      await this.kioskService.getSettings(),
+    );
   }
 
   @Patch('attendance-kiosk/settings')
   @ApiBearerAuth('JWT-auth')
   @UseGuards(JwtAuthGuard, PermissionsGuard)
   @RequirePermissions('kiosk.manage')
-  async updateSettings(@Body() dto: UpdateKioskSettingsDto, @CurrentUser() user: AuthenticatedUser) {
-    return successResponse('Attendance kiosk settings updated', await this.kioskService.updateSettings(dto, user.id));
+  async updateSettings(
+    @Body() dto: UpdateKioskSettingsDto,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return successResponse(
+      'Attendance kiosk settings updated',
+      await this.kioskService.updateSettings(dto, user.id),
+    );
   }
 
   @Patch('branches/:branchId/staff-attendance/:attendanceId/override')
@@ -62,7 +91,12 @@ export class KioskController {
   ) {
     return successResponse(
       'Staff attendance overridden',
-      await this.kioskService.overrideAttendance(branchId, attendanceId, dto, user.id),
+      await this.kioskService.overrideAttendance(
+        branchId,
+        attendanceId,
+        dto,
+        user.id,
+      ),
     );
   }
 }

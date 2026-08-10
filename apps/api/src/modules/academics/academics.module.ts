@@ -6,5 +6,9 @@ import { PrismaModule } from '../../prisma/prisma.module';
 import { AcademicsController } from './academics.controller';
 import { AcademicsService } from './academics.service';
 
-@Module({ imports: [PrismaModule, AuthModule, AccessModule, AuditModule], controllers: [AcademicsController], providers: [AcademicsService] })
+@Module({
+  imports: [PrismaModule, AuthModule, AccessModule, AuditModule],
+  controllers: [AcademicsController],
+  providers: [AcademicsService],
+})
 export class AcademicsModule {}

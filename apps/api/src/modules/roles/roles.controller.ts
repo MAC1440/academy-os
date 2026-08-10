@@ -1,4 +1,13 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Patch,
+  Post,
+  UseGuards,
+} from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { successResponse } from '../../common/api-response';
 import { RequirePermissions } from '../access/decorators/require-permissions.decorator';
@@ -21,19 +30,31 @@ export class RolesController {
   @Get('permissions')
   @RequirePermissions('roles.read')
   async listPermissions() {
-    return successResponse('Permissions retrieved', await this.rolesService.listPermissions());
+    return successResponse(
+      'Permissions retrieved',
+      await this.rolesService.listPermissions(),
+    );
   }
 
   @Get('roles')
   @RequirePermissions('roles.read')
   async listRoles() {
-    return successResponse('Roles retrieved', await this.rolesService.listRoles());
+    return successResponse(
+      'Roles retrieved',
+      await this.rolesService.listRoles(),
+    );
   }
 
   @Post('roles')
   @RequirePermissions('roles.manage')
-  async createRole(@Body() dto: CreateRoleDto, @CurrentUser() user: AuthenticatedUser) {
-    return successResponse('Role created', await this.rolesService.createRole(dto, user.id));
+  async createRole(
+    @Body() dto: CreateRoleDto,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return successResponse(
+      'Role created',
+      await this.rolesService.createRole(dto, user.id),
+    );
   }
 
   @Patch('roles/:roleId')
@@ -43,18 +64,30 @@ export class RolesController {
     @Body() dto: UpdateRoleDto,
     @CurrentUser() user: AuthenticatedUser,
   ) {
-    return successResponse('Role updated', await this.rolesService.updateRole(roleId, dto, user.id));
+    return successResponse(
+      'Role updated',
+      await this.rolesService.updateRole(roleId, dto, user.id),
+    );
   }
 
   @Post('role-assignments')
   @RequirePermissions('roles.manage')
-  async assignRole(@Body() dto: AssignRoleDto, @CurrentUser() user: AuthenticatedUser) {
-    return successResponse('Role assigned', await this.rolesService.assignRole(dto, user.id));
+  async assignRole(
+    @Body() dto: AssignRoleDto,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return successResponse(
+      'Role assigned',
+      await this.rolesService.assignRole(dto, user.id),
+    );
   }
 
   @Delete('role-assignments/:assignmentId')
   @RequirePermissions('roles.manage')
-  async removeAssignment(@Param('assignmentId') assignmentId: string, @CurrentUser() user: AuthenticatedUser) {
+  async removeAssignment(
+    @Param('assignmentId') assignmentId: string,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
     await this.rolesService.removeAssignment(assignmentId, user.id);
     return successResponse('Role assignment removed', { id: assignmentId });
   }

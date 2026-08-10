@@ -1,4 +1,13 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Patch,
+  Post,
+  UseGuards,
+} from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { successResponse } from '../../common/api-response';
 import { RequirePermissions } from '../access/decorators/require-permissions.decorator';
@@ -20,24 +29,43 @@ export class NotesController {
   @Get()
   @RequirePermissions('notes.read')
   async listNotes() {
-    return successResponse('Shared notes retrieved', await this.notesService.listNotes());
+    return successResponse(
+      'Shared notes retrieved',
+      await this.notesService.listNotes(),
+    );
   }
 
   @Post()
   @RequirePermissions('notes.manage')
-  async createNote(@Body() dto: CreateNoteDto, @CurrentUser() user: AuthenticatedUser) {
-    return successResponse('Shared note created', await this.notesService.createNote(dto, user.id));
+  async createNote(
+    @Body() dto: CreateNoteDto,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return successResponse(
+      'Shared note created',
+      await this.notesService.createNote(dto, user.id),
+    );
   }
 
   @Patch(':noteId')
   @RequirePermissions('notes.manage')
-  async updateNote(@Param('noteId') noteId: string, @Body() dto: UpdateNoteDto, @CurrentUser() user: AuthenticatedUser) {
-    return successResponse('Shared note updated', await this.notesService.updateNote(noteId, dto, user.id));
+  async updateNote(
+    @Param('noteId') noteId: string,
+    @Body() dto: UpdateNoteDto,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return successResponse(
+      'Shared note updated',
+      await this.notesService.updateNote(noteId, dto, user.id),
+    );
   }
 
   @Delete(':noteId')
   @RequirePermissions('notes.manage')
-  async archiveNote(@Param('noteId') noteId: string, @CurrentUser() user: AuthenticatedUser) {
+  async archiveNote(
+    @Param('noteId') noteId: string,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
     await this.notesService.archiveNote(noteId, user.id);
     return successResponse('Shared note archived', { id: noteId });
   }

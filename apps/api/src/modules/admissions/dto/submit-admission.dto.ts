@@ -1,5 +1,11 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsObject, IsOptional, IsString, Matches, MaxLength } from 'class-validator';
+import {
+  IsObject,
+  IsOptional,
+  IsString,
+  Matches,
+  MaxLength,
+} from 'class-validator';
 
 export class SubmitAdmissionDto {
   @ApiProperty()
@@ -11,7 +17,10 @@ export class SubmitAdmissionDto {
   @MaxLength(160)
   studentFullName!: string;
 
-  @ApiProperty({ example: '3520212345671', description: 'Student CNIC/B-Form number: exactly 13 digits.' })
+  @ApiProperty({
+    example: '3520212345671',
+    description: 'Student CNIC/B-Form number: exactly 13 digits.',
+  })
   @IsString()
   @Matches(/^\d{13}$/)
   studentCnic!: string;
@@ -39,7 +48,8 @@ export class SubmitAdmissionDto {
   previousPerformance?: string;
 
   @ApiPropertyOptional({
-    description: 'Structured details from the approved physical-form contract: father name, date of birth, nationality, addresses, phones, academic history, guardian employment, and siblings.',
+    description:
+      'Structured details from the approved physical-form contract: father name, date of birth, nationality, addresses, phones, academic history, guardian employment, and siblings.',
     type: Object,
   })
   @IsOptional()

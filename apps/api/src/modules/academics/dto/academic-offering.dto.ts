@@ -1,13 +1,22 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { AcademicOfferingType, EntityStatus } from '@prisma/client';
-import { ArrayUnique, IsArray, IsEnum, IsOptional, IsString, MaxLength } from 'class-validator';
+import {
+  ArrayUnique,
+  IsArray,
+  IsEnum,
+  IsOptional,
+  IsString,
+  MaxLength,
+} from 'class-validator';
 
 export class CreateAcademicOfferingDto {
   @ApiProperty({ enum: AcademicOfferingType })
   @IsEnum(AcademicOfferingType)
   offeringType!: AcademicOfferingType;
 
-  @ApiPropertyOptional({ description: 'Required when offeringType is SCHOOL_CLASS.' })
+  @ApiPropertyOptional({
+    description: 'Required when offeringType is SCHOOL_CLASS.',
+  })
   @IsOptional()
   @IsString()
   schoolClassId?: string;
@@ -17,12 +26,18 @@ export class CreateAcademicOfferingDto {
   @IsString()
   courseId?: string;
 
-  @ApiPropertyOptional({ description: 'Optional organization-wide group for a school-class offering.' })
+  @ApiPropertyOptional({
+    description:
+      'Optional organization-wide group for a school-class offering.',
+  })
   @IsOptional()
   @IsString()
   academicGroupId?: string;
 
-  @ApiPropertyOptional({ example: 'A', description: 'Required when the chosen school class has sections enabled.' })
+  @ApiPropertyOptional({
+    example: 'A',
+    description: 'Required when the chosen school class has sections enabled.',
+  })
   @IsOptional()
   @IsString()
   @MaxLength(40)
@@ -30,7 +45,10 @@ export class CreateAcademicOfferingDto {
 }
 
 export class UpdateAcademicOfferingDto {
-  @ApiPropertyOptional({ description: 'Optional organization-wide group for a school-class offering.' })
+  @ApiPropertyOptional({
+    description:
+      'Optional organization-wide group for a school-class offering.',
+  })
   @IsOptional()
   @IsString()
   academicGroupId?: string;

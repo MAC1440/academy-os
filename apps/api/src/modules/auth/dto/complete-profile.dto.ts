@@ -19,7 +19,10 @@ export class CompleteProfileDto {
   @MaxLength(80)
   username?: string;
 
-  @ApiPropertyOptional({ example: '03135418790', description: 'Without country code' })
+  @ApiPropertyOptional({
+    example: '03135418790',
+    description: 'Without country code',
+  })
   @IsOptional()
   @IsString()
   @Matches(/^\d{7,15}$/)

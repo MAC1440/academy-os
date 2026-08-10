@@ -1,4 +1,8 @@
-import { ConflictException, Injectable, UnauthorizedException } from '@nestjs/common';
+import {
+  ConflictException,
+  Injectable,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { AccountStatus, AccountType, User } from '@prisma/client';
 import * as bcrypt from 'bcryptjs';
@@ -44,7 +48,11 @@ export class AuthService {
     });
 
     const [user] = users;
-    if (!user || users.length !== 1 || !(await bcrypt.compare(dto.password, user.passwordHash))) {
+    if (
+      !user ||
+      users.length !== 1 ||
+      !(await bcrypt.compare(dto.password, user.passwordHash))
+    ) {
       throw new UnauthorizedException('Invalid credentials');
     }
 
@@ -53,9 +61,12 @@ export class AuthService {
 
   async refresh(refreshToken: string) {
     try {
-      const payload = await this.jwtService.verifyAsync<TokenPayload>(refreshToken, {
-        secret: refreshSecret ?? jwtSecret,
-      });
+      const payload = await this.jwtService.verifyAsync<TokenPayload>(
+        refreshToken,
+        {
+          secret: refreshSecret ?? jwtSecret,
+        },
+      );
       const user = await this.getActiveUser(payload.sub);
       return this.createSession(user);
     } catch {
@@ -67,26 +78,37 @@ export class AuthService {
     return this.toPublicUser(await this.getActiveUser(authenticatedUser.id));
   }
 
-  async completeProfile(authenticatedUser: AuthenticatedUser, dto: CompleteProfileDto) {
+  async completeProfile(
+    authenticatedUser: AuthenticatedUser,
+    dto: CompleteProfileDto,
+  ) {
     try {
       const user = await this.prisma.user.update({
         where: { id: authenticatedUser.id },
         data: {
           passwordHash: await bcrypt.hash(dto.newPassword, 12),
           mustCompleteProfile: false,
-          ...(dto.username !== undefined ? { username: dto.username.trim() } : {}),
+          ...(dto.username !== undefined
+            ? { username: dto.username.trim() }
+            : {}),
           ...(dto.contactNumber !== undefined
             ? { contactNumber: dto.contactNumber.trim() }
             : {}),
-          ...(dto.fullName !== undefined ? { fullName: dto.fullName.trim() } : {}),
-          ...(dto.email !== undefined ? { email: dto.email.trim().toLowerCase() } : {}),
+          ...(dto.fullName !== undefined
+            ? { fullName: dto.fullName.trim() }
+            : {}),
+          ...(dto.email !== undefined
+            ? { email: dto.email.trim().toLowerCase() }
+            : {}),
         },
       });
 
       return this.toPublicUser(user);
     } catch (error: unknown) {
       if (this.isUniqueConstraintError(error)) {
-        throw new ConflictException('The supplied username or contact number is already in use');
+        throw new ConflictException(
+          'The supplied username or contact number is already in use',
+        );
       }
 
       throw error;
@@ -94,7 +116,10 @@ export class AuthService {
   }
 
   private async createSession(user: User) {
-    const payload: TokenPayload = { sub: user.id, accountType: user.accountType };
+    const payload: TokenPayload = {
+      sub: user.id,
+      accountType: user.accountType,
+    };
     const [accessToken, refreshToken] = await Promise.all([
       this.jwtService.signAsync(payload, { expiresIn: '15m' }),
       this.jwtService.signAsync(payload, {
@@ -139,6 +164,11 @@ export class AuthService {
   }
 
   private isUniqueConstraintError(error: unknown): boolean {
-    return typeof error === 'object' && error !== null && 'code' in error && error.code === 'P2002';
+    return (
+      typeof error === 'object' &&
+      error !== null &&
+      'code' in error &&
+      error.code === 'P2002'
+    );
   }
 }

@@ -29,13 +29,22 @@ export class AuthController {
   @ApiBearerAuth('JWT-auth')
   @ApiOkResponse({ description: 'Authenticated account' })
   async me(@CurrentUser() user: AuthenticatedUser) {
-    return successResponse('Authenticated account retrieved', await this.authService.me(user));
+    return successResponse(
+      'Authenticated account retrieved',
+      await this.authService.me(user),
+    );
   }
 
   @Post('complete-profile')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth('JWT-auth')
-  async completeProfile(@CurrentUser() user: AuthenticatedUser, @Body() dto: CompleteProfileDto) {
-    return successResponse('Profile completed', await this.authService.completeProfile(user, dto));
+  async completeProfile(
+    @CurrentUser() user: AuthenticatedUser,
+    @Body() dto: CompleteProfileDto,
+  ) {
+    return successResponse(
+      'Profile completed',
+      await this.authService.completeProfile(user, dto),
+    );
   }
 }

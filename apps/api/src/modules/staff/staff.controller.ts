@@ -1,4 +1,12 @@
-import { Body, Controller, Get, Param, Patch, Post, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  Patch,
+  Post,
+  UseGuards,
+} from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { successResponse } from '../../common/api-response';
 import { RequirePermissions } from '../access/decorators/require-permissions.decorator';
@@ -20,19 +28,34 @@ export class StaffController {
   @Get()
   @RequirePermissions('staff.read')
   async listStaff(@CurrentUser() user: AuthenticatedUser) {
-    return successResponse('Staff retrieved', await this.staffService.listStaff(user.id));
+    return successResponse(
+      'Staff retrieved',
+      await this.staffService.listStaff(user.id),
+    );
   }
 
   @Get(':staffId')
   @RequirePermissions('staff.read')
-  async getStaff(@Param('staffId') staffId: string, @CurrentUser() user: AuthenticatedUser) {
-    return successResponse('Staff member retrieved', await this.staffService.getStaff(staffId, user.id));
+  async getStaff(
+    @Param('staffId') staffId: string,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return successResponse(
+      'Staff member retrieved',
+      await this.staffService.getStaff(staffId, user.id),
+    );
   }
 
   @Post()
   @RequirePermissions('staff.manage')
-  async createStaff(@Body() dto: CreateStaffDto, @CurrentUser() user: AuthenticatedUser) {
-    return successResponse('Staff member created. Save the one-time credentials now.', await this.staffService.createStaff(dto, user.id));
+  async createStaff(
+    @Body() dto: CreateStaffDto,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return successResponse(
+      'Staff member created. Save the one-time credentials now.',
+      await this.staffService.createStaff(dto, user.id),
+    );
   }
 
   @Patch(':staffId')
@@ -42,12 +65,21 @@ export class StaffController {
     @Body() dto: UpdateStaffDto,
     @CurrentUser() user: AuthenticatedUser,
   ) {
-    return successResponse('Staff member updated', await this.staffService.updateStaff(staffId, dto, user.id));
+    return successResponse(
+      'Staff member updated',
+      await this.staffService.updateStaff(staffId, dto, user.id),
+    );
   }
 
   @Post(':staffId/reset-pin')
   @RequirePermissions('staff.manage')
-  async resetPin(@Param('staffId') staffId: string, @CurrentUser() user: AuthenticatedUser) {
-    return successResponse('PIN reset. Save the one-time PIN now.', await this.staffService.resetPin(staffId, user.id));
+  async resetPin(
+    @Param('staffId') staffId: string,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return successResponse(
+      'PIN reset. Save the one-time PIN now.',
+      await this.staffService.resetPin(staffId, user.id),
+    );
   }
 }

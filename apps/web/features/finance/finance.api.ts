@@ -1,3 +1,25 @@
-import { baseApi, type ApiRecord } from "@web/store/api/base-api";
-export const financeApi = baseApi.injectEndpoints({ endpoints: (build) => ({ getStudentFinance: build.query<ApiRecord, string>({ query: (studentId) => `/students/${studentId}/finance` }), createPayment: build.mutation<ApiRecord, { studentId: string; amount: number; receiptNumber: string; receivedOn: string; remarks?: string }>({ query: ({ studentId, ...body }) => ({ url: `/students/${studentId}/finance/payments`, method: "POST", body }) }) }) });
+import { baseApi, type ApiRecord } from '@web/store/api/base-api';
+export const financeApi = baseApi.injectEndpoints({
+  endpoints: (build) => ({
+    getStudentFinance: build.query<ApiRecord, string>({
+      query: (studentId) => `/students/${studentId}/finance`,
+    }),
+    createPayment: build.mutation<
+      ApiRecord,
+      {
+        studentId: string;
+        amount: number;
+        receiptNumber: string;
+        receivedOn: string;
+        remarks?: string;
+      }
+    >({
+      query: ({ studentId, ...body }) => ({
+        url: `/students/${studentId}/finance/payments`,
+        method: 'POST',
+        body,
+      }),
+    }),
+  }),
+});
 export const { useGetStudentFinanceQuery, useCreatePaymentMutation } = financeApi;

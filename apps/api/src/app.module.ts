@@ -20,7 +20,25 @@ import { StudentAttendanceModule } from './modules/student-attendance/student-at
 import { PrismaModule } from './prisma/prisma.module';
 
 @Module({
-  imports: [PrismaModule, AuthModule, AccessModule, AuditModule, CalendarModule, OrganizationModule, RolesModule, ReportsModule, StaffModule, SettingsModule, KioskModule, NotesModule, AcademicsModule, AdmissionsModule, StudentAttendanceModule, GradesModule, FinanceModule],
+  imports: [
+    PrismaModule,
+    AuthModule,
+    AccessModule,
+    AuditModule,
+    CalendarModule,
+    OrganizationModule,
+    RolesModule,
+    ReportsModule,
+    StaffModule,
+    SettingsModule,
+    KioskModule,
+    NotesModule,
+    AcademicsModule,
+    AdmissionsModule,
+    StudentAttendanceModule,
+    GradesModule,
+    FinanceModule,
+  ],
   controllers: [AppController],
   providers: [AppService],
 })

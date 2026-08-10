@@ -1,2 +1,48 @@
-import { LoginForm } from "./login-form";
-export function LoginScreen() { return <main className="grid min-h-screen bg-background lg:grid-cols-[1.15fr_.85fr]"><section className="hidden overflow-hidden bg-ink p-12 text-white lg:flex lg:flex-col"><p className="eyebrow text-teal-200">AcademyOS / Operations desk</p><div className="my-auto max-w-xl"><h1 className="font-display text-6xl leading-[.94] tracking-[-.055em]">A calmer way to run every school day.</h1><p className="mt-7 max-w-md text-lg leading-8 text-slate-300">Admissions, attendance, learning records, and fees—kept in one dependable place.</p></div><p className="border-t border-white/15 pt-5 text-sm text-slate-300">Built for school and academy teams in Pakistan.</p></section><section className="flex items-center justify-center p-6 sm:p-10"><div className="w-full max-w-md"><a href="/" className="font-display text-2xl tracking-[-.04em] text-ink dark:text-white">academy<span className="text-teal-600">OS</span></a><div className="mt-14"><p className="eyebrow">Welcome back</p><h2 className="mt-3 font-display text-4xl tracking-[-.04em]">Sign in to your workspace</h2><p className="mt-3 text-sm leading-6 text-muted-foreground">Use your username as an administrator, or your contact number for staff and learner access.</p></div><div className="mt-9"><LoginForm /></div></div></section></main>; }
+import Link from 'next/link';
+import { LoginForm } from './login-form';
+export function LoginScreen() {
+  return (
+    <main className="auth-shell">
+      <div className="auth-panel">
+        <section className="auth-story">
+          <p className="eyebrow" style={{ color: 'var(--brand-contrast)' }}>
+            Vision Preparation Academy
+          </p>
+          <div className="auth-story-copy">
+            <h1 className="font-display">A better day begins with a prepared team.</h1>
+            <p>
+              One place for the people and details that keep your academy moving—from admissions and
+              classes to attendance and results.
+            </p>
+            <div className="auth-result">
+              <span className="eyebrow" style={{ color: 'var(--brand-contrast)' }}>
+                Our latest result
+              </span>
+              <strong>100% Federal Board pass rate</strong>
+              <p>Across our three branches, our students made us proud.</p>
+            </div>
+          </div>
+          <p className="text-sm">Vision Preparation Academy · Staff and family portals</p>
+        </section>
+        <section className="auth-form-panel">
+          <div className="auth-form">
+            <Link href="/" className="brand-mark">
+              Vision Preparation Academy
+            </Link>
+            <div>
+              <p className="eyebrow mt-16">Welcome back</p>
+              <h2 className="font-display">Sign in to your workspace</h2>
+              <p className="description mt-3">
+                Administrators use a username. Staff and families use their registered contact
+                number.
+              </p>
+            </div>
+            <div className="mt-9">
+              <LoginForm />
+            </div>
+          </div>
+        </section>
+      </div>
+    </main>
+  );
+}

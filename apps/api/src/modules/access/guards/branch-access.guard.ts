@@ -29,12 +29,16 @@ export class BranchAccessGuard implements CanActivate {
       body?: Record<string, unknown>;
       query: Record<string, string>;
     }>();
-    const branchId = request.params[field] ?? request.body?.[field] ?? request.query[field];
+    const branchId =
+      request.params[field] ?? request.body?.[field] ?? request.query[field];
     if (typeof branchId !== 'string' || !branchId) {
       throw new ForbiddenException('A branch is required for this operation');
     }
-    if (!request.user) throw new ForbiddenException('Authentication is required');
-    if (!(await this.accessService.canAccessBranch(request.user.id, branchId))) {
+    if (!request.user)
+      throw new ForbiddenException('Authentication is required');
+    if (
+      !(await this.accessService.canAccessBranch(request.user.id, branchId))
+    ) {
       throw new ForbiddenException('You do not have access to this branch');
     }
     return true;

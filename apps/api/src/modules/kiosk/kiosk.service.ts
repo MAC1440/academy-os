@@ -1,5 +1,17 @@
-import { BadRequestException, ConflictException, Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
-import { AccountStatus, AuditAction, Prisma, StaffAttendanceStatus, Weekday } from '@prisma/client';
+import {
+  BadRequestException,
+  ConflictException,
+  Injectable,
+  NotFoundException,
+  UnauthorizedException,
+} from '@nestjs/common';
+import {
+  AccountStatus,
+  AuditAction,
+  Prisma,
+  StaffAttendanceStatus,
+  Weekday,
+} from '@prisma/client';
 import * as bcrypt from 'bcryptjs';
 import { AuditService } from '../audit/audit.service';
 import { PrismaService } from '../../prisma/prisma.service';
@@ -28,7 +40,10 @@ export class KioskService {
     return this.prisma.attendanceKioskSettings.upsert({
       where: { organizationId: organization.id },
       update: {},
-      create: { organizationId: organization.id, workingDays: DEFAULT_WORKING_DAYS },
+      create: {
+        organizationId: organization.id,
+        workingDays: DEFAULT_WORKING_DAYS,
+      },
     });
   }
 
@@ -37,9 +52,19 @@ export class KioskService {
     const settings = await this.prisma.attendanceKioskSettings.upsert({
       where: { organizationId: organization.id },
       update: dto,
-      create: { organizationId: organization.id, ...dto, workingDays: dto.workingDays ?? DEFAULT_WORKING_DAYS },
+      create: {
+        organizationId: organization.id,
+        ...dto,
+        workingDays: dto.workingDays ?? DEFAULT_WORKING_DAYS,
+      },
     });
-    await this.audit(actorUserId, AuditAction.UPDATE, 'AttendanceKioskSettings', settings.id, dto);
+    await this.audit(
+      actorUserId,
+      AuditAction.UPDATE,
+      'AttendanceKioskSettings',
+      settings.id,
+      dto,
+    );
     return settings;
   }
 
@@ -53,15 +78,28 @@ export class KioskService {
           roleAssignments: { some: { branchId } },
         },
       },
-      select: { id: true, staffType: true, designation: true, user: { select: { fullName: true } } },
+      select: {
+        id: true,
+        staffType: true,
+        designation: true,
+        user: { select: { fullName: true } },
+      },
       orderBy: { user: { fullName: 'asc' } },
     });
   }
 
   async checkIn(branchId: string, dto: KioskPinDto) {
-    const { branch, staff, now, local } = await this.authenticateKioskAction(branchId, dto);
+    const { branch, staff, now, local } = await this.authenticateKioskAction(
+      branchId,
+      dto,
+    );
     const settings = await this.getSettings();
-    const status = this.statusForCheckIn(local.hour, local.minute, settings.defaultStaffShiftStart, settings.graceMinutes);
+    const status = this.statusForCheckIn(
+      local.hour,
+      local.minute,
+      settings.defaultStaffShiftStart,
+      settings.graceMinutes,
+    );
     try {
       const attendance = await this.prisma.staffAttendance.create({
         data: {
@@ -72,41 +110,89 @@ export class KioskService {
           status,
         },
       });
-      await this.audit(staff.userId, AuditAction.CREATE, 'StaffAttendance', attendance.id, { branchId, action: 'CHECK_IN' });
+      await this.audit(
+        staff.userId,
+        AuditAction.CREATE,
+        'StaffAttendance',
+        attendance.id,
+        { branchId, action: 'CHECK_IN' },
+      );
       return attendance;
     } catch (error) {
-      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
-        throw new ConflictException('This staff member has already checked in today');
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === 'P2002'
+      ) {
+        throw new ConflictException(
+          'This staff member has already checked in today',
+        );
       }
       throw error;
     }
   }
 
   async checkOut(branchId: string, dto: KioskPinDto) {
-    const { staff, now, local } = await this.authenticateKioskAction(branchId, dto);
+    const { staff, now, local } = await this.authenticateKioskAction(
+      branchId,
+      dto,
+    );
     const attendance = await this.prisma.staffAttendance.findUnique({
-      where: { staffProfileId_attendanceDate: { staffProfileId: staff.id, attendanceDate: this.dateOnly(local.date) } },
+      where: {
+        staffProfileId_attendanceDate: {
+          staffProfileId: staff.id,
+          attendanceDate: this.dateOnly(local.date),
+        },
+      },
     });
-    if (!attendance || attendance.branchId !== branchId) throw new NotFoundException('No check-in was found for today');
-    if (attendance.checkOutAt) throw new ConflictException('This staff member has already checked out today');
+    if (!attendance || attendance.branchId !== branchId)
+      throw new NotFoundException('No check-in was found for today');
+    if (attendance.checkOutAt)
+      throw new ConflictException(
+        'This staff member has already checked out today',
+      );
 
-    const updated = await this.prisma.staffAttendance.update({ where: { id: attendance.id }, data: { checkOutAt: now } });
-    await this.audit(staff.userId, AuditAction.UPDATE, 'StaffAttendance', attendance.id, { branchId, action: 'CHECK_OUT' });
+    const updated = await this.prisma.staffAttendance.update({
+      where: { id: attendance.id },
+      data: { checkOutAt: now },
+    });
+    await this.audit(
+      staff.userId,
+      AuditAction.UPDATE,
+      'StaffAttendance',
+      attendance.id,
+      { branchId, action: 'CHECK_OUT' },
+    );
     return updated;
   }
 
-  async overrideAttendance(branchId: string, attendanceId: string, dto: OverrideStaffAttendanceDto, actorUserId: string) {
-    const attendance = await this.prisma.staffAttendance.findFirst({ where: { id: attendanceId, branchId } });
-    if (!attendance) throw new NotFoundException('Staff attendance record not found');
+  async overrideAttendance(
+    branchId: string,
+    attendanceId: string,
+    dto: OverrideStaffAttendanceDto,
+    actorUserId: string,
+  ) {
+    const attendance = await this.prisma.staffAttendance.findFirst({
+      where: { id: attendanceId, branchId },
+    });
+    if (!attendance)
+      throw new NotFoundException('Staff attendance record not found');
     const updated = await this.prisma.staffAttendance.update({
       where: { id: attendance.id },
       data: {
         ...(dto.status ? { status: dto.status } : {}),
-        ...(dto.overrideReason !== undefined ? { overrideReason: dto.overrideReason.trim() || null } : {}),
+        ...(dto.overrideReason !== undefined
+          ? { overrideReason: dto.overrideReason.trim() || null }
+          : {}),
         ...(dto.checkOutAt ? { checkOutAt: new Date(dto.checkOutAt) } : {}),
       },
     });
-    await this.audit(actorUserId, AuditAction.UPDATE, 'StaffAttendance', attendance.id, dto);
+    await this.audit(
+      actorUserId,
+      AuditAction.UPDATE,
+      'StaffAttendance',
+      attendance.id,
+      dto,
+    );
     return updated;
   }
 
@@ -123,38 +209,64 @@ export class KioskService {
       },
       include: { user: { select: { id: true, pinHash: true } } },
     });
-    if (!staff?.user.pinHash || !(await bcrypt.compare(dto.pin, staff.user.pinHash))) {
+    if (
+      !staff?.user.pinHash ||
+      !(await bcrypt.compare(dto.pin, staff.user.pinHash))
+    ) {
       throw new UnauthorizedException('Invalid staff PIN');
     }
     const now = new Date();
-    return { branch, staff: { id: staff.id, userId: staff.user.id }, now, local: this.karachiNow(now) };
+    return {
+      branch,
+      staff: { id: staff.id, userId: staff.user.id },
+      now,
+      local: this.karachiNow(now),
+    };
   }
 
   private async organization() {
     const organization = await this.prisma.organization.findFirst();
-    if (!organization) throw new NotFoundException('Organization has not been configured');
+    if (!organization)
+      throw new NotFoundException('Organization has not been configured');
     return organization;
   }
 
   private async branch(branchId: string) {
-    const branch = await this.prisma.branch.findFirst({ where: { id: branchId, deletedAt: null } });
+    const branch = await this.prisma.branch.findFirst({
+      where: { id: branchId, deletedAt: null },
+    });
     if (!branch) throw new NotFoundException('Branch not found');
     return branch;
   }
 
-  private statusForCheckIn(hour: number, minute: number, start: string, graceMinutes: number) {
+  private statusForCheckIn(
+    hour: number,
+    minute: number,
+    start: string,
+    graceMinutes: number,
+  ) {
     const [startHour = 0, startMinute = 0] = start.split(':').map(Number);
     const cutoff = startHour * 60 + startMinute + graceMinutes;
-    return hour * 60 + minute > cutoff ? StaffAttendanceStatus.LATE : StaffAttendanceStatus.PRESENT;
+    return hour * 60 + minute > cutoff
+      ? StaffAttendanceStatus.LATE
+      : StaffAttendanceStatus.PRESENT;
   }
 
   private karachiNow(now: Date) {
     const parts = new Intl.DateTimeFormat('en-US', {
       timeZone: 'Asia/Karachi',
-      year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hourCycle: 'h23', weekday: 'long',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      hourCycle: 'h23',
+      weekday: 'long',
     }).formatToParts(now);
-    const value = (type: Intl.DateTimeFormatPartTypes) => Number(parts.find((part) => part.type === type)?.value);
-    const text = (type: Intl.DateTimeFormatPartTypes) => parts.find((part) => part.type === type)?.value ?? '';
+    const value = (type: Intl.DateTimeFormatPartTypes) =>
+      Number(parts.find((part) => part.type === type)?.value);
+    const text = (type: Intl.DateTimeFormatPartTypes) =>
+      parts.find((part) => part.type === type)?.value ?? '';
     return {
       date: `${text('year')}-${text('month')}-${text('day')}`,
       hour: value('hour'),
@@ -167,7 +279,13 @@ export class KioskService {
     return new Date(`${date}T00:00:00.000Z`);
   }
 
-  private async audit(actorUserId: string, action: AuditAction, entityType: string, entityId: string, changes?: object) {
+  private async audit(
+    actorUserId: string,
+    action: AuditAction,
+    entityType: string,
+    entityId: string,
+    changes?: object,
+  ) {
     const organization = await this.organization();
     await this.auditService.record({
       organizationId: organization.id,

@@ -8,5 +8,7 @@ export class MarkStudentAttendanceDto {
 }
 export class SaveStudentAttendanceDto {
   @ApiProperty() @IsDateString() attendanceDate!: string;
-  @ApiProperty({ type: [MarkStudentAttendanceDto] }) @IsArray() records!: MarkStudentAttendanceDto[];
+  @ApiProperty({ type: [MarkStudentAttendanceDto] })
+  @IsArray()
+  records!: MarkStudentAttendanceDto[];
 }

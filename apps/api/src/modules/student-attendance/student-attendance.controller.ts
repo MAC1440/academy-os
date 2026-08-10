@@ -12,6 +12,6 @@ import { StudentAttendanceService } from './student-attendance.service';
 @ApiTags('Student Attendance') @ApiBearerAuth('JWT-auth') @UseGuards(JwtAuthGuard, PermissionsGuard) @Controller('academic-offerings/:offeringId/student-attendance')
 export class StudentAttendanceController {
   constructor(private readonly service: StudentAttendanceService) {}
-  @Get() @RequirePermissions('attendance.read') async roster(@Param('offeringId') offeringId: string, @Query('date') date: string) { return successResponse('Student attendance roster retrieved', await this.service.roster(offeringId, date)); }
+  @Get() @RequirePermissions('attendance.read') async roster(@Param('offeringId') offeringId: string, @Query('date') date: string, @CurrentUser() user: AuthenticatedUser) { return successResponse('Student attendance roster retrieved', await this.service.roster(offeringId, date, user.id)); }
   @Put() @RequirePermissions('attendance.manage') async save(@Param('offeringId') offeringId: string, @Body() dto: SaveStudentAttendanceDto, @CurrentUser() user: AuthenticatedUser) { return successResponse('Student attendance saved', await this.service.save(offeringId, dto, user.id)); }
 }

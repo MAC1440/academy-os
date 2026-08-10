@@ -29,10 +29,10 @@ This is the working PRD/status record for the backend-first MVP. It records both
 - [x] Shared notes library for staff.
 - [x] School classes, courses, subjects, academic offerings, offering subjects, and offering teachers.
 - [x] Organization-wide academic groups, eligible-school-class mapping, and group selection on school-class offerings.
-- [x] Admissions: public submission, review queue, approved/rejected lifecycle, physical-document verification, terms, registration-number settings, and approval into a student record.
-- [x] Learner/guardian portal account creation and contact-number login handling.
-- [x] Student attendance roster and one-request bulk attendance saving. Unmarked values remain `null`/unmarked.
-- [x] Assessments, mark entry, and per-student performance history.
+- [x] Admissions: public submission, review queue, approved/rejected lifecycle, physical-document verification, mandatory academic term, registration-number settings, and approval into a student record.
+- [x] Learner/guardian portal account creation, contact-number login, and ownership-protected views for linked students' attendance, performance, fees, and payments.
+- [x] Student attendance roster and one-request bulk attendance saving. Unmarked values remain `null`/unmarked; branch access is enforced without teacher-to-offering assignment restrictions.
+- [x] Assessments, mark entry, and per-student performance history, with marks validated against the assessment offering's students and subjects.
 - [x] Lightweight student finance: admission fee/balance fields, in-person payments, and finance summary.
 - [x] Academic calendar entries for holidays/off days, without attendance enforcement.
 - [x] Student and staff attendance report endpoints, including CSV-ready output.

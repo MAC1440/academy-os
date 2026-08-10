@@ -61,7 +61,6 @@ export class KioskService {
   async checkIn(branchId: string, dto: KioskPinDto) {
     const { branch, staff, now, local } = await this.authenticateKioskAction(branchId, dto);
     const settings = await this.getSettings();
-    this.ensureWorkingDay(settings.workingDays, local.weekday);
     const status = this.statusForCheckIn(local.hour, local.minute, settings.defaultStaffShiftStart, settings.graceMinutes);
     try {
       const attendance = await this.prisma.staffAttendance.create({
@@ -141,10 +140,6 @@ export class KioskService {
     const branch = await this.prisma.branch.findFirst({ where: { id: branchId, deletedAt: null } });
     if (!branch) throw new NotFoundException('Branch not found');
     return branch;
-  }
-
-  private ensureWorkingDay(workingDays: Weekday[], weekday: Weekday) {
-    if (!workingDays.includes(weekday)) throw new BadRequestException('The attendance kiosk is unavailable on this non-working day');
   }
 
   private statusForCheckIn(hour: number, minute: number, start: string, graceMinutes: number) {

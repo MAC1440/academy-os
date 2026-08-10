@@ -60,4 +60,25 @@ export class AdmissionsController {
   async learnerStudents(@CurrentUser() user: AuthenticatedUser) {
     return successResponse('Learner portal students retrieved', await this.admissions.learnerStudents(user.id));
   }
+
+  @Get('learner-portal/students/:studentId/attendance')
+  @ApiBearerAuth('JWT-auth')
+  @UseGuards(JwtAuthGuard)
+  async learnerStudentAttendance(@Param('studentId') studentId: string, @Query('from') from: string | undefined, @Query('to') to: string | undefined, @CurrentUser() user: AuthenticatedUser) {
+    return successResponse('Learner student attendance retrieved', await this.admissions.learnerStudentAttendance(user.id, studentId, from, to));
+  }
+
+  @Get('learner-portal/students/:studentId/performance')
+  @ApiBearerAuth('JWT-auth')
+  @UseGuards(JwtAuthGuard)
+  async learnerStudentPerformance(@Param('studentId') studentId: string, @CurrentUser() user: AuthenticatedUser) {
+    return successResponse('Learner student performance retrieved', await this.admissions.learnerStudentPerformance(user.id, studentId));
+  }
+
+  @Get('learner-portal/students/:studentId/finance')
+  @ApiBearerAuth('JWT-auth')
+  @UseGuards(JwtAuthGuard)
+  async learnerStudentFinance(@Param('studentId') studentId: string, @CurrentUser() user: AuthenticatedUser) {
+    return successResponse('Learner student finance retrieved', await this.admissions.learnerStudentFinance(user.id, studentId));
+  }
 }

@@ -62,7 +62,8 @@ export class AdmissionsService {
     }
     if (!dto.academicTermId) throw new BadRequestException('An academic term is required for approval');
     const allocatedOffering = await this.activeOffering(dto.academicOfferingId ?? application.academicOfferingId);
-    const academicTerm = await this.prisma.academicTerm.findFirst({ where: { id: dto.academicTermId, isActive: true } });
+    await this.ensureBranchAccess(actorUserId, allocatedOffering.branchId);
+    const academicTerm = await this.prisma.academicTerm.findFirst({ where: { id: dto.academicTermId, organizationId: application.organizationId, isActive: true } });
     if (!academicTerm) throw new NotFoundException('Active academic term not found');
     const initialPassword = this.generatePassword();
     const outcome = await this.prisma.$transaction(async (tx) => {
@@ -96,13 +97,34 @@ export class AdmissionsService {
   async learnerStudents(userId: string) {
     const user = await this.prisma.user.findFirst({ where: { id: userId, accountType: AccountType.LEARNER, deletedAt: null } });
     if (!user) throw new ForbiddenException('Learner portal access is required');
-    return this.prisma.student.findMany({ where: { guardianPortalUserId: user.id, deletedAt: null }, include: { academicOffering: { include: { schoolClass: true, course: true, branch: true } }, admissionApplication: { select: { id: true, status: true, createdAt: true } } }, orderBy: { createdAt: 'desc' } });
+    return this.prisma.student.findMany({ where: { guardianPortalUserId: user.id, deletedAt: null }, include: { academicTerm: true, academicOffering: { include: { schoolClass: true, course: true, academicGroup: true, branch: true } }, admissionApplication: { select: { id: true, status: true, createdAt: true } } }, orderBy: { createdAt: 'desc' } });
+  }
+
+  async learnerStudentAttendance(userId: string, studentId: string, from?: string, to?: string) {
+    const student = await this.learnerStudent(userId, studentId);
+    const dateFilter = from && to ? { attendanceDate: { gte: this.date(from), lte: this.date(to) } } : {};
+    return this.prisma.studentAttendance.findMany({ where: { studentId: student.id, ...dateFilter }, orderBy: { attendanceDate: 'desc' } });
+  }
+
+  async learnerStudentPerformance(userId: string, studentId: string) {
+    const student = await this.learnerStudent(userId, studentId);
+    const marks = await this.prisma.studentAssessmentMark.findMany({ where: { studentId: student.id }, include: { assessment: true, subject: true }, orderBy: { assessment: { heldOn: 'desc' } } });
+    return marks.map((mark) => ({ ...mark, percentage: Number(mark.obtainedMarks) * 100 / Number(mark.maximumMarks) }));
+  }
+
+  async learnerStudentFinance(userId: string, studentId: string) {
+    await this.learnerStudent(userId, studentId);
+    const student = await this.prisma.student.findUniqueOrThrow({ where: { id: studentId }, include: { payments: true, academicTerm: true, academicOffering: { include: { schoolClass: true, course: true, academicGroup: true, branch: true } } } });
+    const paid = student.payments.reduce((sum, payment) => sum + Number(payment.amount), Number(student.amountReceivedWithForm ?? 0));
+    return { student, paid, balance: Number(student.openingBalanceAmount ?? 0) - paid };
   }
 
   private readonly applicationInclude = { branch: true, academicOffering: { include: { schoolClass: true, course: true } }, student: true } satisfies Prisma.AdmissionApplicationInclude;
   private async organization() { const organization = await this.prisma.organization.findFirst(); if (!organization) throw new NotFoundException('Organization has not been configured'); return organization; }
   private async activeOffering(id: string) { const offering = await this.prisma.academicOffering.findFirst({ where: { id, status: 'ACTIVE', branch: { deletedAt: null } }, include: { schoolClass: true, course: true } }); if (!offering) throw new NotFoundException('Academic offering not found'); return offering; }
   private async application(id: string) { const application = await this.prisma.admissionApplication.findFirst({ where: { id, deletedAt: null }, include: this.applicationInclude }); if (!application) throw new NotFoundException('Admission application not found'); return application; }
+  private async learnerStudent(userId: string, studentId: string, include?: Prisma.StudentInclude) { const user = await this.prisma.user.findFirst({ where: { id: userId, accountType: AccountType.LEARNER, deletedAt: null } }); if (!user) throw new ForbiddenException('Learner portal access is required'); const student = await this.prisma.student.findFirst({ where: { id: studentId, guardianPortalUserId: user.id, deletedAt: null }, include }); if (!student) throw new NotFoundException('Student not found'); return student; }
+  private date(value: string) { return new Date(`${value}T00:00:00.000Z`); }
   private async accessibleBranchIds(userId: string): Promise<string[] | null> { const assignments = await this.prisma.roleAssignment.findMany({ where: { userId }, select: { branchId: true } }); if (assignments.some((assignment) => assignment.branchId === null)) return null; return assignments.flatMap((assignment) => assignment.branchId ? [assignment.branchId] : []); }
   private async ensureBranchAccess(userId: string, branchId: string) { const accessible = await this.accessibleBranchIds(userId); if (accessible && !accessible.includes(branchId)) throw new ForbiddenException('You do not have access to this branch'); }
   private generatePassword() { return Array.from({ length: 10 }, () => PASSWORD_ALPHABET[randomInt(PASSWORD_ALPHABET.length)]).join(''); }

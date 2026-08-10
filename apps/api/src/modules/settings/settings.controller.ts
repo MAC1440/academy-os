@@ -1,4 +1,12 @@
-import { Body, Controller, Get, Patch, Post, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  Patch,
+  Post,
+  UseGuards,
+} from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { AcademicTermType } from '@prisma/client';
 import {
@@ -19,6 +27,12 @@ class CreateTerm {
   @IsEnum(AcademicTermType) termType!: AcademicTermType;
   @IsDateString() startsOn!: string;
   @IsDateString() endsOn!: string;
+}
+class UpdateTerm {
+  @IsOptional() @IsString() name?: string;
+  @IsOptional() @IsEnum(AcademicTermType) termType?: AcademicTermType;
+  @IsOptional() @IsDateString() startsOn?: string;
+  @IsOptional() @IsDateString() endsOn?: string;
 }
 class UpdateRegistration {
   @IsOptional() @IsString() prefix?: string;
@@ -56,6 +70,22 @@ export class SettingsController {
         termType: d.termType,
         startsOn: new Date(d.startsOn),
         endsOn: new Date(d.endsOn),
+      },
+    });
+  }
+  @Patch('academic-terms/:termId')
+  @RequirePermissions('organization.manage')
+  async updateTerm(@Param('termId') termId: string, @Body() d: UpdateTerm) {
+    const o = await this.org();
+    await this.prisma.academicTerm.findFirstOrThrow({
+      where: { id: termId, organizationId: o.id },
+    });
+    return this.prisma.academicTerm.update({
+      where: { id: termId },
+      data: {
+        ...d,
+        ...(d.startsOn ? { startsOn: new Date(d.startsOn) } : {}),
+        ...(d.endsOn ? { endsOn: new Date(d.endsOn) } : {}),
       },
     });
   }

@@ -84,6 +84,35 @@ export class AdmissionsService {
     return application;
   }
 
+  async listStudents(requesterUserId: string, branchId?: string) {
+    const accessibleBranches = await this.accessibleBranchIds(requesterUserId);
+    if (
+      branchId &&
+      accessibleBranches &&
+      !accessibleBranches.includes(branchId)
+    )
+      throw new ForbiddenException('You do not have access to this branch');
+    const branchIds = branchId ? [branchId] : accessibleBranches;
+    return this.prisma.student.findMany({
+      where: {
+        deletedAt: null,
+        ...(branchIds ? { branchId: { in: branchIds } } : {}),
+      },
+      include: this.studentInclude,
+      orderBy: { studentFullName: 'asc' },
+    });
+  }
+
+  async getStudent(id: string, requesterUserId: string) {
+    const student = await this.prisma.student.findFirst({
+      where: { id, deletedAt: null },
+      include: this.studentInclude,
+    });
+    if (!student) throw new NotFoundException('Student not found');
+    await this.ensureBranchAccess(requesterUserId, student.branchId);
+    return student;
+  }
+
   async review(id: string, dto: ReviewAdmissionDto, actorUserId: string) {
     const application = await this.application(id);
     await this.ensureBranchAccess(actorUserId, application.branchId);
@@ -337,6 +366,16 @@ export class AdmissionsService {
     academicOffering: { include: { schoolClass: true, course: true } },
     student: true,
   } satisfies Prisma.AdmissionApplicationInclude;
+  private readonly studentInclude = {
+    branch: true,
+    academicTerm: true,
+    academicOffering: {
+      include: { schoolClass: true, course: true, academicGroup: true },
+    },
+    admissionApplication: {
+      select: { id: true, status: true, createdAt: true, formData: true },
+    },
+  } satisfies Prisma.StudentInclude;
   private async organization() {
     const organization = await this.prisma.organization.findFirst();
     if (!organization)

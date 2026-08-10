@@ -3,6 +3,7 @@ import '@web/features/auth/auth.api';
 import '@web/features/organization/organization.api';
 import '@web/features/academics/academics.api';
 import '@web/features/admissions/admissions.api';
+import '@web/features/students/students.api';
 import '@web/features/staff/staff.api';
 import '@web/features/kiosk/kiosk.api';
 import '@web/features/attendance/attendance.api';

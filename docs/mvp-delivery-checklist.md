@@ -59,7 +59,14 @@ This is the working PRD/status record for the backend-first MVP. It records both
 - [x] Fresh Next.js route foundation, landing page, login, guarded dashboard shell, and light/dark/system theme.
 - [x] Redux Toolkit store and RTK Query base API with bearer-token refresh/retry handling.
 - [x] Feature-owned RTK Query endpoint modules registered for every exposed backend endpoint.
-- [ ] Build feature screens one module at a time, starting with organization and branches.
+- [x] Organization setup: profile, branches with unique addresses, editable branch operating hours, organization-wide academic terms, and admission registration-number settings.
+- [x] Academic catalogue: tabbed management for school classes, external courses, subjects, and academic groups.
+- [x] Branch academic offerings: campus-specific school-class/course availability, optional groups and sections, plus offering-subject assignment.
+- [x] Student management: branch-scoped directory and focused student records showing admission, guardian, academic placement, and fee setup.
+- [x] Admissions operations: tabbed pending/approved/rejected queues, application review, physical-document verification, and approval allocation into term/offering/fees.
+- [x] Staff management: tabbed directory, staff-account creation with campus assignment, profile maintenance, and one-time portal/kiosk credentials.
+- [x] Attendance operations: one-click student roster marking, staff attendance reports with CSV download, and editable kiosk default shift/workday settings.
+- [ ] Build feature screens one module at a time, continuing with the public teacher-attendance kiosk.
 
 ## Backend Stop Line
 

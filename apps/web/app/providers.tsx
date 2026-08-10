@@ -5,6 +5,7 @@ import { useEffect, useRef } from 'react';
 import { makeStore, type AppStore } from '@web/store';
 import { hydrateSession } from '@web/store/slices/auth-slice';
 import { ThemeProvider } from '@web/features/theme/theme-provider';
+import { ToastProvider } from '@web/components/toast-provider';
 export function AppProviders({ children }: { children: React.ReactNode }) {
   const storeRef = useRef<AppStore | null>(null);
   if (!storeRef.current) storeRef.current = makeStore();
@@ -13,7 +14,9 @@ export function AppProviders({ children }: { children: React.ReactNode }) {
   }, []);
   return (
     <Provider store={storeRef.current}>
-      <ThemeProvider>{children}</ThemeProvider>
+      <ThemeProvider>
+        <ToastProvider>{children}</ToastProvider>
+      </ThemeProvider>
     </Provider>
   );
 }

@@ -10,6 +10,7 @@ import {
   LogOut,
   NotebookPen,
   Settings,
+  UserRoundCog,
   Users,
 } from 'lucide-react';
 import { useAppDispatch, useAppSelector } from '@web/store/hooks';
@@ -32,6 +33,7 @@ const items = [
     roles: ['ADMIN', 'STAFF', 'LEARNER'],
   },
   { href: '/notes', label: 'Notes', icon: NotebookPen, roles: ['ADMIN', 'STAFF'] },
+  { href: '/staff', label: 'Staff', icon: UserRoundCog, roles: ['ADMIN'] },
   { href: '/settings/organization', label: 'Settings', icon: Settings, roles: ['ADMIN'] },
 ];
 export function PortalShell({ children }: { children: React.ReactNode }) {
@@ -40,8 +42,8 @@ export function PortalShell({ children }: { children: React.ReactNode }) {
   const user = useAppSelector((state) => state.auth.user);
   const { theme, setTheme } = useTheme();
   return (
-    <div className="min-h-screen bg-background lg:grid lg:grid-cols-[16.25rem_1fr]">
-      <aside className="hidden min-h-screen flex-col bg-ink px-4 py-6 text-slate-300 lg:flex">
+    <div className="min-h-screen bg-background lg:grid lg:h-screen lg:grid-cols-[16.25rem_1fr] lg:overflow-hidden">
+      <aside className="hidden h-screen flex-col overflow-hidden bg-ink px-4 py-6 text-slate-300 lg:flex">
         <Link href="/dashboard" className="px-3 font-display text-2xl tracking-[-.04em] text-white">
           academy<span className="text-teal-300">OS</span>
         </Link>
@@ -83,8 +85,8 @@ export function PortalShell({ children }: { children: React.ReactNode }) {
           </button>
         </div>
       </aside>
-      <div>
-        <header className="flex items-center justify-between border-b border-border bg-background/90 px-5 py-4 backdrop-blur lg:px-9">
+      <div className="min-w-0 lg:h-screen lg:overflow-y-auto">
+        <header className="sticky top-0 z-20 flex items-center justify-between border-b border-border bg-background/90 px-5 py-4 backdrop-blur lg:px-9">
           <Link
             href="/dashboard"
             className="font-display text-xl text-ink dark:text-white lg:hidden"
@@ -103,7 +105,9 @@ export function PortalShell({ children }: { children: React.ReactNode }) {
             <span className="text-sm font-medium">Workspace</span>
           </div>
         </header>
-        <main className="mx-auto max-w-7xl px-5 py-8 lg:px-9">{children}</main>
+        <main className="mx-auto w-full max-w-7xl px-5 py-8 sm:px-7 lg:px-10 lg:py-10 xl:px-12">
+          {children}
+        </main>
       </div>
     </div>
   );

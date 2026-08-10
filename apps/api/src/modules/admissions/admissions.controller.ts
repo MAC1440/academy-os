@@ -62,6 +62,34 @@ export class AdmissionsController {
     );
   }
 
+  @Get('students')
+  @ApiBearerAuth('JWT-auth')
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @RequirePermissions('admissions.read')
+  async students(
+    @Query('branchId') branchId: string | undefined,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return successResponse(
+      'Students retrieved',
+      await this.admissions.listStudents(user.id, branchId),
+    );
+  }
+
+  @Get('students/:studentId')
+  @ApiBearerAuth('JWT-auth')
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @RequirePermissions('admissions.read')
+  async student(
+    @Param('studentId') studentId: string,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return successResponse(
+      'Student retrieved',
+      await this.admissions.getStudent(studentId, user.id),
+    );
+  }
+
   @Patch('admissions/:admissionId/review')
   @ApiBearerAuth('JWT-auth')
   @UseGuards(JwtAuthGuard, PermissionsGuard)

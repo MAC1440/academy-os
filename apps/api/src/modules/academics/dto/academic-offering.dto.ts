@@ -17,6 +17,11 @@ export class CreateAcademicOfferingDto {
   @IsString()
   courseId?: string;
 
+  @ApiPropertyOptional({ description: 'Optional organization-wide group for a school-class offering.' })
+  @IsOptional()
+  @IsString()
+  academicGroupId?: string;
+
   @ApiPropertyOptional({ example: 'A', description: 'Required when the chosen school class has sections enabled.' })
   @IsOptional()
   @IsString()
@@ -25,6 +30,11 @@ export class CreateAcademicOfferingDto {
 }
 
 export class UpdateAcademicOfferingDto {
+  @ApiPropertyOptional({ description: 'Optional organization-wide group for a school-class offering.' })
+  @IsOptional()
+  @IsString()
+  academicGroupId?: string;
+
   @ApiPropertyOptional({ example: 'A' })
   @IsOptional()
   @IsString()

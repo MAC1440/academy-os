@@ -28,6 +28,7 @@ This is the working PRD/status record for the backend-first MVP. It records both
 - [x] Staff profiles, secure initial credentials/PIN, PIN reset, public check-in/check-out kiosk, and administrator overrides.
 - [x] Shared notes library for staff.
 - [x] School classes, courses, subjects, academic offerings, offering subjects, and offering teachers.
+- [x] Organization-wide academic groups, eligible-school-class mapping, and group selection on school-class offerings.
 - [x] Admissions: public submission, review queue, approved/rejected lifecycle, physical-document verification, terms, registration-number settings, and approval into a student record.
 - [x] Learner/guardian portal account creation and contact-number login handling.
 - [x] Student attendance roster and one-request bulk attendance saving. Unmarked values remain `null`/unmarked.
@@ -39,7 +40,6 @@ This is the working PRD/status record for the backend-first MVP. It records both
 
 ## Intentionally Deferred / Not Required for This MVP
 
-- [ ] Academic groups for class levels 9–12 (for example Science, Computer, Arts, Pre-Medical, Pre-Engineering, ICS). This is the next backend enhancement after the current testing pass.
 - [ ] Calendar-driven attendance enforcement, automatic absence creation, automatic staff checkout completion, or cron jobs. Not desired.
 - [ ] Payroll, salary, overtime, or holiday-pay calculations. Manual administration is sufficient.
 - [ ] Backend letter-grade scales, grade-boundary configuration, or report-card formatting. Frontend can derive letters from percentage.
@@ -51,9 +51,9 @@ This is the working PRD/status record for the backend-first MVP. It records both
 
 1. Run the Swagger checklist in [swagger-verification-checklist.md](swagger-verification-checklist.md).
 2. Record any API, validation, or permission issue found during real workflows.
-3. Add academic groups after that testing pass is accepted.
+3. Configure academic groups for classes 9–12 and verify grouped academic offerings.
 4. Move to frontend modules, layouts/guards, and shadcn-based UI once backend behavior is signed off.
 
 ## Backend Stop Line
 
-The essential backend MVP is implemented for testing. The remaining planned backend work is academic groups plus any defects uncovered during verification; the deliberately deferred items above do not block frontend development.
+The essential backend MVP is implemented for testing. Remaining backend work is limited to defects uncovered during verification; the deliberately deferred items above do not block frontend development.

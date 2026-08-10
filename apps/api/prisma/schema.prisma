@@ -105,6 +105,7 @@ model Organization {
   schoolClasses SchoolClass[]
   courses     Course[]
   subjects    Subject[]
+  academicGroups AcademicGroup[]
   admissionApplications AdmissionApplication[]
   academicTerms AcademicTerm[]
   admissionRegistrationSettings AdmissionRegistrationSettings?
@@ -199,9 +200,36 @@ model SchoolClass {
   deletedAt       DateTime?
   organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   academicOfferings AcademicOffering[]
+  academicGroups AcademicGroupSchoolClass[]
 
   @@unique([organizationId, name])
   @@index([organizationId, status, sortOrder])
+}
+
+model AcademicGroup {
+  id             String       @id @default(cuid())
+  organizationId String
+  name           String
+  code           String?
+  status         EntityStatus @default(ACTIVE)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  deletedAt      DateTime?
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  schoolClasses  AcademicGroupSchoolClass[]
+  academicOfferings AcademicOffering[]
+
+  @@unique([organizationId, name])
+  @@index([organizationId, status])
+}
+
+model AcademicGroupSchoolClass {
+  academicGroupId String
+  schoolClassId   String
+  academicGroup   AcademicGroup @relation(fields: [academicGroupId], references: [id], onDelete: Cascade)
+  schoolClass     SchoolClass   @relation(fields: [schoolClassId], references: [id], onDelete: Cascade)
+
+  @@id([academicGroupId, schoolClassId])
 }
 
 model Course {
@@ -280,6 +308,7 @@ model AcademicOffering {
   offeringType    AcademicOfferingType
   schoolClassId   String?
   courseId        String?
+  academicGroupId String?
   sectionName     String?
   offeringKey     String
   status          EntityStatus         @default(ACTIVE)
@@ -288,6 +317,7 @@ model AcademicOffering {
   branch          Branch               @relation(fields: [branchId], references: [id], onDelete: Cascade)
   schoolClass     SchoolClass?         @relation(fields: [schoolClassId], references: [id], onDelete: Restrict)
   course          Course?              @relation(fields: [courseId], references: [id], onDelete: Restrict)
+  academicGroup   AcademicGroup?       @relation(fields: [academicGroupId], references: [id], onDelete: Restrict)
   subjects        AcademicOfferingSubject[]
   teachers        AcademicOfferingTeacher[]
   assessments     Assessment[]

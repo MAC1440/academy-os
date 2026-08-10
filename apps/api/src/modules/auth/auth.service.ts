@@ -1,4 +1,4 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { ConflictException, Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { AccountStatus, AccountType, User } from '@prisma/client';
 import * as bcrypt from 'bcryptjs';
@@ -68,8 +68,29 @@ export class AuthService {
   }
 
   async completeProfile(authenticatedUser: AuthenticatedUser, dto: CompleteProfileDto) {
-    await this.prisma.user.update({ where: { id: authenticatedUser.id }, data: { passwordHash: await bcrypt.hash(dto.newPassword, 12), mustCompleteProfile: false } });
-    return this.me(authenticatedUser);
+    try {
+      const user = await this.prisma.user.update({
+        where: { id: authenticatedUser.id },
+        data: {
+          passwordHash: await bcrypt.hash(dto.newPassword, 12),
+          mustCompleteProfile: false,
+          ...(dto.username !== undefined ? { username: dto.username.trim() } : {}),
+          ...(dto.contactNumber !== undefined
+            ? { contactNumber: dto.contactNumber.trim() }
+            : {}),
+          ...(dto.fullName !== undefined ? { fullName: dto.fullName.trim() } : {}),
+          ...(dto.email !== undefined ? { email: dto.email.trim().toLowerCase() } : {}),
+        },
+      });
+
+      return this.toPublicUser(user);
+    } catch (error: unknown) {
+      if (this.isUniqueConstraintError(error)) {
+        throw new ConflictException('The supplied username or contact number is already in use');
+      }
+
+      throw error;
+    }
   }
 
   private async createSession(user: User) {
@@ -115,5 +136,9 @@ export class AuthService {
       email: user.email,
       mustCompleteProfile: user.mustCompleteProfile,
     };
+  }
+
+  private isUniqueConstraintError(error: unknown): boolean {
+    return typeof error === 'object' && error !== null && 'code' in error && error.code === 'P2002';
   }
 }

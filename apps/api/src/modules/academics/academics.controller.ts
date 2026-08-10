@@ -10,6 +10,7 @@ import type { AuthenticatedUser } from '../auth/decorators/current-user.decorato
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { AcademicsService } from './academics.service';
 import { CreateAcademicOfferingDto, ReplaceAcademicOfferingSubjectsDto, ReplaceAcademicOfferingTeachersDto, UpdateAcademicOfferingDto } from './dto/academic-offering.dto';
+import { CreateAcademicGroupDto, ReplaceAcademicGroupSchoolClassesDto, UpdateAcademicGroupDto } from './dto/academic-group.dto';
 import { CreateCourseDto, UpdateCourseDto } from './dto/course.dto';
 import { CreateSchoolClassDto, UpdateSchoolClassDto } from './dto/school-class.dto';
 import { CreateSubjectDto, UpdateSubjectDto } from './dto/subject.dto';
@@ -24,6 +25,11 @@ export class AcademicsController {
   @Get('school-classes') @RequirePermissions('academics.read') async listSchoolClasses() { return successResponse('School classes retrieved', await this.academics.listSchoolClasses()); }
   @Post('school-classes') @RequirePermissions('academics.manage') async createSchoolClass(@Body() dto: CreateSchoolClassDto, @CurrentUser() user: AuthenticatedUser) { return successResponse('School class created', await this.academics.createSchoolClass(dto, user.id)); }
   @Patch('school-classes/:schoolClassId') @RequirePermissions('academics.manage') async updateSchoolClass(@Param('schoolClassId') id: string, @Body() dto: UpdateSchoolClassDto, @CurrentUser() user: AuthenticatedUser) { return successResponse('School class updated', await this.academics.updateSchoolClass(id, dto, user.id)); }
+
+  @Get('academic-groups') @RequirePermissions('academics.read') async listAcademicGroups() { return successResponse('Academic groups retrieved', await this.academics.listAcademicGroups()); }
+  @Post('academic-groups') @RequirePermissions('academics.manage') async createAcademicGroup(@Body() dto: CreateAcademicGroupDto, @CurrentUser() user: AuthenticatedUser) { return successResponse('Academic group created', await this.academics.createAcademicGroup(dto, user.id)); }
+  @Patch('academic-groups/:academicGroupId') @RequirePermissions('academics.manage') async updateAcademicGroup(@Param('academicGroupId') id: string, @Body() dto: UpdateAcademicGroupDto, @CurrentUser() user: AuthenticatedUser) { return successResponse('Academic group updated', await this.academics.updateAcademicGroup(id, dto, user.id)); }
+  @Put('academic-groups/:academicGroupId/school-classes') @RequirePermissions('academics.manage') async replaceAcademicGroupSchoolClasses(@Param('academicGroupId') id: string, @Body() dto: ReplaceAcademicGroupSchoolClassesDto, @CurrentUser() user: AuthenticatedUser) { return successResponse('Academic group school classes updated', await this.academics.replaceAcademicGroupSchoolClasses(id, dto, user.id)); }
 
   @Get('courses') @RequirePermissions('academics.read') async listCourses() { return successResponse('Courses retrieved', await this.academics.listCourses()); }
   @Post('courses') @RequirePermissions('academics.manage') async createCourse(@Body() dto: CreateCourseDto, @CurrentUser() user: AuthenticatedUser) { return successResponse('Course created', await this.academics.createCourse(dto, user.id)); }

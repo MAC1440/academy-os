@@ -3,6 +3,7 @@ export const financeApi = baseApi.injectEndpoints({
   endpoints: (build) => ({
     getStudentFinance: build.query<ApiRecord, string>({
       query: (studentId) => `/students/${studentId}/finance`,
+      providesTags: ['Academic'],
     }),
     createPayment: build.mutation<
       ApiRecord,
@@ -19,6 +20,7 @@ export const financeApi = baseApi.injectEndpoints({
         method: 'POST',
         body,
       }),
+      invalidatesTags: ['Academic'],
     }),
   }),
 });

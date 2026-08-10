@@ -121,6 +121,159 @@ async function main() {
       roleId: administratorRole.id,
     },
   });
+
+  const classNames = [
+    'Nursery',
+    'Prep 1',
+    'Prep 2',
+    ...Array.from({ length: 10 }, (_, index) => `Class ${index + 1}`),
+    'HSSC-I',
+    'HSSC-II',
+  ];
+  const classes = await Promise.all(
+    classNames.map((name, sortOrder) =>
+      prisma.schoolClass.upsert({
+        where: {
+          organizationId_name: { organizationId: organization.id, name },
+        },
+        update: { sortOrder },
+        create: { organizationId: organization.id, name, sortOrder },
+      }),
+    ),
+  );
+  const byClass = new Map(classes.map((item) => [item.name, item]));
+  const subjectNames = [
+    'English',
+    'Urdu',
+    'Mathematics',
+    'General Mathematics',
+    'General Science',
+    'Social Studies',
+    'Computer',
+    'Computer Science',
+    'Islamiyat',
+    'Ethics',
+    'Pakistan Studies',
+    'Physics',
+    'Chemistry',
+    'Biology',
+    'Statistics',
+    'Economics',
+  ];
+  const subjects = await Promise.all(
+    subjectNames.map((name) =>
+      prisma.subject.upsert({
+        where: {
+          organizationId_name: { organizationId: organization.id, name },
+        },
+        update: {},
+        create: { organizationId: organization.id, name },
+      }),
+    ),
+  );
+  const bySubject = new Map(subjects.map((item) => [item.name, item]));
+  const groupDefinitions = [
+    ['Science', ['Class 9', 'Class 10']],
+    ['Computer', ['Class 9', 'Class 10']],
+    ['Arts', ['Class 9', 'Class 10']],
+    ['Pre-Medical', ['HSSC-I', 'HSSC-II']],
+    ['Pre-Engineering', ['HSSC-I', 'HSSC-II']],
+    ['ICS', ['HSSC-I', 'HSSC-II']],
+    ['Arts / General Science / Statistics / Economics', ['HSSC-I', 'HSSC-II']],
+  ] as const;
+  const groups = new Map<string, { id: string }>();
+  for (const [name, targetClasses] of groupDefinitions) {
+    const group = await prisma.academicGroup.upsert({
+      where: { organizationId_name: { organizationId: organization.id, name } },
+      update: {},
+      create: {
+        organizationId: organization.id,
+        name,
+        schoolClasses: {
+          create: targetClasses.map((className) => ({
+            schoolClassId: byClass.get(className)!.id,
+          })),
+        },
+      },
+    });
+    groups.set(name, group);
+  }
+  await prisma.schoolClassCurriculumSubject.deleteMany({
+    where: { schoolClass: { organizationId: organization.id } },
+  });
+  const addTemplate = async (
+    className: string,
+    names: string[],
+    groupName?: string,
+  ) =>
+    prisma.schoolClassCurriculumSubject.createMany({
+      data: names.map((name) => ({
+        schoolClassId: byClass.get(className)!.id,
+        academicGroupId: groupName ? groups.get(groupName)!.id : null,
+        subjectId: bySubject.get(name)!.id,
+      })),
+    });
+  for (const className of classNames.slice(0, 11))
+    await addTemplate(className, [
+      'English',
+      'Urdu',
+      'Mathematics',
+      'General Science',
+      'Islamiyat',
+      'Social Studies',
+      'Computer',
+    ]);
+  for (const className of ['Class 9', 'Class 10']) {
+    await addTemplate(className, [
+      'English',
+      'Urdu',
+      'Islamiyat',
+      'Pakistan Studies',
+    ]);
+    await addTemplate(
+      className,
+      ['Mathematics', 'Physics', 'Chemistry', 'Biology'],
+      'Science',
+    );
+    await addTemplate(
+      className,
+      ['Mathematics', 'Physics', 'Chemistry', 'Computer Science'],
+      'Computer',
+    );
+    await addTemplate(
+      className,
+      ['General Mathematics', 'General Science', 'Economics'],
+      'Arts',
+    );
+  }
+  for (const className of ['HSSC-I', 'HSSC-II']) {
+    await addTemplate(className, [
+      'English',
+      'Urdu',
+      'Islamiyat',
+      'Pakistan Studies',
+    ]);
+    await addTemplate(
+      className,
+      ['Physics', 'Chemistry', 'Biology'],
+      'Pre-Medical',
+    );
+    await addTemplate(
+      className,
+      ['Physics', 'Chemistry', 'Mathematics'],
+      'Pre-Engineering',
+    );
+    await addTemplate(
+      className,
+      ['Physics', 'Mathematics', 'Computer Science'],
+      'ICS',
+    );
+    await addTemplate(
+      className,
+      ['General Science', 'Statistics', 'Economics'],
+      'Arts / General Science / Statistics / Economics',
+    );
+  }
 }
 
 main()

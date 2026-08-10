@@ -19,6 +19,7 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { AdmissionListQueryDto } from './dto/admission-list-query.dto';
 import { ReviewAdmissionDto } from './dto/review-admission.dto';
 import { SubmitAdmissionDto } from './dto/submit-admission.dto';
+import { UpdateStudentDto } from './dto/update-student.dto';
 
 const PASSWORD_ALPHABET =
   'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789';
@@ -111,6 +112,38 @@ export class AdmissionsService {
     if (!student) throw new NotFoundException('Student not found');
     await this.ensureBranchAccess(requesterUserId, student.branchId);
     return student;
+  }
+
+  async updateStudent(id: string, dto: UpdateStudentDto, actorUserId: string) {
+    const student = await this.getStudent(id, actorUserId);
+    try {
+      const updated = await this.prisma.student.update({
+        where: { id: student.id },
+        data: {
+          ...(dto.studentFullName
+            ? { studentFullName: dto.studentFullName.trim() }
+            : {}),
+          ...(dto.studentCnic ? { studentCnic: dto.studentCnic } : {}),
+          ...(dto.previousSchool !== undefined
+            ? { previousSchool: dto.previousSchool.trim() || null }
+            : {}),
+          ...(dto.previousPerformance !== undefined
+            ? { previousPerformance: dto.previousPerformance.trim() || null }
+            : {}),
+        },
+        include: this.studentInclude,
+      });
+      await this.audit(
+        actorUserId,
+        AuditAction.UPDATE,
+        'Student',
+        updated.id,
+        dto,
+      );
+      return updated;
+    } catch (error) {
+      this.rethrowUnique(error);
+    }
   }
 
   async review(id: string, dto: ReviewAdmissionDto, actorUserId: string) {

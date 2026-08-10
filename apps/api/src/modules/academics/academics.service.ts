@@ -273,8 +273,20 @@ export class AcademicsService {
       'AcademicOffering',
       dto,
       actor,
-      () =>
-        this.prisma.academicOffering.create({
+      async () => {
+        const templateSubjects = source.schoolClassId
+          ? await this.prisma.schoolClassCurriculumSubject.findMany({
+              where: {
+                schoolClassId: source.schoolClassId,
+                OR: [
+                  { academicGroupId: null },
+                  { academicGroupId: source.academicGroupId },
+                ],
+              },
+              select: { subjectId: true },
+            })
+          : [];
+        return this.prisma.academicOffering.create({
           data: {
             branchId,
             offeringType: dto.offeringType,
@@ -283,9 +295,17 @@ export class AcademicsService {
             academicGroupId: source.academicGroupId,
             sectionName: source.sectionName,
             offeringKey: source.offeringKey,
+            subjects: templateSubjects.length
+              ? {
+                  create: templateSubjects.map(({ subjectId }) => ({
+                    subjectId,
+                  })),
+                }
+              : undefined,
           },
           include: this.offeringInclude,
-        }),
+        });
+      },
     );
     return offering;
   }

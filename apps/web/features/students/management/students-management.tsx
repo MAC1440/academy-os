@@ -1,10 +1,16 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { skipToken } from '@reduxjs/toolkit/query';
-import { ContactRound, Search, Users } from 'lucide-react';
+import { ContactRound, Pencil, Search, UserPlus, Users } from 'lucide-react';
+import { DirectEnrollment } from './direct-enrollment';
 import { useListBranchesQuery } from '@web/features/organization/organization.api';
-import { useGetStudentQuery, useListStudentsQuery } from '../students.api';
+import { useToast } from '@web/components/toast-provider';
+import {
+  useGetStudentQuery,
+  useListStudentsQuery,
+  useUpdateStudentMutation,
+} from '../students.api';
 import type { ApiRecord } from '@web/store/api/base-api';
 
 type Student = ApiRecord & {
@@ -21,6 +27,7 @@ type Student = ApiRecord & {
 const tabs = [
   { id: 'directory', label: 'Student directory', icon: Users },
   { id: 'record', label: 'Student record', icon: ContactRound },
+  { id: 'enroll', label: 'Direct enrollment', icon: UserPlus },
 ] as const;
 
 export function StudentsManagement() {
@@ -151,6 +158,13 @@ export function StudentsManagement() {
           />
         </section>
       ) : null}
+      {activeTab === 'enroll' ? (
+        <DirectEnrollment
+          onCreated={(studentId) => {
+            setSelectedId(studentId);
+          }}
+        />
+      ) : null}
     </div>
   );
 }
@@ -194,6 +208,7 @@ function StudentRecord({
   isLoading: boolean;
   onBack: () => void;
 }) {
+  const [editing, setEditing] = useState(false);
   if (isLoading) return <p className="text-sm text-muted-foreground">Loading student record...</p>;
   if (!student)
     return (
@@ -230,45 +245,129 @@ function StudentRecord({
             </strong>
           </p>
         </div>
-        <button type="button" className="button-secondary" onClick={onBack}>
-          Back to directory
-        </button>
+        <div className="flex gap-2">
+          <button type="button" className="button-secondary" onClick={() => setEditing(!editing)}>
+            <Pencil className="mr-1 inline" size={14} />
+            {editing ? 'Close editor' : 'Edit student'}
+          </button>
+          <button type="button" className="button-secondary" onClick={onBack}>
+            Back to directory
+          </button>
+        </div>
       </div>
-      <div className="grid gap-4 md:grid-cols-2">
-        <RecordCard
-          title="Academic placement"
-          lines={[
-            `${String(student.branch?.name ?? 'Campus')}`,
-            `${offering}${group}`,
-            `Academic term: ${String(student.academicTerm?.name ?? 'Not set')}`,
-          ]}
-        />
-        <RecordCard
-          title="Guardian"
-          lines={[
-            String(student.guardianFullName),
-            String(student.guardianContactNumber),
-            `CNIC: ${String(student.studentCnic)}`,
-          ]}
-        />
-        <RecordCard
-          title="Admission"
-          lines={[
-            `Approved from application ${String(student.admissionApplication?.id ?? '')}`,
-            `Previous school: ${String(student.previousSchool ?? 'Not provided')}`,
-            `Previous performance: ${String(student.previousPerformance ?? 'Not provided')}`,
-          ]}
-        />
-        <RecordCard
-          title="Fee setup"
-          lines={[
-            `Monthly fee: PKR ${String(student.monthlyFeeAmount ?? 'Not set')}`,
-            `Opening balance: PKR ${String(student.openingBalanceAmount ?? '0')}`,
-            `Balance due: ${String(student.balanceDueOn ?? 'Not set').slice(0, 10)}`,
-          ]}
-        />
-      </div>
+      {editing ? (
+        <StudentEditForm student={student} onSaved={() => setEditing(false)} />
+      ) : (
+        <div className="grid gap-4 md:grid-cols-2">
+          <RecordCard
+            title="Academic placement"
+            lines={[
+              `${String(student.branch?.name ?? 'Campus')}`,
+              `${offering}${group}`,
+              `Academic term: ${String(student.academicTerm?.name ?? 'Not set')}`,
+            ]}
+          />
+          <RecordCard
+            title="Guardian"
+            lines={[
+              String(student.guardianFullName),
+              String(student.guardianContactNumber),
+              `CNIC: ${String(student.studentCnic)}`,
+            ]}
+          />
+          <RecordCard
+            title="Admission"
+            lines={[
+              `Approved from application ${String(student.admissionApplication?.id ?? '')}`,
+              `Previous school: ${String(student.previousSchool ?? 'Not provided')}`,
+              `Previous performance: ${String(student.previousPerformance ?? 'Not provided')}`,
+            ]}
+          />
+          <RecordCard
+            title="Fee setup"
+            lines={[
+              `Monthly fee: PKR ${String(student.monthlyFeeAmount ?? 'Not set')}`,
+              `Opening balance: PKR ${String(student.openingBalanceAmount ?? '0')}`,
+              `Balance due: ${String(student.balanceDueOn ?? 'Not set').slice(0, 10)}`,
+            ]}
+          />
+        </div>
+      )}
     </div>
+  );
+}
+
+function StudentEditForm({ student, onSaved }: { student: Student; onSaved: () => void }) {
+  const [update, { isLoading }] = useUpdateStudentMutation();
+  const toast = useToast();
+  const [form, setForm] = useState({
+    studentFullName: String(student.studentFullName),
+    studentCnic: String(student.studentCnic),
+    previousSchool: String(student.previousSchool ?? ''),
+    previousPerformance: String(student.previousPerformance ?? ''),
+  });
+  async function submit(event: FormEvent) {
+    event.preventDefault();
+    try {
+      await update({ studentId: student.id, body: form }).unwrap();
+      toast.success('Student details updated.');
+      onSaved();
+    } catch {
+      toast.error('Student details could not be updated. CNIC must be unique within the offering.');
+    }
+  }
+  return (
+    <form
+      onSubmit={submit}
+      className="grid gap-4 rounded-xl border border-teal-300 bg-teal-50/60 p-4 md:grid-cols-2"
+    >
+      <label className="grid gap-1 text-sm font-medium">
+        Student full name
+        <input
+          className="field"
+          required
+          value={form.studentFullName}
+          onChange={(event) => setForm({ ...form, studentFullName: event.target.value })}
+        />
+      </label>
+      <label className="grid gap-1 text-sm font-medium">
+        CNIC / B-Form
+        <input
+          className="field"
+          required
+          inputMode="numeric"
+          pattern="\d{13}"
+          maxLength={13}
+          value={form.studentCnic}
+          onChange={(event) =>
+            setForm({ ...form, studentCnic: event.target.value.replace(/\D/g, '') })
+          }
+        />
+      </label>
+      <label className="grid gap-1 text-sm font-medium">
+        Previous school
+        <input
+          className="field"
+          value={form.previousSchool}
+          onChange={(event) => setForm({ ...form, previousSchool: event.target.value })}
+        />
+      </label>
+      <label className="grid gap-1 text-sm font-medium">
+        Previous performance
+        <input
+          className="field"
+          value={form.previousPerformance}
+          onChange={(event) => setForm({ ...form, previousPerformance: event.target.value })}
+        />
+      </label>
+      <div className="rounded-lg bg-background p-3 text-sm text-muted-foreground md:col-span-2">
+        Guardian contact is the shared learner-portal sign-in, so it is managed separately to avoid
+        breaking access for siblings.
+      </div>
+      <button className="button-primary w-fit" disabled={isLoading}>
+        {isLoading ? 'Saving...' : 'Save student details'}
+      </button>
+    </form>
   );
 }
 

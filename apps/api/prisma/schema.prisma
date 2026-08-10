@@ -201,6 +201,7 @@ model SchoolClass {
   organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   academicOfferings AcademicOffering[]
   academicGroups AcademicGroupSchoolClass[]
+  curriculumSubjects SchoolClassCurriculumSubject[]
 
   @@unique([organizationId, name])
   @@index([organizationId, status, sortOrder])
@@ -218,6 +219,7 @@ model AcademicGroup {
   organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   schoolClasses  AcademicGroupSchoolClass[]
   academicOfferings AcademicOffering[]
+  curriculumSubjects SchoolClassCurriculumSubject[]
 
   @@unique([organizationId, name])
   @@index([organizationId, status])
@@ -298,9 +300,23 @@ model Subject {
   organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   academicOfferings AcademicOfferingSubject[]
   assessmentMarks StudentAssessmentMark[]
+  curriculumSubjects SchoolClassCurriculumSubject[]
 
   @@unique([organizationId, name])
   @@index([organizationId, status])
+}
+
+model SchoolClassCurriculumSubject {
+  id              String         @id @default(cuid())
+  schoolClassId   String
+  academicGroupId String?
+  subjectId       String
+  schoolClass     SchoolClass    @relation(fields: [schoolClassId], references: [id], onDelete: Cascade)
+  academicGroup   AcademicGroup? @relation(fields: [academicGroupId], references: [id], onDelete: Cascade)
+  subject         Subject        @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+
+  @@unique([schoolClassId, academicGroupId, subjectId])
+  @@index([schoolClassId, academicGroupId])
 }
 
 model AcademicOffering {

@@ -62,13 +62,14 @@ This is the working PRD/status record for the backend-first MVP. It records both
 - [x] Organization setup: profile, branches with unique addresses, editable branch operating hours, organization-wide academic terms, and admission registration-number settings.
 - [x] Academic catalogue: tabbed management for school classes, external courses, subjects, and academic groups.
 - [x] Branch academic offerings: campus-specific school-class/course availability, optional groups and sections, plus offering-subject assignment.
-- [x] Student management: branch-scoped directory and focused student records showing admission, guardian, academic placement, and fee setup.
+- [x] Student management: branch-scoped directory, editable student records, and direct enrollment for pre-existing students using the same admission-approval workflow.
 - [x] Admissions operations: tabbed pending/approved/rejected queues, application review, physical-document verification, and approval allocation into term/offering/fees.
 - [x] Staff management: tabbed directory, staff-account creation with campus assignment, profile maintenance, and one-time portal/kiosk credentials.
 - [x] Attendance operations: one-click student roster marking, staff attendance reports with CSV download, and editable kiosk default shift/workday settings.
 - [x] Public teacher-attendance kiosk: campus selection, staff-name selection, private four-digit PIN verification, and check-in/check-out recording.
 - [x] Grades and performance: regular/festival assessments, subject-based mark entry, and student performance history.
-- [ ] Build feature screens one module at a time, continuing with finance operations.
+- [x] Finance operations: per-student fee summary, payment history, and receipt-numbered payment recording in PKR.
+- [ ] Build feature screens one module at a time, continuing with shared notes.
 
 ## Backend Stop Line
 

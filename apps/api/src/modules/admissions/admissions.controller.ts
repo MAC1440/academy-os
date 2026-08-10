@@ -20,6 +20,7 @@ import { AdmissionsService } from './admissions.service';
 import { AdmissionListQueryDto } from './dto/admission-list-query.dto';
 import { ReviewAdmissionDto } from './dto/review-admission.dto';
 import { SubmitAdmissionDto } from './dto/submit-admission.dto';
+import { UpdateStudentDto } from './dto/update-student.dto';
 
 @ApiTags('Admissions')
 @Controller()
@@ -87,6 +88,21 @@ export class AdmissionsController {
     return successResponse(
       'Student retrieved',
       await this.admissions.getStudent(studentId, user.id),
+    );
+  }
+
+  @Patch('students/:studentId')
+  @ApiBearerAuth('JWT-auth')
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @RequirePermissions('admissions.manage')
+  async updateStudent(
+    @Param('studentId') studentId: string,
+    @Body() dto: UpdateStudentDto,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return successResponse(
+      'Student updated',
+      await this.admissions.updateStudent(studentId, dto, user.id),
     );
   }
 

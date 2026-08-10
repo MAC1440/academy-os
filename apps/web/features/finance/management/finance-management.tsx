@@ -1,0 +1,242 @@
+'use client';
+
+import { FormEvent, useState } from 'react';
+import { skipToken } from '@reduxjs/toolkit/query';
+import { CreditCard, ReceiptText } from 'lucide-react';
+import { useToast } from '@web/components/toast-provider';
+import { useListBranchesQuery } from '@web/features/organization/organization.api';
+import { useListStudentsQuery } from '@web/features/students/students.api';
+import { useCreatePaymentMutation, useGetStudentFinanceQuery } from '../finance.api';
+import type { ApiRecord } from '@web/store/api/base-api';
+
+const today = new Date().toISOString().slice(0, 10);
+
+export function FinanceManagement() {
+  const [tab, setTab] = useState<'summary' | 'payment'>('summary');
+  const [branchId, setBranchId] = useState('');
+  const [studentId, setStudentId] = useState('');
+  const { data: branches = [] } = useListBranchesQuery();
+  const { data: students = [] } = useListStudentsQuery(branchId ? { branchId } : undefined);
+  const summary = useGetStudentFinanceQuery(studentId || skipToken);
+  return (
+    <div className="space-y-6">
+      <header className="max-w-2xl">
+        <p className="eyebrow">Finance operations</p>
+        <h1 className="mt-2 font-display text-4xl tracking-[-.05em]">
+          Simple fee records, kept current.
+        </h1>
+        <p className="mt-3 text-sm leading-6 text-muted-foreground">
+          Review each student’s opening balance and recorded payments, then issue a receipt for
+          every amount received.
+        </p>
+      </header>
+      <div role="tablist" className="flex gap-2 overflow-x-auto border-b border-border pb-3">
+        <button
+          type="button"
+          role="tab"
+          aria-selected={tab === 'summary'}
+          onClick={() => setTab('summary')}
+          className={`inline-flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold ${tab === 'summary' ? 'bg-teal-600 text-white' : 'text-muted-foreground hover:bg-muted'}`}
+        >
+          <ReceiptText size={16} />
+          Fee summary
+        </button>
+        <button
+          type="button"
+          role="tab"
+          aria-selected={tab === 'payment'}
+          onClick={() => setTab('payment')}
+          className={`inline-flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold ${tab === 'payment' ? 'bg-teal-600 text-white' : 'text-muted-foreground hover:bg-muted'}`}
+        >
+          <CreditCard size={16} />
+          Record payment
+        </button>
+      </div>
+      <section className="space-y-5 rounded-2xl border border-border bg-card p-5 shadow-sm sm:p-6">
+        <div className="grid gap-3 md:grid-cols-2">
+          <label className="grid gap-1 text-sm font-medium">
+            Campus
+            <select
+              className="field"
+              value={branchId}
+              onChange={(event) => {
+                setBranchId(event.target.value);
+                setStudentId('');
+              }}
+            >
+              <option value="">Select a campus</option>
+              {branches.map((branch) => (
+                <option key={branch.id} value={branch.id}>
+                  {String(branch.name)}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="grid gap-1 text-sm font-medium">
+            Student
+            <select
+              className="field"
+              disabled={!branchId}
+              value={studentId}
+              onChange={(event) => setStudentId(event.target.value)}
+            >
+              <option value="">Select a student</option>
+              {students.map((student) => (
+                <option key={student.id} value={student.id}>
+                  {String(student.studentFullName)} · {String(student.registrationNumber ?? '')}
+                </option>
+              ))}
+            </select>
+          </label>
+        </div>
+        {studentId && tab === 'summary' ? (
+          <FinanceSummary summary={summary.data} isLoading={summary.isLoading} />
+        ) : null}
+        {studentId && tab === 'payment' ? <PaymentForm studentId={studentId} /> : null}
+        {!studentId ? (
+          <p className="text-sm text-muted-foreground">
+            Choose a campus and student to view or update their fee record.
+          </p>
+        ) : null}
+      </section>
+    </div>
+  );
+}
+
+function FinanceSummary({ summary, isLoading }: { summary?: ApiRecord; isLoading: boolean }) {
+  if (isLoading) return <p className="text-sm text-muted-foreground">Loading fee summary...</p>;
+  if (!summary) return null;
+  const amount = (value: unknown) =>
+    `PKR ${Number(value ?? 0).toLocaleString('en-PK', { minimumFractionDigits: 2 })}`;
+  const payments = Array.isArray(summary.payments) ? (summary.payments as ApiRecord[]) : [];
+  return (
+    <div className="space-y-5">
+      <div className="grid gap-3 md:grid-cols-3">
+        <FinanceCard label="Monthly fee" value={amount(summary.monthlyFeeAmount)} />
+        <FinanceCard label="Total received" value={amount(summary.paid)} />
+        <FinanceCard
+          label="Opening balance"
+          value={amount(summary.openingBalanceAmount)}
+          emphasis
+        />
+        <FinanceCard label="Remaining balance" value={amount(summary.balance)} emphasis />
+      </div>
+      <div>
+        <h2 className="font-display text-2xl">Payment history</h2>
+        <div className="mt-3 grid gap-2">
+          {payments.length === 0 ? (
+            <p className="rounded-xl border border-dashed border-border p-4 text-sm text-muted-foreground">
+              No payments recorded beyond the amount received with the admission form.
+            </p>
+          ) : (
+            payments.map((payment) => (
+              <article
+                key={payment.id}
+                className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border p-4"
+              >
+                <div>
+                  <p className="font-medium">Receipt {String(payment.receiptNumber)}</p>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    {String(payment.receivedOn).slice(0, 10)} ·{' '}
+                    {String(payment.remarks ?? 'No remarks')}
+                  </p>
+                </div>
+                <strong>{amount(payment.amount)}</strong>
+              </article>
+            ))
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+function FinanceCard({
+  label,
+  value,
+  emphasis,
+}: {
+  label: string;
+  value: string;
+  emphasis?: boolean;
+}) {
+  return (
+    <article
+      className={`rounded-xl border p-4 ${emphasis ? 'border-teal-300 bg-teal-50/60' : 'border-border bg-muted/30'}`}
+    >
+      <p className="text-sm text-muted-foreground">{label}</p>
+      <p className="mt-2 font-display text-2xl">{value}</p>
+    </article>
+  );
+}
+function PaymentForm({ studentId }: { studentId: string }) {
+  const [create, { isLoading }] = useCreatePaymentMutation();
+  const toast = useToast();
+  const [form, setForm] = useState({
+    amount: '',
+    receiptNumber: '',
+    receivedOn: today,
+    remarks: '',
+  });
+  async function submit(event: FormEvent) {
+    event.preventDefault();
+    try {
+      await create({
+        studentId,
+        amount: Number(form.amount),
+        receiptNumber: form.receiptNumber,
+        receivedOn: form.receivedOn,
+        remarks: form.remarks || undefined,
+      }).unwrap();
+      setForm({ amount: '', receiptNumber: '', receivedOn: today, remarks: '' });
+      toast.success('Payment recorded and receipt number saved.');
+    } catch {
+      toast.error('Payment could not be recorded. Receipt numbers must be unique.');
+    }
+  }
+  return (
+    <form onSubmit={submit} className="grid gap-4 md:grid-cols-2">
+      <label className="grid gap-1 text-sm font-medium">
+        Amount (PKR)
+        <input
+          className="field"
+          required
+          min="0.01"
+          step="0.01"
+          type="number"
+          value={form.amount}
+          onChange={(event) => setForm({ ...form, amount: event.target.value })}
+        />
+      </label>
+      <label className="grid gap-1 text-sm font-medium">
+        Receipt number
+        <input
+          className="field"
+          required
+          value={form.receiptNumber}
+          onChange={(event) => setForm({ ...form, receiptNumber: event.target.value })}
+        />
+      </label>
+      <label className="grid gap-1 text-sm font-medium">
+        Received on
+        <input
+          className="field"
+          required
+          type="date"
+          value={form.receivedOn}
+          onChange={(event) => setForm({ ...form, receivedOn: event.target.value })}
+        />
+      </label>
+      <label className="grid gap-1 text-sm font-medium">
+        Remarks <span className="font-normal text-muted-foreground">(optional)</span>
+        <input
+          className="field"
+          value={form.remarks}
+          onChange={(event) => setForm({ ...form, remarks: event.target.value })}
+        />
+      </label>
+      <button className="button-primary w-fit" disabled={isLoading}>
+        {isLoading ? 'Recording...' : 'Record payment'}
+      </button>
+    </form>
+  );
+}

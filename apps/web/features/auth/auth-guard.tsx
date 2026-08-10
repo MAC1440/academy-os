@@ -1,69 +1,8 @@
 "use client";
+import { useEffect } from "react";
+import { usePathname, useRouter } from "next/navigation";
+import { useMeQuery } from "./auth.api";
+import { useAppDispatch, useAppSelector } from "@web/store/hooks";
+import { setUser, signOut, type AccountType } from "@web/store/slices/auth-slice";
 
-import { createContext, useContext, useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
-import { getCurrentUser, getAccessToken, clearTokens, type AuthenticatedUser } from "@web/lib/api";
-
-type AuthContextValue = {
-  user: AuthenticatedUser;
-};
-
-const AuthContext = createContext<AuthContextValue | null>(null);
-
-export function useAuth() {
-  const auth = useContext(AuthContext);
-  if (!auth) throw new Error("useAuth must be used within AuthGuard");
-  return auth;
-}
-
-export function AuthGuard({ children }: { children: React.ReactNode }) {
-  const router = useRouter();
-  const [user, setUser] = useState<AuthenticatedUser | null>(null);
-  const [checking, setChecking] = useState(true);
-
-  useEffect(() => {
-    let active = true;
-
-    async function checkSession() {
-      const token = getAccessToken();
-      if (!token) {
-        router.replace("/login");
-        return;
-      }
-
-      try {
-        // If the access token has expired, apiFetch's internal 401 handler
-        // silently refreshes and retries before this ever throws.
-        const currentUser = await getCurrentUser();
-        if (active) setUser(currentUser);
-      } catch {
-        clearTokens();
-        router.replace("/login");
-      } finally {
-        if (active) setChecking(false);
-      }
-    }
-
-    function handleUnauthorized() {
-      clearTokens();
-      router.replace("/login");
-    }
-
-    void checkSession();
-    window.addEventListener("auth:unauthorized", handleUnauthorized);
-    return () => {
-      active = false;
-      window.removeEventListener("auth:unauthorized", handleUnauthorized);
-    };
-  }, [router]);
-
-  if (checking || !user) {
-    return (
-      <main className="min-h-screen bg-[#fffdf8] px-6 py-16 text-[#470004]">
-        <p className="text-center text-sm text-[#5b4a4b]">Checking your session...</p>
-      </main>
-    );
-  }
-
-  return <AuthContext.Provider value={{ user }}>{children}</AuthContext.Provider>;
-}
+export function AuthGuard({ children, allowed }: { children: React.ReactNode; allowed?: AccountType[] }) { const router = useRouter(); const pathname = usePathname(); const dispatch = useAppDispatch(); const { accessToken, hydrated, user } = useAppSelector((state) => state.auth); const query = useMeQuery(undefined, { skip: !hydrated || !accessToken }); useEffect(() => { if (!hydrated) return; if (!accessToken) { router.replace(`/login?next=${encodeURIComponent(pathname)}`); return; } if (query.data) dispatch(setUser(query.data)); if (query.isError) { dispatch(signOut()); router.replace("/login"); } }, [accessToken, dispatch, hydrated, pathname, query.data, query.isError, router]); if (!hydrated || query.isLoading || !user) return <main className="grid min-h-screen place-items-center bg-background text-sm text-muted-foreground">Restoring your workspace…</main>; if (allowed && !allowed.includes(user.accountType)) { router.replace("/dashboard"); return null; } return <>{children}</>; }

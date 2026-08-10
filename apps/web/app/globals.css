@@ -241,7 +241,7 @@ a:focus-visible {
   margin-top: 2.1rem;
 }
 
-.academy-actions a:last-child {
+.academy-actions a:not(.button-primary) {
   color: var(--brand);
   font-weight: 750;
   text-decoration: underline;

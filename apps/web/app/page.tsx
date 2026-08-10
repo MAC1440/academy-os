@@ -23,6 +23,7 @@ export default function Page() {
             <Link href="/login" className="button-primary">
               Enter the academy portal
             </Link>
+            <Link href="/kiosk">Staff attendance kiosk</Link>
             <a href="#our-story">Meet the academy</a>
           </div>
         </div>

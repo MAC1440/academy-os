@@ -54,6 +54,13 @@ This is the working PRD/status record for the backend-first MVP. It records both
 3. Configure academic groups for classes 9–12 and verify grouped academic offerings.
 4. Move to frontend modules, layouts/guards, and shadcn-based UI once backend behavior is signed off.
 
+## Frontend Foundation
+
+- [x] Fresh Next.js route foundation, landing page, login, guarded dashboard shell, and light/dark/system theme.
+- [x] Redux Toolkit store and RTK Query base API with bearer-token refresh/retry handling.
+- [x] Feature-owned RTK Query endpoint modules registered for every exposed backend endpoint.
+- [ ] Build feature screens one module at a time, starting with organization and branches.
+
 ## Backend Stop Line
 
 The essential backend MVP is implemented for testing. Remaining backend work is limited to defects uncovered during verification; the deliberately deferred items above do not block frontend development.

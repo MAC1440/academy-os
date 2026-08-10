@@ -1,4 +1,5 @@
 "use client";
+import "@web/store/api/register-endpoints";
 import { Provider } from "react-redux";
 import { useEffect, useRef } from "react";
 import { makeStore, type AppStore } from "@web/store";

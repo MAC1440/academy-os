@@ -4,6 +4,6 @@ The backend MVP is at its manual-verification checkpoint. The authoritative impl
 
 ## Next
 
-1. Verify the existing APIs in Swagger with realistic organization data.
+1. Build feature screens one module at a time using the registered RTK Query hooks, starting with organization and branches.
 2. Configure and verify academic groups for class levels 9–12.
-3. Build the frontend as modular portals with guarded layouts, a shadcn component base, and light/dark/system themes.
+3. Complete modular admin, staff, learner, and kiosk portals.

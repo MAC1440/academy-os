@@ -2,6 +2,11 @@ import { createApi, fetchBaseQuery, type BaseQueryFn, type FetchArgs, type Fetch
 import type { RootState } from "@web/store";
 import { setCredentials, signOut, type AuthenticatedUser } from "@web/store/slices/auth-slice";
 
+export type ApiRecord = Record<string, unknown> & { id: string };
+export type ApiEnvelope<T> = { success: boolean; data: T; message?: string; meta?: unknown; errors?: unknown };
+export const unwrap = <T>(response: ApiEnvelope<T>) => response.data;
+export const queryString = (params: Record<string, string | number | boolean | undefined>) => { const value = new URLSearchParams(); Object.entries(params).forEach(([key, item]) => { if (item !== undefined) value.set(key, String(item)); }); const result = value.toString(); return result ? `?${result}` : ""; };
+
 type SessionResponse = { accessToken: string; refreshToken: string; user?: AuthenticatedUser };
 let refreshRequest: Promise<SessionResponse | null> | null = null;
 const rawBaseQuery = fetchBaseQuery({ baseUrl: process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3000", prepareHeaders: (headers, { getState }) => { const token = (getState() as RootState).auth.accessToken; if (token) headers.set("authorization", `Bearer ${token}`); return headers; } });

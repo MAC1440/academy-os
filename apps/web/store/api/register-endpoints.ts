@@ -1,0 +1,16 @@
+// Eagerly inject every feature API at startup. Screens still import hooks from their own feature.
+import "@web/features/auth/auth.api";
+import "@web/features/organization/organization.api";
+import "@web/features/academics/academics.api";
+import "@web/features/admissions/admissions.api";
+import "@web/features/staff/staff.api";
+import "@web/features/kiosk/kiosk.api";
+import "@web/features/attendance/attendance.api";
+import "@web/features/grades/grades.api";
+import "@web/features/finance/finance.api";
+import "@web/features/notes/notes.api";
+import "@web/features/roles/roles.api";
+import "@web/features/settings/settings.api";
+import "@web/features/calendar/calendar.api";
+import "@web/features/reports/reports.api";
+import "@web/features/learner-portal/learner-portal.api";

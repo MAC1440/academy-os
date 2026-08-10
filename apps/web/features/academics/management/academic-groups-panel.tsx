@@ -7,12 +7,14 @@ import {
   useCreateAcademicGroupMutation,
   useListAcademicGroupsQuery,
   useListSchoolClassesQuery,
+  useUpdateAcademicGroupMutation,
 } from '../academics.api';
 
 export function AcademicGroupsPanel() {
   const { data: groups = [] } = useListAcademicGroupsQuery();
   const { data: schoolClasses = [] } = useListSchoolClassesQuery();
   const [create] = useCreateAcademicGroupMutation();
+  const [update] = useUpdateAcademicGroupMutation();
   const toast = useToast();
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState({ name: '', code: '', schoolClassIds: [] as string[] });
@@ -33,6 +35,21 @@ export function AcademicGroupsPanel() {
       toast.success('Academic group added.');
     } catch {
       toast.error('Academic group could not be added. Select at least one class.');
+    }
+  }
+  async function removeGroup(id: string, name: string) {
+    if (
+      !window.confirm(`Remove ${name}? It can be restored later if it has no active offerings.`)
+    ) {
+      return;
+    }
+    try {
+      await update({ id, body: { status: 'ARCHIVED' } }).unwrap();
+      toast.success('Academic group removed.');
+    } catch {
+      toast.error(
+        'This group is still used by an active class offering. Move or archive it first.',
+      );
     }
   }
   return (
@@ -109,7 +126,16 @@ export function AcademicGroupsPanel() {
         ) : (
           groups.map((group) => (
             <article key={group.id} className="rounded-xl border border-border bg-card p-4">
-              <p className="font-medium">{String(group.name)}</p>
+              <div className="flex items-start justify-between gap-3">
+                <p className="font-medium">{String(group.name)}</p>
+                <button
+                  type="button"
+                  className="button-secondary shrink-0 text-xs text-destructive"
+                  onClick={() => removeGroup(group.id, String(group.name))}
+                >
+                  Remove
+                </button>
+              </div>
               <p className="mt-1 text-sm text-muted-foreground">
                 {String(group.code ?? 'No code')} ·{' '}
                 {Array.isArray(group.schoolClasses)

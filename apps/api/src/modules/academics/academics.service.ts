@@ -123,6 +123,16 @@ export class AcademicsService {
     actor: string,
   ) {
     const group = await this.academicGroup(id);
+    if (dto.status === EntityStatus.ARCHIVED) {
+      const activeOfferingCount = await this.prisma.academicOffering.count({
+        where: { academicGroupId: group.id, status: EntityStatus.ACTIVE },
+      });
+      if (activeOfferingCount) {
+        throw new BadRequestException(
+          'Move or archive the active class offerings that use this group before removing it',
+        );
+      }
+    }
     return this.updateUnique('AcademicGroup', id, dto, actor, () =>
       this.prisma.academicGroup.update({
         where: { id: group.id },

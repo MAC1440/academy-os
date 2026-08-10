@@ -119,10 +119,9 @@ export class AdmissionsService {
     const nextOffering = dto.academicOfferingId
       ? await this.activeOffering(dto.academicOfferingId)
       : undefined;
-    if (nextOffering && nextOffering.branchId !== student.branchId)
-      throw new BadRequestException(
-        'Move across branches by creating a separate admission',
-      );
+    if (nextOffering) {
+      await this.ensureBranchAccess(actorUserId, nextOffering.branchId);
+    }
     if (dto.academicTermId) {
       const organization = await this.organization();
       const term = await this.prisma.academicTerm.findFirst({
@@ -148,7 +147,12 @@ export class AdmissionsService {
           ...(dto.previousPerformance !== undefined
             ? { previousPerformance: dto.previousPerformance.trim() || null }
             : {}),
-          ...(nextOffering ? { academicOfferingId: nextOffering.id } : {}),
+          ...(nextOffering
+            ? {
+                academicOfferingId: nextOffering.id,
+                branchId: nextOffering.branchId,
+              }
+            : {}),
           ...(dto.academicTermId ? { academicTermId: dto.academicTermId } : {}),
         },
         include: this.studentInclude,

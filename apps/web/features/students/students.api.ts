@@ -21,6 +21,8 @@ export const studentsApi = baseApi.injectEndpoints({
           studentCnic: string;
           previousSchool: string;
           previousPerformance: string;
+          academicOfferingId: string;
+          academicTermId: string;
         }>;
       }
     >({

@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Patch, Post, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOkResponse, ApiTags } from '@nestjs/swagger';
 import { successResponse } from '../../common/api-response';
 import { AuthService } from './auth.service';
@@ -7,6 +7,7 @@ import type { AuthenticatedUser } from './decorators/current-user.decorator';
 import { LoginDto } from './dto/login.dto';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
 import { CompleteProfileDto } from './dto/complete-profile.dto';
+import { UpdateProfileDto } from './dto/update-profile.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 
 @ApiTags('Auth')
@@ -45,6 +46,19 @@ export class AuthController {
     return successResponse(
       'Profile completed',
       await this.authService.completeProfile(user, dto),
+    );
+  }
+
+  @Patch('profile')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth('JWT-auth')
+  async updateProfile(
+    @CurrentUser() user: AuthenticatedUser,
+    @Body() dto: UpdateProfileDto,
+  ) {
+    return successResponse(
+      'Profile updated',
+      await this.authService.updateProfile(user, dto),
     );
   }
 }

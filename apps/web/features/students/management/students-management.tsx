@@ -4,7 +4,9 @@ import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { skipToken } from '@reduxjs/toolkit/query';
 import { ContactRound, Pencil, Search, UserPlus, Users } from 'lucide-react';
 import { DirectEnrollment } from './direct-enrollment';
+import { useListOfferingsQuery } from '@web/features/academics/academics.api';
 import { useListBranchesQuery } from '@web/features/organization/organization.api';
+import { useListAcademicTermsQuery } from '@web/features/settings/settings.api';
 import { useToast } from '@web/components/toast-provider';
 import {
   useGetStudentQuery,
@@ -300,11 +302,17 @@ function StudentRecord({
 function StudentEditForm({ student, onSaved }: { student: Student; onSaved: () => void }) {
   const [update, { isLoading }] = useUpdateStudentMutation();
   const toast = useToast();
+  const { data: branches = [] } = useListBranchesQuery();
+  const [targetBranchId, setTargetBranchId] = useState(String(student.branchId));
+  const { data: offerings = [] } = useListOfferingsQuery(targetBranchId || skipToken);
+  const { data: academicTerms = [] } = useListAcademicTermsQuery();
   const [form, setForm] = useState({
     studentFullName: String(student.studentFullName),
     studentCnic: String(student.studentCnic),
     previousSchool: String(student.previousSchool ?? ''),
     previousPerformance: String(student.previousPerformance ?? ''),
+    academicOfferingId: String(student.academicOfferingId),
+    academicTermId: String(student.academicTermId),
   });
   async function submit(event: FormEvent) {
     event.preventDefault();
@@ -360,9 +368,65 @@ function StudentEditForm({ student, onSaved }: { student: Student; onSaved: () =
           onChange={(event) => setForm({ ...form, previousPerformance: event.target.value })}
         />
       </label>
+      <label className="grid gap-1 text-sm font-medium">
+        Campus
+        <select
+          className="field"
+          required
+          value={targetBranchId}
+          onChange={(event) => {
+            setTargetBranchId(event.target.value);
+            setForm({ ...form, academicOfferingId: '' });
+          }}
+        >
+          <option value="">Select campus</option>
+          {branches.map((branch) => (
+            <option key={branch.id} value={branch.id}>
+              {String(branch.name)}
+            </option>
+          ))}
+        </select>
+      </label>
+      <label className="grid gap-1 text-sm font-medium">
+        Class or course
+        <select
+          className="field"
+          required
+          value={form.academicOfferingId}
+          onChange={(event) => setForm({ ...form, academicOfferingId: event.target.value })}
+        >
+          <option value="">Select class or course</option>
+          {offerings.map((offering) => (
+            <option key={offering.id} value={offering.id}>
+              {String(
+                (offering.schoolClass as ApiRecord | undefined)?.name ??
+                  (offering.course as ApiRecord | undefined)?.name ??
+                  offering.offeringKey,
+              )}
+              {offering.sectionName ? ` - ${String(offering.sectionName)}` : ''}
+            </option>
+          ))}
+        </select>
+      </label>
+      <label className="grid gap-1 text-sm font-medium">
+        Academic term
+        <select
+          className="field"
+          required
+          value={form.academicTermId}
+          onChange={(event) => setForm({ ...form, academicTermId: event.target.value })}
+        >
+          <option value="">Select academic term</option>
+          {academicTerms.map((term) => (
+            <option key={term.id} value={term.id}>
+              {String(term.name)}
+            </option>
+          ))}
+        </select>
+      </label>
       <div className="rounded-lg bg-background p-3 text-sm text-muted-foreground md:col-span-2">
-        Guardian contact is the shared learner-portal sign-in, so it is managed separately to avoid
-        breaking access for siblings.
+        Changing the class or campus safely moves this student to that active offering. Guardian
+        contact is managed separately to avoid breaking learner access for siblings.
       </div>
       <button className="button-primary w-fit" disabled={isLoading}>
         {isLoading ? 'Saving...' : 'Save student details'}

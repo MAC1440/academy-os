@@ -62,7 +62,8 @@ This is the working PRD/status record for the backend-first MVP. It records both
 - [x] Organization setup: profile, branches with unique addresses, editable branch operating hours, organization-wide academic terms, and admission registration-number settings.
 - [x] Academic catalogue: tabbed management for school classes, external courses, subjects, and academic groups.
 - [x] Branch academic offerings: campus-specific school-class/course availability, optional groups and sections, plus offering-subject assignment.
-- [x] Student management: branch-scoped directory, editable student records, and direct enrollment for pre-existing students using the same admission-approval workflow.
+- [x] Student management: branch-scoped directory, editable student records with class/campus reassignment, and direct enrollment for pre-existing students using the same admission-approval workflow.
+- [x] Administrator self-service profile: editable sign-in username, contact details, and password.
 - [x] Admissions operations: tabbed pending/approved/rejected queues, application review, physical-document verification, and approval allocation into term/offering/fees.
 - [x] Staff management: tabbed directory, staff-account creation with campus assignment, profile maintenance, and one-time portal/kiosk credentials.
 - [x] Attendance operations: one-click student roster marking, staff attendance reports with CSV download, and editable kiosk default shift/workday settings.

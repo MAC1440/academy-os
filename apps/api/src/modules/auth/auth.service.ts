@@ -11,6 +11,7 @@ import { PrismaService } from '../../prisma/prisma.service';
 import type { AuthenticatedUser } from './decorators/current-user.decorator';
 import { LoginDto } from './dto/login.dto';
 import { CompleteProfileDto } from './dto/complete-profile.dto';
+import { UpdateProfileDto } from './dto/update-profile.dto';
 
 type PublicUser = Pick<
   User,
@@ -106,11 +107,43 @@ export class AuthService {
       return this.toPublicUser(user);
     } catch (error: unknown) {
       if (this.isUniqueConstraintError(error)) {
-        throw new ConflictException(
-          'The supplied username or contact number is already in use',
-        );
+        throw new ConflictException('The supplied username is already in use');
       }
 
+      throw error;
+    }
+  }
+
+  async updateProfile(
+    authenticatedUser: AuthenticatedUser,
+    dto: UpdateProfileDto,
+  ) {
+    try {
+      const user = await this.prisma.user.update({
+        where: { id: authenticatedUser.id },
+        data: {
+          ...(dto.username !== undefined
+            ? { username: dto.username.trim() }
+            : {}),
+          ...(dto.contactNumber !== undefined
+            ? { contactNumber: dto.contactNumber.trim() }
+            : {}),
+          ...(dto.fullName !== undefined
+            ? { fullName: dto.fullName.trim() }
+            : {}),
+          ...(dto.email !== undefined
+            ? { email: dto.email.trim().toLowerCase() }
+            : {}),
+          ...(dto.newPassword !== undefined
+            ? { passwordHash: await bcrypt.hash(dto.newPassword, 12) }
+            : {}),
+        },
+      });
+      return this.toPublicUser(user);
+    } catch (error: unknown) {
+      if (this.isUniqueConstraintError(error)) {
+        throw new ConflictException('The supplied username is already in use');
+      }
       throw error;
     }
   }

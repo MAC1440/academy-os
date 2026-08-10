@@ -31,6 +31,25 @@ export const authApi = baseApi.injectEndpoints({
       transformResponse: (response: Envelope<AuthenticatedUser>) => response.data,
       invalidatesTags: ['Session'],
     }),
+    updateProfile: build.mutation<
+      AuthenticatedUser,
+      {
+        username?: string;
+        contactNumber?: string;
+        fullName?: string;
+        email?: string;
+        newPassword?: string;
+      }
+    >({
+      query: (body) => ({ url: '/auth/profile', method: 'PATCH', body }),
+      transformResponse: (response: Envelope<AuthenticatedUser>) => response.data,
+      invalidatesTags: ['Session'],
+    }),
   }),
 });
-export const { useLoginMutation, useMeQuery, useCompleteProfileMutation } = authApi;
+export const {
+  useLoginMutation,
+  useMeQuery,
+  useCompleteProfileMutation,
+  useUpdateProfileMutation,
+} = authApi;

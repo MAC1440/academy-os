@@ -1,6 +1,6 @@
 'use client';
 import { FormEvent, useEffect, useState } from 'react';
-import { Building2, CalendarRange, Hash, Landmark } from 'lucide-react';
+import { Building2, CalendarRange, Hash, Landmark, UserRound } from 'lucide-react';
 import { useGetOrganizationQuery } from '../organization.api';
 import {
   useCreateAcademicTermMutation,
@@ -11,6 +11,7 @@ import {
 } from '@web/features/settings/settings.api';
 import { BranchPanel } from './branch-panel';
 import { OrganizationProfileForm } from './organization-profile-form';
+import { AdministratorProfileForm } from './administrator-profile-form';
 import { useToast } from '@web/components/toast-provider';
 import type { Organization } from './types';
 function Section({
@@ -291,14 +292,15 @@ function RegistrationNumbering() {
 }
 export function OrganizationSetup() {
   const organization = useGetOrganizationQuery();
-  const [activeTab, setActiveTab] = useState<'organization' | 'branches' | 'terms' | 'admissions'>(
-    'organization',
-  );
+  const [activeTab, setActiveTab] = useState<
+    'organization' | 'branches' | 'terms' | 'admissions' | 'profile'
+  >('organization');
   const tabs = [
     { id: 'organization' as const, label: 'Organization', icon: Landmark },
     { id: 'branches' as const, label: 'Branches', icon: Building2 },
     { id: 'terms' as const, label: 'Academic terms', icon: CalendarRange },
     { id: 'admissions' as const, label: 'Admissions', icon: Hash },
+    { id: 'profile' as const, label: 'My profile', icon: UserRound },
   ];
   return (
     <div className="space-y-6">
@@ -375,6 +377,17 @@ export function OrganizationSetup() {
         >
           <div role="tabpanel" id="admissions-panel" aria-labelledby="admissions-tab">
             <RegistrationNumbering />
+          </div>
+        </Section>
+      ) : null}
+      {activeTab === 'profile' ? (
+        <Section
+          icon={UserRound}
+          title="My administrator profile"
+          detail="Update your personal sign-in details and password."
+        >
+          <div role="tabpanel" id="profile-panel" aria-labelledby="profile-tab">
+            <AdministratorProfileForm />
           </div>
         </Section>
       ) : null}

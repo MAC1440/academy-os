@@ -157,7 +157,8 @@ a:focus-visible {
 }
 
 .academy-landing,
-.auth-shell {
+.auth-shell,
+.kiosk-shell {
   /* Public pages intentionally stay light, independent of the portal preference. */
   --background: #fbf6ed;
   --foreground: #301316;
@@ -355,6 +356,17 @@ a:focus-visible {
 .auth-shell {
   min-height: 100vh;
   background: var(--background);
+}
+
+.kiosk-shell {
+  min-height: 100vh;
+  background:
+    radial-gradient(
+      circle at 88% 8%,
+      color-mix(in srgb, var(--accent-soft) 82%, transparent),
+      transparent 25rem
+    ),
+    var(--background);
 }
 
 .auth-panel {

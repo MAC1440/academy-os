@@ -26,6 +26,14 @@ import { KioskService } from './kiosk.service';
 export class KioskController {
   constructor(private readonly kioskService: KioskService) {}
 
+  @Get('kiosk/branches')
+  async listBranches() {
+    return successResponse(
+      'Kiosk branches retrieved',
+      await this.kioskService.listKioskBranches(),
+    );
+  }
+
   @Get('kiosk/branches/:branchId/staff')
   async listBranchStaff(@Param('branchId') branchId: string) {
     return successResponse(

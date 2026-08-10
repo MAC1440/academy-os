@@ -88,6 +88,14 @@ export class KioskService {
     });
   }
 
+  async listKioskBranches() {
+    return this.prisma.branch.findMany({
+      where: { deletedAt: null, status: 'ACTIVE' },
+      select: { id: true, name: true, city: true },
+      orderBy: { name: 'asc' },
+    });
+  }
+
   async checkIn(branchId: string, dto: KioskPinDto) {
     const { branch, staff, now, local } = await this.authenticateKioskAction(
       branchId,

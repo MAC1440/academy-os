@@ -8,6 +8,10 @@ type KioskSettings = {
 };
 export const kioskApi = baseApi.injectEndpoints({
   endpoints: (build) => ({
+    listKioskBranches: build.query<ApiRecord[], void>({
+      query: () => '/kiosk/branches',
+      transformResponse: unwrap,
+    }),
     listKioskStaff: build.query<ApiRecord[], string>({
       query: (branchId) => `/kiosk/branches/${branchId}/staff`,
       transformResponse: unwrap,
@@ -54,6 +58,7 @@ export const kioskApi = baseApi.injectEndpoints({
   }),
 });
 export const {
+  useListKioskBranchesQuery,
   useListKioskStaffQuery,
   useKioskCheckInMutation,
   useKioskCheckOutMutation,

@@ -66,7 +66,8 @@ This is the working PRD/status record for the backend-first MVP. It records both
 - [x] Admissions operations: tabbed pending/approved/rejected queues, application review, physical-document verification, and approval allocation into term/offering/fees.
 - [x] Staff management: tabbed directory, staff-account creation with campus assignment, profile maintenance, and one-time portal/kiosk credentials.
 - [x] Attendance operations: one-click student roster marking, staff attendance reports with CSV download, and editable kiosk default shift/workday settings.
-- [ ] Build feature screens one module at a time, continuing with the public teacher-attendance kiosk.
+- [x] Public teacher-attendance kiosk: campus selection, staff-name selection, private four-digit PIN verification, and check-in/check-out recording.
+- [ ] Build feature screens one module at a time, continuing with grades and performance.
 
 ## Backend Stop Line
 

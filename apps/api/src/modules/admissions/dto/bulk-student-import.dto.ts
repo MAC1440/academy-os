@@ -52,3 +52,10 @@ export class BulkStudentImportDto {
   @Type(() => BulkStudentImportRowDto)
   rows!: BulkStudentImportRowDto[];
 }
+
+/** A permissive payload used to return row-level CSV guidance before final import validation. */
+export class BulkStudentImportPreviewDto {
+  @IsArray()
+  @ArrayMaxSize(200)
+  rows!: Record<string, unknown>[];
+}

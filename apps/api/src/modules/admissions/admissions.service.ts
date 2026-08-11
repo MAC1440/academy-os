@@ -8,6 +8,7 @@ import {
 import {
   AccountStatus,
   AccountType,
+  AcademicOfferingType,
   AdmissionStatus,
   AuditAction,
   Prisma,
@@ -23,6 +24,7 @@ import { UpdateStudentDto } from './dto/update-student.dto';
 import {
   BulkStudentImportDto,
   BulkStudentImportRowDto,
+  BulkStudentImportPreviewDto,
 } from './dto/bulk-student-import.dto';
 
 const PASSWORD_ALPHABET =
@@ -174,12 +176,28 @@ export class AdmissionsService {
     }
   }
 
+  async deleteStudent(id: string, actorUserId: string) {
+    const student = await this.getStudent(id, actorUserId);
+    await this.prisma.$transaction(async (tx) => {
+      await tx.student.delete({ where: { id: student.id } });
+      await tx.admissionApplication.delete({
+        where: { id: student.admissionApplicationId },
+      });
+    });
+    await this.audit(actorUserId, AuditAction.DELETE, 'Student', student.id, {
+      studentFullName: student.studentFullName,
+      studentCnic: student.studentCnic,
+    });
+    return { id: student.id };
+  }
+
   async bulkImportStudents(dto: BulkStudentImportDto, actorUserId: string) {
     const results: Array<{
       row: number;
       studentName: string;
       success: boolean;
       message: string;
+      skipped?: boolean;
     }> = [];
     for (const [index, row] of dto.rows.entries()) {
       try {
@@ -197,6 +215,31 @@ export class AdmissionsService {
           throw new NotFoundException(
             `Active academic term "${row.academicTermName}" was not found`,
           );
+        const existingStudent = await this.prisma.student.findFirst({
+          where: {
+            studentCnic: row.studentCnic,
+            deletedAt: null,
+            OR: [
+              { academicOfferingId: offering.id },
+              {
+                branchId: offering.branchId,
+                academicTermId: term.id,
+                academicOffering: { offeringType: offering.offeringType },
+              },
+            ],
+          },
+          select: { id: true },
+        });
+        if (existingStudent) {
+          results.push({
+            row: index + 2,
+            studentName: row.studentFullName,
+            success: true,
+            skipped: true,
+            message: 'Skipped: this student is already enrolled',
+          });
+          continue;
+        }
         const application = await this.submit({
           academicOfferingId: offering.id,
           studentFullName: row.studentFullName,
@@ -241,31 +284,126 @@ export class AdmissionsService {
       }
     }
     return {
-      imported: results.filter((result) => result.success).length,
+      imported: results.filter((result) => result.success && !result.skipped)
+        .length,
+      skipped: results.filter((result) => result.skipped).length,
       failed: results.filter((result) => !result.success).length,
       results,
     };
   }
 
-  async previewBulkImport(dto: BulkStudentImportDto) {
+  async previewBulkImport(dto: BulkStudentImportPreviewDto) {
     const organization = await this.organization();
     const terms = await this.prisma.academicTerm.findMany({
       where: { organizationId: organization.id, isActive: true },
-      select: { name: true },
+      select: { id: true, name: true },
     });
     return {
       rows: await Promise.all(
-        dto.rows.map(async (input, index) => {
+        dto.rows.map(async (rawInput, index) => {
+          const input = rawInput as Partial<BulkStudentImportRowDto>;
           const issues: string[] = [];
-          try {
-            await this.offeringForImport(input);
-          } catch (error) {
-            issues.push(error instanceof Error ? error.message : 'Class placement could not be matched');
+          let matchedOffering: {
+            id: string;
+            branchId: string;
+            offeringType: AcademicOfferingType;
+          } | null = null;
+          const requiredTextFields: Array<
+            [keyof BulkStudentImportRowDto, string]
+          > = [
+            ['campusName', 'Campus is required'],
+            ['classOrCourse', 'Class or course is required'],
+            ['academicTermName', 'Academic term is required'],
+            ['studentFullName', 'Student name is required'],
+            ['studentCnic', 'Student CNIC / B-Form is required'],
+            ['guardianFullName', 'Guardian name is required'],
+            ['guardianContactNumber', 'Guardian contact number is required'],
+          ];
+          for (const [field, message] of requiredTextFields) {
+            if (!String(input[field] ?? '').trim()) issues.push(message);
           }
-          if (!terms.some((term) => term.name.trim().toLowerCase() === input.academicTermName.trim().toLowerCase())) {
-            issues.push(`Active academic term "${input.academicTermName}" was not found`);
+          if (
+            input.studentCnic &&
+            !/^\d{13}$/.test(String(input.studentCnic))
+          ) {
+            issues.push('Student CNIC / B-Form must contain exactly 13 digits');
           }
-          return { row: index + 2, input, issues };
+          if (
+            input.guardianContactNumber &&
+            !/^\d{7,15}$/.test(String(input.guardianContactNumber))
+          ) {
+            issues.push('Guardian contact number must contain 7 to 15 digits');
+          }
+          for (const field of [
+            'monthlyFeeAmount',
+            'amountReceivedWithForm',
+            'openingBalanceAmount',
+          ] as const) {
+            if (
+              input[field] !== undefined &&
+              (!Number.isFinite(Number(input[field])) ||
+                Number(input[field]) < 0)
+            ) {
+              issues.push(
+                `${field.replace(/[A-Z]/g, (letter) => ` ${letter.toLowerCase()}`)} must be a non-negative number`,
+              );
+            }
+          }
+          if (input.campusName && input.classOrCourse) {
+            try {
+              matchedOffering = await this.offeringForImport(
+                input as BulkStudentImportRowDto,
+              );
+            } catch (error) {
+              issues.push(
+                error instanceof Error
+                  ? error.message
+                  : 'Class placement could not be matched',
+              );
+            }
+          }
+          const matchedTerm = terms.find(
+            (term) =>
+              term.name.trim().toLowerCase() ===
+              String(input.academicTermName ?? '')
+                .trim()
+                .toLowerCase(),
+          );
+          if (input.academicTermName && !matchedTerm) {
+            issues.push(
+              `Active academic term "${input.academicTermName}" was not found`,
+            );
+          }
+          const alreadyEnrolled =
+            matchedOffering &&
+            /^\d{13}$/.test(String(input.studentCnic ?? '')) &&
+            (await this.prisma.student.findFirst({
+              where: {
+                studentCnic: String(input.studentCnic),
+                deletedAt: null,
+                OR: [
+                  { academicOfferingId: matchedOffering.id },
+                  ...(matchedTerm
+                    ? [
+                        {
+                          branchId: matchedOffering.branchId,
+                          academicTermId: matchedTerm.id,
+                          academicOffering: {
+                            offeringType: matchedOffering.offeringType,
+                          },
+                        },
+                      ]
+                    : []),
+                ],
+              },
+              select: { id: true },
+            }));
+          return {
+            row: index + 2,
+            input,
+            issues,
+            alreadyEnrolled: Boolean(alreadyEnrolled),
+          };
         }),
       ),
     };

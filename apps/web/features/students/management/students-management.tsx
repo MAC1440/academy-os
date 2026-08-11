@@ -2,7 +2,7 @@
 
 import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { skipToken } from '@reduxjs/toolkit/query';
-import { Pencil, UserPlus, Users } from 'lucide-react';
+import { Pencil, Trash2, UserPlus, Users } from 'lucide-react';
 import { DirectEnrollment } from './direct-enrollment';
 import { BulkStudentImport } from './bulk-student-import';
 import { useListOfferingsQuery } from '@web/features/academics/academics.api';
@@ -17,6 +17,7 @@ import {
 } from '@web/components/data-table';
 import {
   useGetStudentQuery,
+  useDeleteStudentMutation,
   useListStudentsQuery,
   useUpdateStudentMutation,
 } from '../students.api';
@@ -240,6 +241,11 @@ export function StudentsManagement() {
             student={selected.data as Student | undefined}
             isLoading={selected.isLoading}
             onBack={() => setActiveTab('directory')}
+            onDeleted={() => {
+              setSelectedId(null);
+              students.refetch();
+              setActiveTab('directory');
+            }}
           />
         </section>
       ) : null}
@@ -250,7 +256,7 @@ export function StudentsManagement() {
               setSelectedId(studentId);
             }}
           />
-          <BulkStudentImport onImported={() => setActiveTab('directory')} />
+          <BulkStudentImport onImported={() => students.refetch()} />
         </div>
       ) : null}
     </div>
@@ -291,12 +297,16 @@ function StudentRecord({
   student,
   isLoading,
   onBack,
+  onDeleted,
 }: {
   student?: Student;
   isLoading: boolean;
   onBack: () => void;
+  onDeleted: () => void;
 }) {
   const [editing, setEditing] = useState(false);
+  const [remove, { isLoading: isDeleting }] = useDeleteStudentMutation();
+  const toast = useToast();
   if (isLoading) return <p className="text-sm text-muted-foreground">Loading student record...</p>;
   if (!student)
     return (
@@ -310,14 +320,25 @@ function StudentRecord({
         </button>
       </div>
     );
+  const currentStudent = student;
   const offering = String(
     student.academicOffering?.schoolClass?.name ??
       student.academicOffering?.course?.name ??
       'Not assigned',
   );
-  const group = student.academicOffering?.academicGroup?.name
-    ? ` · ${String(student.academicOffering.academicGroup.name)}`
-    : '';
+  const groupName = currentStudent.academicOffering?.academicGroup?.name;
+  const group = groupName ? ` · ${String(groupName)}` : '';
+  async function deleteStudent() {
+    if (!window.confirm(`Delete ${String(currentStudent.studentFullName)}? This cannot be undone.`))
+      return;
+    try {
+      await remove(currentStudent.id).unwrap();
+      toast.success('Student deleted.');
+      onDeleted();
+    } catch {
+      toast.error('Student could not be deleted.');
+    }
+  }
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-start justify-between gap-3">
@@ -337,6 +358,15 @@ function StudentRecord({
           <button type="button" className="button-secondary" onClick={() => setEditing(!editing)}>
             <Pencil className="mr-1 inline" size={14} />
             {editing ? 'Close editor' : 'Edit student'}
+          </button>
+          <button
+            type="button"
+            className="button-secondary text-rose-700 hover:text-rose-800 dark:text-rose-300"
+            disabled={isDeleting}
+            onClick={deleteStudent}
+          >
+            <Trash2 className="mr-1 inline" size={14} />
+            {isDeleting ? 'Deleting...' : 'Delete student'}
           </button>
           <button type="button" className="button-secondary" onClick={onBack}>
             Back to directory

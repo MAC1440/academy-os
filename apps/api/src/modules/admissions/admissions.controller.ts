@@ -21,7 +21,10 @@ import { AdmissionListQueryDto } from './dto/admission-list-query.dto';
 import { ReviewAdmissionDto } from './dto/review-admission.dto';
 import { SubmitAdmissionDto } from './dto/submit-admission.dto';
 import { UpdateStudentDto } from './dto/update-student.dto';
-import { BulkStudentImportDto } from './dto/bulk-student-import.dto';
+import {
+  BulkStudentImportDto,
+  BulkStudentImportPreviewDto,
+} from './dto/bulk-student-import.dto';
 
 @ApiTags('Admissions')
 @Controller()
@@ -107,6 +110,20 @@ export class AdmissionsController {
     );
   }
 
+  @Delete('students/:studentId')
+  @ApiBearerAuth('JWT-auth')
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @RequirePermissions('admissions.manage')
+  async deleteStudent(
+    @Param('studentId') studentId: string,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return successResponse(
+      'Student deleted',
+      await this.admissions.deleteStudent(studentId, user.id),
+    );
+  }
+
   @Post('students/bulk-import')
   @ApiBearerAuth('JWT-auth')
   @UseGuards(JwtAuthGuard, PermissionsGuard)
@@ -125,7 +142,7 @@ export class AdmissionsController {
   @ApiBearerAuth('JWT-auth')
   @UseGuards(JwtAuthGuard, PermissionsGuard)
   @RequirePermissions('admissions.manage')
-  async previewBulkImport(@Body() dto: BulkStudentImportDto) {
+  async previewBulkImport(@Body() dto: BulkStudentImportPreviewDto) {
     return successResponse(
       'Student import preview created',
       await this.admissions.previewBulkImport(dto),

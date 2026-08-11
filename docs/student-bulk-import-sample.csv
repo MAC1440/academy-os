@@ -1,0 +1,6 @@
+campus_name,class_or_course,section_name,academic_term_name,student_full_name,student_cnic,guardian_full_name,guardian_contact_number,monthly_fee_amount,amount_received_with_form,opening_balance_amount,receipt_number,balance_due_on,previous_school,previous_performance,admission_note,physical_documents_verified
+Main Campus,Class 1,A,2026-2027,Muhammad Hamza Khan,3520212345671,Ahmad Khan,03001234567,4500,4500,0,RCP-1001,,The Smart School,Promoted from Prep 2,,TRUE
+Main Campus,Class 3,A,2026-2027,Ayesha Fatima,3520212345672,Muhammad Usman,03011234567,5000,2500,2500,RCP-1002,2026-09-10,The Educators,82 percent in Class 2,Transfer admission,TRUE
+City Campus,Class 6,B,2026-2027,Ali Raza,3520212345673,Raza Ahmed,03021234567,5500,0,5500,,2026-09-15,Beaconhouse School System,Promoted from Class 5,,FALSE
+City Campus,Class 9,Science,2026-2027,Sara Iqbal,3520212345674,Iqbal Hussain,03031234567,6500,6500,0,RCP-1004,,Allied School,88 percent in Class 8,Science group,TRUE
+Main Campus,F.Sc-I,Pre-Medical,2026-2027,Zainab Noor,3520212345675,Noor Alam,03041234567,7500,3000,4500,RCP-1005,2026-09-20,Government Girls High School,89 percent in Matric,Pre-medical group,TRUE

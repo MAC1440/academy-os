@@ -21,6 +21,7 @@ import { AdmissionListQueryDto } from './dto/admission-list-query.dto';
 import { ReviewAdmissionDto } from './dto/review-admission.dto';
 import { SubmitAdmissionDto } from './dto/submit-admission.dto';
 import { UpdateStudentDto } from './dto/update-student.dto';
+import { BulkStudentImportDto } from './dto/bulk-student-import.dto';
 
 @ApiTags('Admissions')
 @Controller()
@@ -103,6 +104,20 @@ export class AdmissionsController {
     return successResponse(
       'Student updated',
       await this.admissions.updateStudent(studentId, dto, user.id),
+    );
+  }
+
+  @Post('students/bulk-import')
+  @ApiBearerAuth('JWT-auth')
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @RequirePermissions('admissions.manage')
+  async bulkImportStudents(
+    @Body() dto: BulkStudentImportDto,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return successResponse(
+      'Student import completed',
+      await this.admissions.bulkImportStudents(dto, user.id),
     );
   }
 

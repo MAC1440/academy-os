@@ -20,6 +20,10 @@ import { AdmissionListQueryDto } from './dto/admission-list-query.dto';
 import { ReviewAdmissionDto } from './dto/review-admission.dto';
 import { SubmitAdmissionDto } from './dto/submit-admission.dto';
 import { UpdateStudentDto } from './dto/update-student.dto';
+import {
+  BulkStudentImportDto,
+  BulkStudentImportRowDto,
+} from './dto/bulk-student-import.dto';
 
 const PASSWORD_ALPHABET =
   'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789';
@@ -168,6 +172,79 @@ export class AdmissionsService {
     } catch (error) {
       this.rethrowUnique(error);
     }
+  }
+
+  async bulkImportStudents(dto: BulkStudentImportDto, actorUserId: string) {
+    const results: Array<{
+      row: number;
+      studentName: string;
+      success: boolean;
+      message: string;
+    }> = [];
+    for (const [index, row] of dto.rows.entries()) {
+      try {
+        const offering = await this.offeringForImport(row);
+        await this.ensureBranchAccess(actorUserId, offering.branchId);
+        const organization = await this.organization();
+        const term = await this.prisma.academicTerm.findFirst({
+          where: {
+            organizationId: organization.id,
+            name: row.academicTermName.trim(),
+            isActive: true,
+          },
+        });
+        if (!term)
+          throw new NotFoundException(
+            `Active academic term "${row.academicTermName}" was not found`,
+          );
+        const application = await this.submit({
+          academicOfferingId: offering.id,
+          studentFullName: row.studentFullName,
+          studentCnic: row.studentCnic,
+          guardianFullName: row.guardianFullName,
+          guardianContactNumber: row.guardianContactNumber,
+          previousSchool: row.previousSchool,
+          previousPerformance: row.previousPerformance,
+        });
+        await this.review(
+          application.id,
+          {
+            status: AdmissionStatus.APPROVED,
+            academicOfferingId: offering.id,
+            academicTermId: term.id,
+            monthlyFeeAmount: row.monthlyFeeAmount,
+            amountReceivedWithForm: row.amountReceivedWithForm,
+            openingBalanceAmount: row.openingBalanceAmount,
+            receiptNumber: row.receiptNumber,
+            balanceDueOn: row.balanceDueOn,
+            reviewNote: row.admissionNote,
+            physicalDocumentsVerified: row.physicalDocumentsVerified ?? false,
+          },
+          actorUserId,
+        );
+        results.push({
+          row: index + 2,
+          studentName: row.studentFullName,
+          success: true,
+          message: 'Imported',
+        });
+      } catch (error) {
+        results.push({
+          row: index + 2,
+          studentName: row.studentFullName,
+          success: false,
+          message:
+            error instanceof Error
+              ? error.message
+              : 'Could not import this row',
+        });
+      }
+    }
+    return {
+      imported: results.filter((result) => result.success).length,
+      failed: results.filter((result) => !result.success).length,
+      results,
+    };
   }
 
   async review(id: string, dto: ReviewAdmissionDto, actorUserId: string) {
@@ -446,6 +523,37 @@ export class AdmissionsService {
     });
     if (!offering) throw new NotFoundException('Academic offering not found');
     return offering;
+  }
+  private async offeringForImport(row: BulkStudentImportRowDto) {
+    const offerings = await this.prisma.academicOffering.findMany({
+      where: { status: 'ACTIVE', branch: { deletedAt: null } },
+      include: { branch: true, schoolClass: true, course: true },
+    });
+    const normalize = (value: string | null | undefined) =>
+      (value ?? '').trim().toLocaleLowerCase();
+    const matches = offerings.filter(
+      (offering) =>
+        normalize(offering.branch.name) === normalize(row.campusName) &&
+        normalize(offering.schoolClass?.name ?? offering.course?.name) ===
+          normalize(row.classOrCourse) &&
+        (!row.sectionName ||
+          normalize(offering.sectionName) === normalize(row.sectionName)),
+    );
+    const fallbackMatches = offerings.filter(
+      (offering) =>
+        normalize(offering.schoolClass?.name ?? offering.course?.name) ===
+          normalize(row.classOrCourse) &&
+        (!row.sectionName ||
+          normalize(offering.sectionName) === normalize(row.sectionName)),
+    );
+    const resolved = matches.length === 1 ? matches : fallbackMatches;
+    if (resolved.length !== 1)
+      throw new NotFoundException(
+        resolved.length === 0
+          ? `No active offering found for ${row.campusName} / ${row.classOrCourse}`
+          : `Multiple offerings match ${row.classOrCourse}; use the exact campus_name and section_name`,
+      );
+    return resolved[0]!;
   }
   private async application(id: string) {
     const application = await this.prisma.admissionApplication.findFirst({

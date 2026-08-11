@@ -30,7 +30,17 @@ export const studentsApi = baseApi.injectEndpoints({
       transformResponse: unwrap,
       invalidatesTags: ['Academic'],
     }),
+    bulkImportStudents: build.mutation<ApiRecord, { rows: ApiRecord[] }>({
+      query: (body) => ({ url: '/students/bulk-import', method: 'POST', body }),
+      transformResponse: unwrap,
+      invalidatesTags: ['Academic'],
+    }),
   }),
 });
 
-export const { useListStudentsQuery, useGetStudentQuery, useUpdateStudentMutation } = studentsApi;
+export const {
+  useListStudentsQuery,
+  useGetStudentQuery,
+  useUpdateStudentMutation,
+  useBulkImportStudentsMutation,
+} = studentsApi;

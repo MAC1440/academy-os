@@ -2,13 +2,19 @@
 
 import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { skipToken } from '@reduxjs/toolkit/query';
-import { Pencil, Search, UserPlus, Users } from 'lucide-react';
+import { Pencil, UserPlus, Users } from 'lucide-react';
 import { DirectEnrollment } from './direct-enrollment';
+import { BulkStudentImport } from './bulk-student-import';
 import { useListOfferingsQuery } from '@web/features/academics/academics.api';
 import { useListBranchesQuery } from '@web/features/organization/organization.api';
 import { useListAcademicTermsQuery } from '@web/features/settings/settings.api';
 import { useToast } from '@web/components/toast-provider';
-import { DataTable, TableEmpty } from '@web/components/data-table';
+import {
+  DataTable,
+  DataTableControls,
+  DataTablePagination,
+  TableEmpty,
+} from '@web/components/data-table';
 import {
   useGetStudentQuery,
   useListStudentsQuery,
@@ -36,19 +42,41 @@ export function StudentsManagement() {
   const [activeTab, setActiveTab] = useState<'directory' | 'enroll' | 'record'>('directory');
   const [branchId, setBranchId] = useState('');
   const [search, setSearch] = useState('');
+  const [sort, setSort] = useState('name-asc');
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const { data: branches = [] } = useListBranchesQuery();
   const students = useListStudentsQuery(branchId ? { branchId } : undefined);
   const selected = useGetStudentQuery(selectedId ?? skipToken);
-  const filteredStudents = useMemo(
-    () =>
-      (students.data ?? []).filter((item) =>
+  const filteredStudents = useMemo(() => {
+    return [...(students.data ?? [])]
+      .filter((item) =>
         `${String(item.studentFullName ?? '')} ${String(item.registrationNumber ?? '')} ${String(item.guardianContactNumber ?? '')}`
           .toLowerCase()
           .includes(search.trim().toLowerCase()),
-      ),
-    [search, students.data],
-  );
+      )
+      .sort((left, right) => {
+        const leftValue =
+          sort === 'registration'
+            ? String(left.registrationNumber ?? '')
+            : String(left.studentFullName ?? '');
+        const rightValue =
+          sort === 'registration'
+            ? String(right.registrationNumber ?? '')
+            : String(right.studentFullName ?? '');
+        const comparison = leftValue.localeCompare(rightValue, 'en');
+        return sort === 'name-desc' ? -comparison : comparison;
+      });
+  }, [search, sort, students.data]);
+  const pageCount = Math.max(1, Math.ceil(filteredStudents.length / pageSize));
+  const paginatedStudents = filteredStudents.slice((page - 1) * pageSize, page * pageSize);
+  useEffect(() => {
+    setPage(1);
+  }, [branchId, pageSize, search, sort]);
+  useEffect(() => {
+    if (page > pageCount) setPage(pageCount);
+  }, [page, pageCount]);
   useEffect(() => {
     if (selectedId) setActiveTab('record');
   }, [selectedId]);
@@ -91,7 +119,7 @@ export function StudentsManagement() {
           aria-labelledby="directory-tab"
           className="rounded-2xl border border-border bg-card p-5 shadow-sm sm:p-6"
         >
-          <div className="flex flex-wrap items-end justify-between gap-3">
+          <div className="flex flex-wrap items-end gap-3">
             <label className="grid gap-1 text-sm font-medium">
               Campus
               <select
@@ -107,21 +135,20 @@ export function StudentsManagement() {
                 ))}
               </select>
             </label>
-            <label className="grid w-full max-w-sm gap-1 text-sm font-medium">
-              Find student
-              <div className="relative">
-                <Search
-                  size={16}
-                  className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
-                />
-                <input
-                  className="field pl-9"
-                  value={search}
-                  onChange={(event) => setSearch(event.target.value)}
-                  placeholder="Name, registration number, or guardian phone"
-                />
-              </div>
-            </label>
+            <div className="min-w-72 flex-1">
+              <DataTableControls
+                searchValue={search}
+                onSearchChange={setSearch}
+                searchPlaceholder="Name, registration number, or guardian phone"
+                sortValue={sort}
+                onSortChange={setSort}
+                sortOptions={[
+                  { value: 'name-asc', label: 'Name: A to Z' },
+                  { value: 'name-desc', label: 'Name: Z to A' },
+                  { value: 'registration', label: 'Registration number' },
+                ]}
+              />
+            </div>
           </div>
           <div className="mt-5">
             <DataTable minWidth="52rem">
@@ -143,7 +170,7 @@ export function StudentsManagement() {
                     No students match this view. Approved admissions will appear here automatically.
                   </TableEmpty>
                 ) : null}
-                {filteredStudents.map((item) => {
+                {paginatedStudents.map((item) => {
                   const student = item as Student;
                   const offering = String(
                     student.academicOffering?.schoolClass?.name ??
@@ -172,6 +199,16 @@ export function StudentsManagement() {
                 })}
               </tbody>
             </DataTable>
+            <div className="mt-4">
+              <DataTablePagination
+                page={page}
+                pageCount={pageCount}
+                itemCount={filteredStudents.length}
+                pageSize={pageSize}
+                onPageChange={setPage}
+                onPageSizeChange={setPageSize}
+              />
+            </div>
           </div>
           <div className="hidden">
             {students.isLoading ? (
@@ -207,11 +244,14 @@ export function StudentsManagement() {
         </section>
       ) : null}
       {activeTab === 'enroll' ? (
-        <DirectEnrollment
-          onCreated={(studentId) => {
-            setSelectedId(studentId);
-          }}
-        />
+        <div className="space-y-6">
+          <DirectEnrollment
+            onCreated={(studentId) => {
+              setSelectedId(studentId);
+            }}
+          />
+          <BulkStudentImport onImported={() => setActiveTab('directory')} />
+        </div>
       ) : null}
     </div>
   );

@@ -247,6 +247,30 @@ export class AdmissionsService {
     };
   }
 
+  async previewBulkImport(dto: BulkStudentImportDto) {
+    const organization = await this.organization();
+    const terms = await this.prisma.academicTerm.findMany({
+      where: { organizationId: organization.id, isActive: true },
+      select: { name: true },
+    });
+    return {
+      rows: await Promise.all(
+        dto.rows.map(async (input, index) => {
+          const issues: string[] = [];
+          try {
+            await this.offeringForImport(input);
+          } catch (error) {
+            issues.push(error instanceof Error ? error.message : 'Class placement could not be matched');
+          }
+          if (!terms.some((term) => term.name.trim().toLowerCase() === input.academicTermName.trim().toLowerCase())) {
+            issues.push(`Active academic term "${input.academicTermName}" was not found`);
+          }
+          return { row: index + 2, input, issues };
+        }),
+      ),
+    };
+  }
+
   async review(id: string, dto: ReviewAdmissionDto, actorUserId: string) {
     const application = await this.application(id);
     await this.ensureBranchAccess(actorUserId, application.branchId);

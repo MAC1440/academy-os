@@ -35,6 +35,10 @@ export const studentsApi = baseApi.injectEndpoints({
       transformResponse: unwrap,
       invalidatesTags: ['Academic'],
     }),
+    previewStudentBulkImport: build.mutation<ApiRecord, { rows: ApiRecord[] }>({
+      query: (body) => ({ url: '/students/bulk-import/preview', method: 'POST', body }),
+      transformResponse: unwrap,
+    }),
   }),
 });
 
@@ -43,4 +47,5 @@ export const {
   useGetStudentQuery,
   useUpdateStudentMutation,
   useBulkImportStudentsMutation,
+  usePreviewStudentBulkImportMutation,
 } = studentsApi;

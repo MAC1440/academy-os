@@ -121,6 +121,17 @@ export class AdmissionsController {
     );
   }
 
+  @Post('students/bulk-import/preview')
+  @ApiBearerAuth('JWT-auth')
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @RequirePermissions('admissions.manage')
+  async previewBulkImport(@Body() dto: BulkStudentImportDto) {
+    return successResponse(
+      'Student import preview created',
+      await this.admissions.previewBulkImport(dto),
+    );
+  }
+
   @Patch('admissions/:admissionId/review')
   @ApiBearerAuth('JWT-auth')
   @UseGuards(JwtAuthGuard, PermissionsGuard)

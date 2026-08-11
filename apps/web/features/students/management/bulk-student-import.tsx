@@ -3,7 +3,10 @@
 import { ChangeEvent, useState } from 'react';
 import { Download, Upload } from 'lucide-react';
 import { useToast } from '@web/components/toast-provider';
-import { useBulkImportStudentsMutation } from '../students.api';
+import {
+  useBulkImportStudentsMutation,
+  usePreviewStudentBulkImportMutation,
+} from '../students.api';
 import type { ApiRecord } from '@web/store/api/base-api';
 
 const requiredHeaders = [
@@ -38,8 +41,12 @@ const keyMap: Record<string, string> = {
 export function BulkStudentImport({ onImported }: { onImported: () => void }) {
   const toast = useToast();
   const [rows, setRows] = useState<ApiRecord[]>([]);
+  const [reviewRows, setReviewRows] = useState<
+    Array<{ row: number; input: ApiRecord; issues: string[] }>
+  >([]);
   const [result, setResult] = useState<ApiRecord | null>(null);
   const [importRows, { isLoading }] = useBulkImportStudentsMutation();
+  const [previewImport, { isLoading: previewing }] = usePreviewStudentBulkImportMutation();
   async function selectFile(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
     if (!file) return;
@@ -78,10 +85,21 @@ export function BulkStudentImport({ onImported }: { onImported: () => void }) {
     });
     setRows(parsed);
     setResult(null);
+    setReviewRows([]);
+  }
+  async function preview() {
+    try {
+      const response = await previewImport({ rows }).unwrap();
+      setReviewRows(
+        (response.rows as Array<{ row: number; input: ApiRecord; issues: string[] }>) ?? [],
+      );
+    } catch {
+      toast.error('The CSV could not be validated.');
+    }
   }
   async function submit() {
     try {
-      const response = await importRows({ rows }).unwrap();
+      const response = await importRows({ rows: reviewRows.map((item) => item.input) }).unwrap();
       setResult(response);
       if (Number(response.imported ?? 0)) onImported();
       toast.success(`Imported ${String(response.imported ?? 0)} students.`);
@@ -113,16 +131,16 @@ export function BulkStudentImport({ onImported }: { onImported: () => void }) {
       {rows.length ? (
         <>
           <p className="text-sm text-muted-foreground">
-            Ready to import {rows.length} students. First: {String(rows[0]?.studentFullName)}
+            {rows.length} students ready for validation.
           </p>
           <button
             type="button"
             className="button-primary inline-flex items-center gap-2"
-            disabled={isLoading}
-            onClick={submit}
+            disabled={previewing}
+            onClick={preview}
           >
             <Upload size={16} />
-            {isLoading ? 'Importing...' : `Import ${rows.length} students`}
+            {previewing ? 'Checking...' : 'Review import'}
           </button>
         </>
       ) : null}
@@ -131,6 +149,44 @@ export function BulkStudentImport({ onImported }: { onImported: () => void }) {
           Imported: {String(result.imported ?? 0)} · Needs attention: {String(result.failed ?? 0)}.
           Review the response in the browser network panel for row details.
         </p>
+      ) : null}
+      {reviewRows.length ? (
+        <dialog
+          open
+          className="fixed inset-0 z-50 m-auto max-h-[85vh] w-[min(50rem,calc(100%-2rem))] overflow-y-auto rounded-2xl border border-border bg-card p-5 text-foreground shadow-xl"
+        >
+          <h3 className="font-display text-2xl">Review import</h3>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Nothing has been added yet. Fix the CSV details below, then upload it again.
+          </p>
+          <div className="mt-4 space-y-3">
+            {reviewRows
+              .filter((item) => item.issues.length)
+              .map((item) => (
+                <div key={item.row} className="rounded-xl border border-border p-3">
+                  <p className="font-semibold">
+                    Row {item.row}: {String(item.input.studentFullName)}
+                  </p>
+                  <p className="mt-1 text-sm text-rose-700 dark:text-rose-300">
+                    {item.issues.join(' · ')}
+                  </p>
+                </div>
+              ))}
+          </div>
+          <button type="button" className="button-secondary mt-4" onClick={() => setReviewRows([])}>
+            Close review
+          </button>
+          {!reviewRows.some((item) => item.issues.length) ? (
+            <button
+              type="button"
+              className="button-primary ml-2"
+              disabled={isLoading}
+              onClick={submit}
+            >
+              {isLoading ? 'Importing...' : `Import ${reviewRows.length} students`}
+            </button>
+          ) : null}
+        </dialog>
       ) : null}
     </section>
   );

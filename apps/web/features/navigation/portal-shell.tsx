@@ -108,7 +108,7 @@ export function PortalShell({ children }: { children: React.ReactNode }) {
               aria-label="Color theme"
               value={theme}
               onChange={(event) => setTheme(event.target.value as 'light' | 'dark' | 'system')}
-              className="rounded-md border border-white/10 bg-white/5 px-2 py-1.5 text-sm text-white outline-none focus:ring-2 focus:ring-teal-300"
+              className="portal-theme-select rounded-md border border-white/15 bg-slate-950 px-2 py-1.5 text-sm text-slate-100 outline-none focus:ring-2 focus:ring-teal-300"
             >
               <option value="light">Light</option>
               <option value="dark">Dark</option>

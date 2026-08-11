@@ -34,8 +34,17 @@ export const staffApi = baseApi.injectEndpoints({
       transformResponse: unwrap,
       invalidatesTags: ['Branch'],
     }),
+    deleteStaff: build.mutation<ApiRecord, string>({
+      query: (id) => ({ url: `/staff/${id}`, method: 'DELETE' }),
+      transformResponse: unwrap,
+      invalidatesTags: ['Branch'],
+    }),
     resetStaffPin: build.mutation<ApiRecord, string>({
       query: (id) => ({ url: `/staff/${id}/reset-pin`, method: 'POST' }),
+      transformResponse: unwrap,
+    }),
+    resetStaffPassword: build.mutation<ApiRecord, string>({
+      query: (id) => ({ url: `/staff/${id}/reset-password`, method: 'POST' }),
       transformResponse: unwrap,
     }),
   }),
@@ -46,5 +55,7 @@ export const {
   useGetTemporaryStaffCredentialsQuery,
   useCreateStaffMutation,
   useUpdateStaffMutation,
+  useDeleteStaffMutation,
   useResetStaffPinMutation,
+  useResetStaffPasswordMutation,
 } = staffApi;

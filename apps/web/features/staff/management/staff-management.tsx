@@ -14,10 +14,12 @@ import { useListBranchesQuery } from '@web/features/organization/organization.ap
 import { useListRolesQuery } from '@web/features/roles/roles.api';
 import {
   useCreateStaffMutation,
+  useDeleteStaffMutation,
   useGetStaffQuery,
   useGetTemporaryStaffCredentialsQuery,
   useListStaffQuery,
   useResetStaffPinMutation,
+  useResetStaffPasswordMutation,
   useUpdateStaffMutation,
 } from '../staff.api';
 import type { ApiRecord } from '@web/store/api/base-api';
@@ -434,7 +436,9 @@ function StaffRecord({
   onBack: () => void;
 }) {
   const [update] = useUpdateStaffMutation();
+  const [removeStaff, { isLoading: removing }] = useDeleteStaffMutation();
   const [resetPin] = useResetStaffPinMutation();
+  const [resetPassword, { isLoading: resettingPassword }] = useResetStaffPasswordMutation();
   const toast = useToast();
   const temporaryCredentials = useGetTemporaryStaffCredentialsQuery(staff?.id ?? skipToken);
   const user = staff?.user;
@@ -479,6 +483,35 @@ function StaffRecord({
       toast.error('Kiosk PIN could not be reset.');
     }
   }
+  async function resetPortalPassword() {
+    if (!staff) return;
+    try {
+      await resetPassword(staff.id).unwrap();
+      await temporaryCredentials.refetch();
+      toast.success(
+        'Portal password reset. It remains available here until the staff member changes it.',
+      );
+    } catch {
+      toast.error('Portal password could not be reset.');
+    }
+  }
+  async function remove() {
+    if (!staff) return;
+    if (
+      !window.confirm(
+        `Remove ${String(user?.fullName ?? 'this staff member')}? They will no longer be able to sign in.`,
+      )
+    ) {
+      return;
+    }
+    try {
+      await removeStaff(staff.id).unwrap();
+      toast.success('Staff member removed.');
+      onBack();
+    } catch {
+      toast.error('Staff member could not be removed.');
+    }
+  }
   if (isLoading) return <p className="text-sm text-muted-foreground">Loading staff record...</p>;
   if (!staff || !user)
     return (
@@ -506,9 +539,19 @@ function StaffRecord({
           <p className="eyebrow">Staff record</p>
           <h2 className="mt-2 font-display text-3xl tracking-[-.04em]">{String(user.fullName)}</h2>
         </div>
-        <button type="button" className="button-secondary" onClick={onBack}>
-          Back to directory
-        </button>
+        <div className="flex flex-wrap gap-2">
+          <button type="button" className="button-secondary" onClick={onBack}>
+            Back to directory
+          </button>
+          <button
+            type="button"
+            className="rounded-xl border border-rose-500/50 px-4 py-2 text-sm font-semibold text-rose-700 transition hover:bg-rose-50 dark:text-rose-300 dark:hover:bg-rose-950/40"
+            disabled={removing}
+            onClick={remove}
+          >
+            {removing ? 'Removing...' : 'Remove staff'}
+          </button>
+        </div>
       </div>
       <form onSubmit={save} className="grid gap-4 md:grid-cols-2">
         <label className="grid gap-1 text-sm font-medium">
@@ -574,9 +617,9 @@ function StaffRecord({
         </label>
         <button className="button-primary w-fit">Save changes</button>
       </form>
-      <div className="rounded-xl border border-amber-200 bg-amber-50 p-4">
-        <p className="font-semibold text-amber-950">Attendance kiosk PIN</p>
-        <p className="mt-1 text-sm text-amber-900">
+      <div className="rounded-xl border border-border bg-muted/30 p-4">
+        <p className="font-semibold">Attendance kiosk PIN</p>
+        <p className="mt-1 text-sm text-muted-foreground">
           Reset only when the staff member is present; the generated PIN is shown once.
         </p>
         <button type="button" className="button-secondary mt-3" onClick={reset}>
@@ -588,14 +631,29 @@ function StaffRecord({
           />
         ) : null}
       </div>
-      {temporaryCredentials.data?.initialPassword ? (
-        <CredentialCard
-          credentials={{
-            contactNumber: String(temporaryCredentials.data.contactNumber ?? ''),
-            initialPassword: String(temporaryCredentials.data.initialPassword),
-          }}
-        />
-      ) : null}
+      <div className="rounded-xl border border-border bg-muted/30 p-4">
+        <p className="font-semibold">Portal password</p>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Reset only when needed. The staff member will be asked to choose a new password after
+          signing in.
+        </p>
+        <button
+          type="button"
+          className="button-secondary mt-3"
+          disabled={resettingPassword}
+          onClick={resetPortalPassword}
+        >
+          {resettingPassword ? 'Resetting...' : 'Reset portal password'}
+        </button>
+        {temporaryCredentials.data?.initialPassword ? (
+          <CredentialCard
+            credentials={{
+              contactNumber: String(temporaryCredentials.data.contactNumber ?? ''),
+              initialPassword: String(temporaryCredentials.data.initialPassword),
+            }}
+          />
+        ) : null}
+      </div>
     </section>
   );
 }
@@ -606,12 +664,12 @@ function CredentialCard({
   credentials: { contactNumber?: string; initialPassword?: string; initialPin?: string };
 }) {
   return (
-    <div className="mt-5 rounded-xl border border-amber-300 bg-amber-50 p-4">
-      <p className="font-semibold text-amber-950">Temporary credentials</p>
-      <p className="mt-1 text-sm text-amber-900">
+    <div className="mt-5 rounded-xl border border-border bg-card p-4">
+      <p className="font-semibold">Temporary credentials</p>
+      <p className="mt-1 text-sm text-muted-foreground">
         Administrators can view these until the staff member changes the matching credential.
       </p>
-      <div className="mt-3 grid gap-1 font-mono text-sm text-amber-950">
+      <div className="mt-3 grid gap-1 font-mono text-sm">
         {credentials.contactNumber ? <p>Contact: {credentials.contactNumber}</p> : null}
         {credentials.initialPassword ? <p>Portal password: {credentials.initialPassword}</p> : null}
         {credentials.initialPin ? <p>Kiosk PIN: {credentials.initialPin}</p> : null}

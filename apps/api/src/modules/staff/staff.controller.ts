@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   Param,
   Patch,
@@ -80,6 +81,18 @@ export class StaffController {
     );
   }
 
+  @Delete(':staffId')
+  @RequirePermissions('staff.manage')
+  async deleteStaff(
+    @Param('staffId') staffId: string,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return successResponse(
+      'Staff member removed',
+      await this.staffService.deleteStaff(staffId, user.id),
+    );
+  }
+
   @Post(':staffId/reset-pin')
   @RequirePermissions('staff.manage')
   async resetPin(
@@ -89,6 +102,18 @@ export class StaffController {
     return successResponse(
       'PIN reset. The temporary PIN remains available to administrators until changed.',
       await this.staffService.resetPin(staffId, user.id),
+    );
+  }
+
+  @Post(':staffId/reset-password')
+  @RequirePermissions('staff.manage')
+  async resetPassword(
+    @Param('staffId') staffId: string,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return successResponse(
+      'Password reset. The temporary password remains available to administrators until changed.',
+      await this.staffService.resetPassword(staffId, user.id),
     );
   }
 }

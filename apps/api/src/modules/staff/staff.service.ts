@@ -187,6 +187,21 @@ export class StaffService {
     }
   }
 
+  async deleteStaff(staffId: string, actorUserId: string) {
+    const staff = await this.getStaffForManagement(staffId);
+    await this.prisma.user.update({
+      where: { id: staff.userId },
+      data: {
+        deletedAt: new Date(),
+        status: AccountStatus.INACTIVE,
+        temporaryPasswordEncrypted: null,
+        temporaryPinEncrypted: null,
+      },
+    });
+    await this.audit(actorUserId, AuditAction.DELETE, 'StaffProfile', staff.id);
+    return { staffId: staff.id };
+  }
+
   async resetPin(staffId: string, actorUserId: string) {
     const staff = await this.getStaffForManagement(staffId);
     const initialPin = String(randomInt(1000, 10_000));
@@ -202,6 +217,29 @@ export class StaffService {
     });
     await this.audit(actorUserId, AuditAction.UPDATE, 'StaffPin', staff.id);
     return { staffId, initialPin };
+  }
+
+  async resetPassword(staffId: string, actorUserId: string) {
+    const staff = await this.getStaffForManagement(staffId);
+    const initialPassword = this.generatePassword();
+    await this.prisma.user.update({
+      where: { id: staff.userId },
+      data: {
+        passwordHash: await bcrypt.hash(initialPassword, 12),
+        temporaryPasswordEncrypted: encryptTemporaryCredential(
+          initialPassword,
+          jwtSecret,
+        ),
+        mustCompleteProfile: true,
+      },
+    });
+    await this.audit(
+      actorUserId,
+      AuditAction.UPDATE,
+      'StaffPassword',
+      staff.id,
+    );
+    return { staffId, initialPassword };
   }
 
   async temporaryCredentials(staffId: string) {

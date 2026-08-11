@@ -138,6 +138,33 @@ a:focus-visible {
   outline-offset: 3px;
 }
 
+.button-secondary {
+  border: 1px solid var(--border);
+  border-radius: 0.75rem;
+  background: var(--card);
+  color: var(--foreground);
+  padding: 0.8rem 1rem;
+  font-weight: 700;
+  transition:
+    background 0.16s,
+    border-color 0.16s;
+}
+
+.button-secondary:hover:not(:disabled) {
+  border-color: var(--focus);
+  background: color-mix(in srgb, var(--card) 82%, var(--accent-soft));
+}
+
+.button-secondary:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.portal-theme-select option {
+  background: #241114;
+  color: #fff8ec;
+}
+
 .nav-link {
   display: flex;
   align-items: center;

@@ -2,12 +2,13 @@
 
 import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { skipToken } from '@reduxjs/toolkit/query';
-import { ContactRound, Pencil, Search, UserPlus, Users } from 'lucide-react';
+import { Pencil, Search, UserPlus, Users } from 'lucide-react';
 import { DirectEnrollment } from './direct-enrollment';
 import { useListOfferingsQuery } from '@web/features/academics/academics.api';
 import { useListBranchesQuery } from '@web/features/organization/organization.api';
 import { useListAcademicTermsQuery } from '@web/features/settings/settings.api';
 import { useToast } from '@web/components/toast-provider';
+import { DataTable, TableEmpty } from '@web/components/data-table';
 import {
   useGetStudentQuery,
   useListStudentsQuery,
@@ -27,13 +28,12 @@ type Student = ApiRecord & {
 };
 
 const tabs = [
-  { id: 'directory', label: 'Student directory', icon: Users },
-  { id: 'record', label: 'Student record', icon: ContactRound },
-  { id: 'enroll', label: 'Direct enrollment', icon: UserPlus },
+  { id: 'directory', label: 'Students', icon: Users },
+  { id: 'enroll', label: 'Add student', icon: UserPlus },
 ] as const;
 
 export function StudentsManagement() {
-  const [activeTab, setActiveTab] = useState<(typeof tabs)[number]['id']>('directory');
+  const [activeTab, setActiveTab] = useState<'directory' | 'enroll' | 'record'>('directory');
   const [branchId, setBranchId] = useState('');
   const [search, setSearch] = useState('');
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -55,13 +55,9 @@ export function StudentsManagement() {
   return (
     <div className="space-y-6">
       <header className="max-w-2xl">
-        <p className="eyebrow">Student management</p>
-        <h1 className="mt-2 font-display text-4xl tracking-[-.05em]">
-          Every admission, ready to find.
-        </h1>
+        <h1 className="font-display text-4xl tracking-[-.04em]">Students</h1>
         <p className="mt-3 text-sm leading-6 text-muted-foreground">
-          Students are created when an admission is approved. This directory keeps their current
-          campus, offering, guardian, and admission record easy to inspect.
+          Find a student, update their class or campus, or add someone who is already enrolled.
         </p>
       </header>
       <div
@@ -127,7 +123,57 @@ export function StudentsManagement() {
               </div>
             </label>
           </div>
-          <div className="mt-5 grid gap-3">
+          <div className="mt-5">
+            <DataTable minWidth="52rem">
+              <thead className="border-b border-border bg-muted/45 text-xs uppercase tracking-wide text-muted-foreground">
+                <tr>
+                  <th className="px-4 py-3 font-semibold">Student</th>
+                  <th className="px-4 py-3 font-semibold">Class / course</th>
+                  <th className="px-4 py-3 font-semibold">Campus</th>
+                  <th className="px-4 py-3 font-semibold">Registration</th>
+                  <th className="px-4 py-3 font-semibold">Guardian</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border">
+                {students.isLoading ? (
+                  <TableEmpty colSpan={5}>Loading students...</TableEmpty>
+                ) : null}
+                {!students.isLoading && filteredStudents.length === 0 ? (
+                  <TableEmpty colSpan={5}>
+                    No students match this view. Approved admissions will appear here automatically.
+                  </TableEmpty>
+                ) : null}
+                {filteredStudents.map((item) => {
+                  const student = item as Student;
+                  const offering = String(
+                    student.academicOffering?.schoolClass?.name ??
+                      student.academicOffering?.course?.name ??
+                      'Offering not available',
+                  );
+                  return (
+                    <tr
+                      key={student.id}
+                      className="cursor-pointer transition hover:bg-teal-50/60"
+                      onClick={() => setSelectedId(student.id)}
+                    >
+                      <td className="px-4 py-3 font-medium">{String(student.studentFullName)}</td>
+                      <td className="px-4 py-3 text-muted-foreground">{offering}</td>
+                      <td className="px-4 py-3 text-muted-foreground">
+                        {String(student.branch?.name ?? 'Campus')}
+                      </td>
+                      <td className="px-4 py-3 font-medium text-teal-700">
+                        {String(student.registrationNumber ?? 'Registration pending')}
+                      </td>
+                      <td className="px-4 py-3 text-muted-foreground">
+                        {String(student.guardianFullName)} · {String(student.guardianContactNumber)}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </DataTable>
+          </div>
+          <div className="hidden">
             {students.isLoading ? (
               <p className="text-sm text-muted-foreground">Loading students...</p>
             ) : null}

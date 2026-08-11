@@ -20,5 +20,8 @@ export const attendanceApi = baseApi.injectEndpoints({
     }),
   }),
 });
-export const { useGetStudentAttendanceRosterQuery, useSaveStudentAttendanceMutation } =
-  attendanceApi;
+export const {
+  useGetStudentAttendanceRosterQuery,
+  useLazyGetStudentAttendanceRosterQuery,
+  useSaveStudentAttendanceMutation,
+} = attendanceApi;

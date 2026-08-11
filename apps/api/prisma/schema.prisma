@@ -121,6 +121,8 @@ model User {
   email                String?
   passwordHash         String
   pinHash              String?
+  temporaryPasswordEncrypted String?
+  temporaryPinEncrypted      String?
   mustCompleteProfile  Boolean       @default(true)
   status               AccountStatus @default(ACTIVE)
   createdAt            DateTime      @default(now())

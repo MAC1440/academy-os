@@ -70,6 +70,7 @@ This is the working PRD/status record for the backend-first MVP. It records both
 - [x] Public teacher-attendance kiosk: campus selection, staff-name selection, private four-digit PIN verification, and check-in/check-out recording.
 - [x] Grades and performance: regular/festival assessments, subject-based mark entry, and student performance history.
 - [x] Finance operations: per-student fee summary, payment history, and receipt-numbered payment recording in PKR.
+- [x] Operations table foundation: responsive, horizontally scrollable data tables for academic catalogues/groups, student and staff directories, and finance payment history.
 - [ ] Build feature screens one module at a time, continuing with shared notes.
 
 ## Backend Stop Line

@@ -1,14 +1,21 @@
 'use client';
 
-import { FormEvent, useEffect, useState } from 'react';
+import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { skipToken } from '@reduxjs/toolkit/query';
-import { KeyRound, Plus, UsersRound } from 'lucide-react';
+import { Plus, UsersRound } from 'lucide-react';
 import { useToast } from '@web/components/toast-provider';
+import {
+  DataTable,
+  DataTableControls,
+  DataTablePagination,
+  TableEmpty,
+} from '@web/components/data-table';
 import { useListBranchesQuery } from '@web/features/organization/organization.api';
 import { useListRolesQuery } from '@web/features/roles/roles.api';
 import {
   useCreateStaffMutation,
   useGetStaffQuery,
+  useGetTemporaryStaffCredentialsQuery,
   useListStaffQuery,
   useResetStaffPinMutation,
   useUpdateStaffMutation,
@@ -21,13 +28,12 @@ type Staff = ApiRecord & {
   };
 };
 const tabs = [
-  { id: 'directory', label: 'Staff directory', icon: UsersRound },
+  { id: 'directory', label: 'Staff', icon: UsersRound },
   { id: 'add', label: 'Add staff', icon: Plus },
-  { id: 'record', label: 'Staff record', icon: KeyRound },
 ] as const;
 
 export function StaffManagement() {
-  const [activeTab, setActiveTab] = useState<(typeof tabs)[number]['id']>('directory');
+  const [activeTab, setActiveTab] = useState<'directory' | 'add' | 'record'>('directory');
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const staff = useListStaffQuery();
   const selected = useGetStaffQuery(selectedId ?? skipToken);
@@ -37,13 +43,9 @@ export function StaffManagement() {
   return (
     <div className="space-y-6">
       <header className="max-w-2xl">
-        <p className="eyebrow">Staff management</p>
-        <h1 className="mt-2 font-display text-4xl tracking-[-.05em]">
-          The people who run your campus.
-        </h1>
+        <h1 className="font-display text-4xl tracking-[-.04em]">Staff</h1>
         <p className="mt-3 text-sm leading-6 text-muted-foreground">
-          Create secure staff accounts, assign their campuses, and keep their kiosk PIN separate
-          from their portal password.
+          Add staff, set their campus access, and manage their kiosk PIN.
         </p>
       </header>
       <div
@@ -100,6 +102,52 @@ function Directory({
   isLoading: boolean;
   onOpen: (id: string) => void;
 }) {
+  const [search, setSearch] = useState('');
+  const [sort, setSort] = useState('name-asc');
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+  const filteredStaff = useMemo(() => {
+    const term = search.trim().toLocaleLowerCase();
+    return [...staff]
+      .filter((item) => {
+        const profile = item as Staff;
+        const user = profile.user;
+        if (!term) return true;
+        return [
+          user?.fullName,
+          user?.contactNumber,
+          profile.designation,
+          profile.staffType,
+          user?.status,
+        ]
+          .filter(Boolean)
+          .some((value) => String(value).toLocaleLowerCase().includes(term));
+      })
+      .sort((left, right) => {
+        const leftProfile = left as Staff;
+        const rightProfile = right as Staff;
+        const leftValue =
+          sort === 'designation'
+            ? String(leftProfile.designation ?? leftProfile.staffType ?? '')
+            : String(leftProfile.user?.fullName ?? '');
+        const rightValue =
+          sort === 'designation'
+            ? String(rightProfile.designation ?? rightProfile.staffType ?? '')
+            : String(rightProfile.user?.fullName ?? '');
+        const comparison = leftValue.localeCompare(rightValue, 'en');
+        return sort === 'name-desc' ? -comparison : comparison;
+      });
+  }, [search, sort, staff]);
+  const pageCount = Math.max(1, Math.ceil(filteredStaff.length / pageSize));
+  const paginatedStaff = filteredStaff.slice((page - 1) * pageSize, page * pageSize);
+
+  useEffect(() => {
+    setPage(1);
+  }, [pageSize, search, sort]);
+  useEffect(() => {
+    if (page > pageCount) setPage(pageCount);
+  }, [page, pageCount]);
+
   return (
     <section
       role="tabpanel"
@@ -107,7 +155,83 @@ function Directory({
       aria-labelledby="directory-tab"
       className="rounded-2xl border border-border bg-card p-5 shadow-sm sm:p-6"
     >
-      <div className="grid gap-3">
+      <div className="mb-4">
+        <DataTableControls
+          searchValue={search}
+          onSearchChange={setSearch}
+          searchPlaceholder="Search staff, contact, or designation"
+          sortValue={sort}
+          onSortChange={setSort}
+          sortOptions={[
+            { value: 'name-asc', label: 'Name: A to Z' },
+            { value: 'name-desc', label: 'Name: Z to A' },
+            { value: 'designation', label: 'Designation' },
+          ]}
+        />
+      </div>
+      <DataTable minWidth="50rem">
+        <thead className="border-b border-border bg-muted/45 text-xs uppercase tracking-wide text-muted-foreground">
+          <tr>
+            <th className="px-4 py-3 font-semibold">Staff member</th>
+            <th className="px-4 py-3 font-semibold">Role / designation</th>
+            <th className="px-4 py-3 font-semibold">Campuses</th>
+            <th className="px-4 py-3 font-semibold">Contact</th>
+            <th className="px-4 py-3 font-semibold">Status</th>
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-border">
+          {isLoading ? <TableEmpty colSpan={5}>Loading staff...</TableEmpty> : null}
+          {!isLoading && filteredStaff.length === 0 ? (
+            <TableEmpty colSpan={5}>
+              {staff.length === 0
+                ? 'No staff accounts yet. Add the first staff member from the next tab.'
+                : 'No staff members match your search.'}
+            </TableEmpty>
+          ) : null}
+          {paginatedStaff.map((item) => {
+            const profile = item as Staff;
+            const user = profile.user;
+            const branches = (user?.roleAssignments ?? [])
+              .map((assignment) => String(assignment.branch?.name ?? ''))
+              .filter(Boolean)
+              .join(', ');
+            return (
+              <tr
+                key={item.id}
+                className="cursor-pointer transition hover:bg-teal-50/60"
+                onClick={() => onOpen(item.id)}
+              >
+                <td className="px-4 py-3 font-medium">
+                  {String(user?.fullName ?? 'Staff member')}
+                </td>
+                <td className="px-4 py-3 text-muted-foreground">
+                  {String(profile.designation ?? profile.staffType ?? 'Staff')}
+                </td>
+                <td className="px-4 py-3 text-muted-foreground">
+                  {branches || 'No campus assigned'}
+                </td>
+                <td className="px-4 py-3 text-muted-foreground">
+                  {String(user?.contactNumber ?? '')}
+                </td>
+                <td className="px-4 py-3 text-xs font-semibold text-teal-700">
+                  {String(user?.status ?? 'ACTIVE')}
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </DataTable>
+      <div className="mt-4">
+        <DataTablePagination
+          page={page}
+          pageCount={pageCount}
+          itemCount={filteredStaff.length}
+          pageSize={pageSize}
+          onPageChange={setPage}
+          onPageSizeChange={setPageSize}
+        />
+      </div>
+      <div className="hidden">
         {isLoading ? <p className="text-sm text-muted-foreground">Loading staff...</p> : null}
         {!isLoading && staff.length === 0 ? (
           <p className="rounded-xl border border-dashed border-border p-5 text-sm text-muted-foreground">
@@ -189,7 +313,9 @@ function CreateStaff({ onCreated }: { onCreated: (staffId: string) => void }) {
         credentials?: { contactNumber?: string; initialPassword?: string; initialPin?: string };
       };
       setCredentials(result.credentials ?? null);
-      toast.success('Staff account created. Save the one-time credentials.');
+      toast.success(
+        'Staff account created. Temporary credentials are available from the staff record.',
+      );
       if (result.staff?.id) onCreated(result.staff.id);
     } catch {
       toast.error('Staff account could not be created. Contact number must be unique.');
@@ -310,7 +436,7 @@ function StaffRecord({
   const [update] = useUpdateStaffMutation();
   const [resetPin] = useResetStaffPinMutation();
   const toast = useToast();
-  const [pin, setPin] = useState<string | null>(null);
+  const temporaryCredentials = useGetTemporaryStaffCredentialsQuery(staff?.id ?? skipToken);
   const user = staff?.user;
   const [form, setForm] = useState({
     fullName: '',
@@ -344,9 +470,11 @@ function StaffRecord({
   async function reset() {
     if (!staff) return;
     try {
-      const result = await resetPin(staff.id).unwrap();
-      setPin(String(result.initialPin ?? ''));
-      toast.success('Kiosk PIN reset. Save it now.');
+      await resetPin(staff.id).unwrap();
+      await temporaryCredentials.refetch();
+      toast.success(
+        'Kiosk PIN reset. It remains available here until the staff member changes it.',
+      );
     } catch {
       toast.error('Kiosk PIN could not be reset.');
     }
@@ -454,8 +582,20 @@ function StaffRecord({
         <button type="button" className="button-secondary mt-3" onClick={reset}>
           Reset kiosk PIN
         </button>
-        {pin ? <CredentialCard credentials={{ initialPin: pin }} /> : null}
+        {temporaryCredentials.data?.initialPin ? (
+          <CredentialCard
+            credentials={{ initialPin: String(temporaryCredentials.data.initialPin) }}
+          />
+        ) : null}
       </div>
+      {temporaryCredentials.data?.initialPassword ? (
+        <CredentialCard
+          credentials={{
+            contactNumber: String(temporaryCredentials.data.contactNumber ?? ''),
+            initialPassword: String(temporaryCredentials.data.initialPassword),
+          }}
+        />
+      ) : null}
     </section>
   );
 }
@@ -467,7 +607,10 @@ function CredentialCard({
 }) {
   return (
     <div className="mt-5 rounded-xl border border-amber-300 bg-amber-50 p-4">
-      <p className="font-semibold text-amber-950">Save these one-time credentials now.</p>
+      <p className="font-semibold text-amber-950">Temporary credentials</p>
+      <p className="mt-1 text-sm text-amber-900">
+        Administrators can view these until the staff member changes the matching credential.
+      </p>
       <div className="mt-3 grid gap-1 font-mono text-sm text-amber-950">
         {credentials.contactNumber ? <p>Contact: {credentials.contactNumber}</p> : null}
         {credentials.initialPassword ? <p>Portal password: {credentials.initialPassword}</p> : null}

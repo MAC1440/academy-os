@@ -305,8 +305,7 @@ export function OrganizationSetup() {
   return (
     <div className="space-y-6">
       <header className="max-w-2xl">
-        <p className="eyebrow">Administrator setup</p>
-        <h1 className="mt-2 font-display text-4xl tracking-[-.05em]">Set the foundation once.</h1>
+        <h1 className="font-display text-4xl tracking-[-.04em]">Settings</h1>
         <p className="mt-3 text-sm leading-6 text-muted-foreground">
           These details shape admissions, academic records, and the day-to-day workflow across your
           academy.

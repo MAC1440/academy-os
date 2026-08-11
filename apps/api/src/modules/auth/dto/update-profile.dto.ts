@@ -42,4 +42,13 @@ export class UpdateProfileDto {
   @IsString()
   @MinLength(8)
   newPassword?: string;
+
+  @ApiPropertyOptional({
+    example: '1234',
+    description: 'Leave empty to keep the current kiosk PIN.',
+  })
+  @IsOptional()
+  @IsString()
+  @Matches(/^\d{4}$/)
+  newPin?: string;
 }

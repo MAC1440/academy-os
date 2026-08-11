@@ -20,6 +20,10 @@ export const staffApi = baseApi.injectEndpoints({
       query: (id) => `/staff/${id}`,
       transformResponse: unwrap,
     }),
+    getTemporaryStaffCredentials: build.query<ApiRecord, string>({
+      query: (id) => `/staff/${id}/temporary-credentials`,
+      transformResponse: unwrap,
+    }),
     createStaff: build.mutation<ApiRecord, StaffInput>({
       query: (body) => ({ url: '/staff', method: 'POST', body }),
       transformResponse: unwrap,
@@ -39,6 +43,7 @@ export const staffApi = baseApi.injectEndpoints({
 export const {
   useListStaffQuery,
   useGetStaffQuery,
+  useGetTemporaryStaffCredentialsQuery,
   useCreateStaffMutation,
   useUpdateStaffMutation,
   useResetStaffPinMutation,

@@ -12,6 +12,11 @@ import {
 } from '@prisma/client';
 import * as bcrypt from 'bcryptjs';
 import { randomInt } from 'node:crypto';
+import {
+  decryptTemporaryCredential,
+  encryptTemporaryCredential,
+} from '../../common/temporary-credential-vault';
+import { jwtSecret } from '../../config/environment';
 import { AuditService } from '../audit/audit.service';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreateStaffDto } from './dto/create-staff.dto';
@@ -76,6 +81,14 @@ export class StaffService {
             email: dto.email?.trim(),
             passwordHash: await bcrypt.hash(initialPassword, 12),
             pinHash: await bcrypt.hash(initialPin, 12),
+            temporaryPasswordEncrypted: encryptTemporaryCredential(
+              initialPassword,
+              jwtSecret,
+            ),
+            temporaryPinEncrypted: encryptTemporaryCredential(
+              initialPin,
+              jwtSecret,
+            ),
             mustCompleteProfile: true,
           },
         });
@@ -179,10 +192,33 @@ export class StaffService {
     const initialPin = String(randomInt(1000, 10_000));
     await this.prisma.user.update({
       where: { id: staff.userId },
-      data: { pinHash: await bcrypt.hash(initialPin, 12) },
+      data: {
+        pinHash: await bcrypt.hash(initialPin, 12),
+        temporaryPinEncrypted: encryptTemporaryCredential(
+          initialPin,
+          jwtSecret,
+        ),
+      },
     });
     await this.audit(actorUserId, AuditAction.UPDATE, 'StaffPin', staff.id);
     return { staffId, initialPin };
+  }
+
+  async temporaryCredentials(staffId: string) {
+    const staff = await this.getStaffForManagement(staffId);
+    const user = await this.prisma.user.findUnique({
+      where: { id: staff.userId },
+    });
+    if (!user) throw new NotFoundException('Staff member not found');
+    return {
+      contactNumber: user.contactNumber,
+      initialPassword: user.temporaryPasswordEncrypted
+        ? decryptTemporaryCredential(user.temporaryPasswordEncrypted, jwtSecret)
+        : null,
+      initialPin: user.temporaryPinEncrypted
+        ? decryptTemporaryCredential(user.temporaryPinEncrypted, jwtSecret)
+        : null,
+    };
   }
 
   private readonly staffInclude = {

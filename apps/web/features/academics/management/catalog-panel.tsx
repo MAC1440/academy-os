@@ -2,6 +2,7 @@
 
 import { FormEvent, useState } from 'react';
 import { Pencil, Plus } from 'lucide-react';
+import { DataTable, TableEmpty } from '@web/components/data-table';
 import { useToast } from '@web/components/toast-provider';
 import type { ApiRecord } from '@web/store/api/base-api';
 
@@ -24,17 +25,18 @@ type CatalogPanelProps = {
   update: (id: string, body: CatalogInput) => Promise<unknown>;
 };
 
-export function CatalogPanel({
-  itemName,
-  description,
-  records,
-  isLoading,
-  allowCode,
-  allowDescription,
-  allowSections,
-  create,
-  update,
-}: CatalogPanelProps) {
+export function CatalogPanel(props: CatalogPanelProps) {
+  const {
+    itemName,
+    description,
+    records,
+    isLoading,
+    allowCode,
+    allowDescription,
+    allowSections,
+    create,
+    update,
+  } = props;
   const toast = useToast();
   const [creating, setCreating] = useState(false);
   const [form, setForm] = useState<CatalogInput>({
@@ -43,6 +45,7 @@ export function CatalogPanel({
     description: '',
     sectionsEnabled: false,
   });
+
   async function submit(event: FormEvent) {
     event.preventDefault();
     try {
@@ -54,95 +57,57 @@ export function CatalogPanel({
       toast.error(`${itemName} could not be added. Check the details and try again.`);
     }
   }
+
   return (
     <div className="space-y-5">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <p className="max-w-2xl text-sm leading-6 text-muted-foreground">{description}</p>
-        <div className="flex gap-2">
-          <button
-            type="button"
-            className="button-primary inline-flex items-center gap-2"
-            onClick={() => setCreating(true)}
-          >
-            <Plus size={16} />
-            Add {itemName.toLowerCase()}
-          </button>
-        </div>
+        <button
+          type="button"
+          className="button-primary inline-flex items-center gap-2"
+          onClick={() => setCreating(true)}
+        >
+          <Plus size={16} />
+          Add {itemName.toLowerCase()}
+        </button>
       </div>
       {creating ? (
-        <form
+        <CatalogFields
+          form={form}
+          setForm={setForm}
+          allowCode={allowCode}
+          allowDescription={allowDescription}
+          allowSections={allowSections}
           onSubmit={submit}
-          className="grid gap-3 rounded-xl border border-teal-300 bg-teal-50/60 p-4 md:grid-cols-2"
-        >
-          <label className="grid gap-1 text-sm font-medium">
-            Name
-            <input
-              className="field"
-              required
-              autoFocus
-              value={form.name}
-              onChange={(event) => setForm({ ...form, name: event.target.value })}
-            />
-          </label>
-          {allowCode ? (
-            <label className="grid gap-1 text-sm font-medium">
-              Code
-              <input
-                className="field"
-                value={form.code}
-                onChange={(event) => setForm({ ...form, code: event.target.value })}
-              />
-            </label>
-          ) : null}
-          {allowDescription ? (
-            <label className="grid gap-1 text-sm font-medium md:col-span-2">
-              Description
-              <input
-                className="field"
-                value={form.description}
-                onChange={(event) => setForm({ ...form, description: event.target.value })}
-              />
-            </label>
-          ) : null}
-          {allowSections ? (
-            <label className="flex items-center gap-2 text-sm font-medium md:col-span-2">
-              <input
-                type="checkbox"
-                checked={form.sectionsEnabled}
-                onChange={(event) => setForm({ ...form, sectionsEnabled: event.target.checked })}
-              />
-              This class uses sections
-            </label>
-          ) : null}
-          <div className="flex gap-2">
-            <button className="button-primary">Save {itemName.toLowerCase()}</button>
-            <button type="button" className="button-secondary" onClick={() => setCreating(false)}>
-              Cancel
-            </button>
-          </div>
-        </form>
+          submitLabel={`Save ${itemName.toLowerCase()}`}
+          onCancel={() => setCreating(false)}
+        />
       ) : null}
-      <div className="grid gap-3">
-        {isLoading ? (
-          <p className="text-sm text-muted-foreground">Loading {itemName.toLowerCase()}s...</p>
-        ) : null}
-        {!isLoading && records.length === 0 ? (
-          <p className="rounded-xl border border-dashed border-border p-5 text-sm text-muted-foreground">
-            No {itemName.toLowerCase()}s yet. Add the first one above.
-          </p>
-        ) : null}
-        {records.map((record) => (
-          <CatalogItem
-            key={record.id}
-            record={record}
-            itemName={itemName}
-            allowCode={allowCode}
-            allowDescription={allowDescription}
-            allowSections={allowSections}
-            update={update}
-          />
-        ))}
-      </div>
+      <DataTable minWidth="46rem">
+        <thead className="border-b border-border bg-muted/45 text-xs uppercase tracking-wide text-muted-foreground">
+          <tr>
+            <th className="px-4 py-3 font-semibold">Name</th>
+            {allowCode ? <th className="px-4 py-3 font-semibold">Code</th> : null}
+            <th className="px-4 py-3 font-semibold">Details</th>
+            <th className="px-4 py-3 text-right font-semibold">Actions</th>
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-border">
+          {isLoading ? (
+            <TableEmpty colSpan={allowCode ? 4 : 3}>
+              Loading {itemName.toLowerCase()}s...
+            </TableEmpty>
+          ) : null}
+          {!isLoading && records.length === 0 ? (
+            <TableEmpty colSpan={allowCode ? 4 : 3}>
+              No {itemName.toLowerCase()}s yet. Add the first one above.
+            </TableEmpty>
+          ) : null}
+          {records.map((record) => (
+            <CatalogItem key={record.id} record={record} {...props} />
+          ))}
+        </tbody>
+      </DataTable>
     </div>
   );
 }
@@ -154,9 +119,7 @@ function CatalogItem({
   allowDescription,
   allowSections,
   update,
-}: Omit<CatalogPanelProps, 'description' | 'records' | 'isLoading' | 'create'> & {
-  record: ApiRecord;
-}) {
+}: CatalogPanelProps & { record: ApiRecord }) {
   const toast = useToast();
   const [editing, setEditing] = useState(false);
   const [form, setForm] = useState<CatalogInput>({
@@ -184,51 +147,89 @@ function CatalogItem({
       toast.error(`${itemName} could not be removed because it is still in use.`);
     }
   }
-  if (!editing)
-    return (
-      <article className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border bg-card p-4">
-        <div>
-          <p className="font-medium">{String(record.name)}</p>
-          <p className="mt-1 text-sm text-muted-foreground">
-            {allowCode && record.code ? `${String(record.code)} · ` : ''}
-            {allowDescription && record.description
-              ? String(record.description)
-              : allowSections
-                ? record.sectionsEnabled
-                  ? 'Sections enabled'
-                  : 'Sections not enabled'
-                : 'Active'}
-          </p>
-        </div>
-        <div className="flex gap-2">
-          <button
-            type="button"
-            className="button-secondary inline-flex items-center gap-2"
-            onClick={() => setEditing(true)}
-          >
-            <Pencil size={14} />
-            Edit
-          </button>
-          <button
-            type="button"
-            className="px-3 text-sm font-semibold text-rose-700 hover:underline"
-            onClick={archive}
-          >
-            Remove
-          </button>
-        </div>
-      </article>
-    );
+  const details =
+    allowDescription && record.description
+      ? String(record.description)
+      : allowSections
+        ? record.sectionsEnabled
+          ? 'Sections enabled'
+          : 'Sections not enabled'
+        : 'Active';
+  const colSpan = allowCode ? 4 : 3;
   return (
-    <form
-      onSubmit={submit}
-      className="grid gap-3 rounded-xl border border-teal-300 bg-teal-50/60 p-4 md:grid-cols-2"
-    >
+    <>
+      <tr className="hover:bg-muted/30">
+        <td className="px-4 py-3 font-medium">{String(record.name)}</td>
+        {allowCode ? (
+          <td className="px-4 py-3 text-muted-foreground">{String(record.code ?? '—')}</td>
+        ) : null}
+        <td className="px-4 py-3 text-muted-foreground">{details}</td>
+        <td className="px-4 py-3 text-right">
+          <div className="inline-flex gap-3">
+            <button
+              type="button"
+              className="inline-flex items-center gap-1 text-sm font-semibold text-teal-700 hover:underline"
+              onClick={() => setEditing(!editing)}
+            >
+              <Pencil size={14} /> Edit
+            </button>
+            <button
+              type="button"
+              className="text-sm font-semibold text-destructive hover:underline"
+              onClick={archive}
+            >
+              Remove
+            </button>
+          </div>
+        </td>
+      </tr>
+      {editing ? (
+        <tr className="bg-teal-50/60">
+          <td colSpan={colSpan} className="p-4">
+            <CatalogFields
+              form={form}
+              setForm={setForm}
+              allowCode={allowCode}
+              allowDescription={allowDescription}
+              allowSections={allowSections}
+              onSubmit={submit}
+              submitLabel="Save changes"
+              onCancel={() => setEditing(false)}
+            />
+          </td>
+        </tr>
+      ) : null}
+    </>
+  );
+}
+
+function CatalogFields({
+  form,
+  setForm,
+  allowCode,
+  allowDescription,
+  allowSections,
+  onSubmit,
+  submitLabel,
+  onCancel,
+}: {
+  form: CatalogInput;
+  setForm: (form: CatalogInput) => void;
+  allowCode?: boolean;
+  allowDescription?: boolean;
+  allowSections?: boolean;
+  onSubmit: (event: FormEvent) => void;
+  submitLabel: string;
+  onCancel: () => void;
+}) {
+  return (
+    <form onSubmit={onSubmit} className="grid gap-3 md:grid-cols-2">
       <label className="grid gap-1 text-sm font-medium">
         Name
         <input
           className="field"
           required
+          autoFocus
           value={form.name}
           onChange={(event) => setForm({ ...form, name: event.target.value })}
         />
@@ -264,8 +265,8 @@ function CatalogItem({
         </label>
       ) : null}
       <div className="flex gap-2">
-        <button className="button-primary">Save changes</button>
-        <button type="button" className="button-secondary" onClick={() => setEditing(false)}>
+        <button className="button-primary">{submitLabel}</button>
+        <button type="button" className="button-secondary" onClick={onCancel}>
           Cancel
         </button>
       </div>

@@ -46,6 +46,15 @@ export class StaffController {
     );
   }
 
+  @Get(':staffId/temporary-credentials')
+  @RequirePermissions('staff.manage')
+  async temporaryCredentials(@Param('staffId') staffId: string) {
+    return successResponse(
+      'Active temporary staff credentials retrieved',
+      await this.staffService.temporaryCredentials(staffId),
+    );
+  }
+
   @Post()
   @RequirePermissions('staff.manage')
   async createStaff(
@@ -53,7 +62,7 @@ export class StaffController {
     @CurrentUser() user: AuthenticatedUser,
   ) {
     return successResponse(
-      'Staff member created. Save the one-time credentials now.',
+      'Staff member created. Temporary credentials remain available to administrators until changed.',
       await this.staffService.createStaff(dto, user.id),
     );
   }
@@ -78,7 +87,7 @@ export class StaffController {
     @CurrentUser() user: AuthenticatedUser,
   ) {
     return successResponse(
-      'PIN reset. Save the one-time PIN now.',
+      'PIN reset. The temporary PIN remains available to administrators until changed.',
       await this.staffService.resetPin(staffId, user.id),
     );
   }

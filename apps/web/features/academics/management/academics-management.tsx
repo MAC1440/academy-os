@@ -39,10 +39,7 @@ export function AcademicsManagement() {
   return (
     <div className="space-y-6">
       <header className="max-w-2xl">
-        <p className="eyebrow">Academic setup</p>
-        <h1 className="mt-2 font-display text-4xl tracking-[-.05em]">
-          Build your learning catalogue.
-        </h1>
+        <h1 className="font-display text-4xl tracking-[-.04em]">Academics</h1>
         <p className="mt-3 text-sm leading-6 text-muted-foreground">
           Keep regular school classes separate from external courses, then connect groups such as
           Pre-Medical or ICS to the classes that use them.

@@ -13,6 +13,15 @@ export class CompleteProfileDto {
   @MinLength(8)
   newPassword!: string;
 
+  @ApiPropertyOptional({
+    example: '1234',
+    description: 'Optional four-digit attendance kiosk PIN.',
+  })
+  @IsOptional()
+  @IsString()
+  @Matches(/^\d{4}$/)
+  newPin?: string;
+
   @ApiPropertyOptional({ example: 'ahmed-admin' })
   @IsOptional()
   @IsString()

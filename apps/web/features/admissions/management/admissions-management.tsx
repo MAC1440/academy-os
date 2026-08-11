@@ -3,6 +3,7 @@
 import { FormEvent, useEffect, useState } from 'react';
 import { skipToken } from '@reduxjs/toolkit/query';
 import { CheckCircle2, ClipboardList, XCircle } from 'lucide-react';
+import { DataTable, TableEmpty } from '@web/components/data-table';
 import { useToast } from '@web/components/toast-provider';
 import { useListOfferingsQuery } from '@web/features/academics/academics.api';
 import { useListAcademicTermsQuery } from '@web/features/settings/settings.api';
@@ -38,13 +39,9 @@ export function AdmissionsManagement() {
   return (
     <div className="space-y-6">
       <header className="max-w-2xl">
-        <p className="eyebrow">Admissions operations</p>
-        <h1 className="mt-2 font-display text-4xl tracking-[-.05em]">
-          Move each application with care.
-        </h1>
+        <h1 className="font-display text-4xl tracking-[-.04em]">Admissions</h1>
         <p className="mt-3 text-sm leading-6 text-muted-foreground">
-          Review the submitted details, verify physical documents at the campus, then approve into a
-          term and offering or record a clear rejection note.
+          Review each application, confirm the documents in person, then approve or decline it.
         </p>
       </header>
       <div
@@ -82,7 +79,53 @@ export function AdmissionsManagement() {
             {status[0]}
             {status.slice(1).toLowerCase()} applications
           </p>
-          <div className="mt-3 grid gap-2">
+          <div className="mt-3">
+            <DataTable minWidth="38rem">
+              <thead className="border-b border-border bg-muted/45 text-xs uppercase tracking-wide text-muted-foreground">
+                <tr>
+                  <th className="px-3 py-3 font-semibold">Student</th>
+                  <th className="px-3 py-3 font-semibold">Class</th>
+                  <th className="px-3 py-3 font-semibold">Contact</th>
+                  <th className="px-3 py-3 font-semibold">Submitted</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border">
+                {admissions.isLoading ? (
+                  <TableEmpty colSpan={4}>Loading applications...</TableEmpty>
+                ) : null}
+                {!admissions.isLoading && (admissions.data?.length ?? 0) === 0 ? (
+                  <TableEmpty colSpan={4}>No {status.toLowerCase()} applications.</TableEmpty>
+                ) : null}
+                {(admissions.data ?? []).map((item) => {
+                  const application = item as Admission;
+                  const offering = String(
+                    application.academicOffering?.schoolClass?.name ??
+                      application.academicOffering?.course?.name ??
+                      'Offering',
+                  );
+                  return (
+                    <tr
+                      key={application.id}
+                      onClick={() => setSelectedId(application.id)}
+                      className={`cursor-pointer transition hover:bg-teal-50/60 ${selectedId === application.id ? 'bg-teal-50/80' : ''}`}
+                    >
+                      <td className="px-3 py-3 font-medium">
+                        {String(application.studentFullName)}
+                      </td>
+                      <td className="px-3 py-3 text-muted-foreground">{offering}</td>
+                      <td className="px-3 py-3 text-muted-foreground">
+                        {String(application.guardianContactNumber)}
+                      </td>
+                      <td className="px-3 py-3 text-muted-foreground">
+                        {String(application.createdAt).slice(0, 10)}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </DataTable>
+          </div>
+          <div className="hidden">
             {admissions.isLoading ? (
               <p className="px-2 text-sm text-muted-foreground">Loading applications...</p>
             ) : null}
@@ -167,8 +210,7 @@ function AdmissionDetail({
   return (
     <div className="space-y-5">
       <div>
-        <p className="eyebrow">Admission application</p>
-        <h2 className="mt-2 font-display text-3xl tracking-[-.04em]">
+        <h2 className="font-display text-3xl tracking-[-.04em]">
           {String(application.studentFullName)}
         </h2>
         <p className="mt-2 text-sm text-muted-foreground">

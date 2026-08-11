@@ -88,6 +88,13 @@ export class AuthService {
         where: { id: authenticatedUser.id },
         data: {
           passwordHash: await bcrypt.hash(dto.newPassword, 12),
+          temporaryPasswordEncrypted: null,
+          ...(dto.newPin !== undefined
+            ? {
+                pinHash: await bcrypt.hash(dto.newPin, 12),
+                temporaryPinEncrypted: null,
+              }
+            : {}),
           mustCompleteProfile: false,
           ...(dto.username !== undefined
             ? { username: dto.username.trim() }
@@ -135,7 +142,16 @@ export class AuthService {
             ? { email: dto.email.trim().toLowerCase() }
             : {}),
           ...(dto.newPassword !== undefined
-            ? { passwordHash: await bcrypt.hash(dto.newPassword, 12) }
+            ? {
+                passwordHash: await bcrypt.hash(dto.newPassword, 12),
+                temporaryPasswordEncrypted: null,
+              }
+            : {}),
+          ...(dto.newPin !== undefined
+            ? {
+                pinHash: await bcrypt.hash(dto.newPin, 12),
+                temporaryPinEncrypted: null,
+              }
             : {}),
         },
       });

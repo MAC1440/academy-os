@@ -82,8 +82,7 @@ export function PortalShell({ children }: { children: React.ReactNode }) {
             <X size={20} />
           </button>
         </div>
-        <p className="mt-1 px-3 text-xs text-slate-400">Your operations desk</p>
-        <nav className="mt-10 grid gap-1">
+        <nav className="mt-8 grid gap-1" aria-label="Main navigation">
           {items
             .filter((item) => user && item.roles.includes(user.accountType))
             .map(({ href, label, icon: Icon }) => (
@@ -103,18 +102,19 @@ export function PortalShell({ children }: { children: React.ReactNode }) {
             <p className="font-medium text-white">{user?.fullName}</p>
             <p className="mt-0.5 text-xs text-slate-400">{user?.accountType.toLowerCase()}</p>
           </div>
-          <div className="flex gap-1 px-2">
-            {(['light', 'dark', 'system'] as const).map((value) => (
-              <button
-                key={value}
-                aria-pressed={theme === value}
-                onClick={() => setTheme(value)}
-                className="rounded-md px-2 py-1 text-xs hover:bg-white/10"
-              >
-                {value}
-              </button>
-            ))}
-          </div>
+          <label className="grid gap-1 px-3 text-xs text-slate-400">
+            Appearance
+            <select
+              aria-label="Color theme"
+              value={theme}
+              onChange={(event) => setTheme(event.target.value as 'light' | 'dark' | 'system')}
+              className="rounded-md border border-white/10 bg-white/5 px-2 py-1.5 text-sm text-white outline-none focus:ring-2 focus:ring-teal-300"
+            >
+              <option value="light">Light</option>
+              <option value="dark">Dark</option>
+              <option value="system">System</option>
+            </select>
+          </label>
           <button
             onClick={() => {
               setMobileNavigationOpen(false);
@@ -154,9 +154,9 @@ export function PortalShell({ children }: { children: React.ReactNode }) {
               month: 'long',
             }).format(new Date())}
           </p>
-          <div className="flex items-center gap-2">
+          <div className="hidden items-center gap-2 text-sm text-muted-foreground sm:flex">
             <Building2 size={16} className="text-teal-600" />
-            <span className="text-sm font-medium">Workspace</span>
+            <span>{user?.fullName}</span>
           </div>
         </header>
         <main className="mx-auto w-full max-w-7xl px-5 py-8 sm:px-7 lg:px-10 lg:py-10 xl:px-12">

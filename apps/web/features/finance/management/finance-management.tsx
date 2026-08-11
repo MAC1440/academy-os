@@ -4,6 +4,7 @@ import { FormEvent, useState } from 'react';
 import { skipToken } from '@reduxjs/toolkit/query';
 import { CreditCard, ReceiptText } from 'lucide-react';
 import { useToast } from '@web/components/toast-provider';
+import { DataTable, TableEmpty } from '@web/components/data-table';
 import { useListBranchesQuery } from '@web/features/organization/organization.api';
 import { useListStudentsQuery } from '@web/features/students/students.api';
 import { useCreatePaymentMutation, useGetStudentFinanceQuery } from '../finance.api';
@@ -21,10 +22,7 @@ export function FinanceManagement() {
   return (
     <div className="space-y-6">
       <header className="max-w-2xl">
-        <p className="eyebrow">Finance operations</p>
-        <h1 className="mt-2 font-display text-4xl tracking-[-.05em]">
-          Simple fee records, kept current.
-        </h1>
+        <h1 className="font-display text-4xl tracking-[-.04em]">Fees and payments</h1>
         <p className="mt-3 text-sm leading-6 text-muted-foreground">
           Review each student’s opening balance and recorded payments, then issue a receipt for
           every amount received.
@@ -123,7 +121,37 @@ function FinanceSummary({ summary, isLoading }: { summary?: ApiRecord; isLoading
       </div>
       <div>
         <h2 className="font-display text-2xl">Payment history</h2>
-        <div className="mt-3 grid gap-2">
+        <DataTable minWidth="36rem">
+          <thead className="border-b border-border bg-muted/45 text-xs uppercase tracking-wide text-muted-foreground">
+            <tr>
+              <th className="px-4 py-3 font-semibold">Receipt</th>
+              <th className="px-4 py-3 font-semibold">Received on</th>
+              <th className="px-4 py-3 font-semibold">Remarks</th>
+              <th className="px-4 py-3 text-right font-semibold">Amount</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-border">
+            {payments.length === 0 ? (
+              <TableEmpty colSpan={4}>
+                No payments recorded beyond the amount received with the admission form.
+              </TableEmpty>
+            ) : (
+              payments.map((payment) => (
+                <tr key={payment.id}>
+                  <td className="px-4 py-3 font-medium">{String(payment.receiptNumber)}</td>
+                  <td className="px-4 py-3 text-muted-foreground">
+                    {String(payment.receivedOn).slice(0, 10)}
+                  </td>
+                  <td className="px-4 py-3 text-muted-foreground">
+                    {String(payment.remarks ?? 'No remarks')}
+                  </td>
+                  <td className="px-4 py-3 text-right font-semibold">{amount(payment.amount)}</td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </DataTable>
+        <div className="hidden">
           {payments.length === 0 ? (
             <p className="rounded-xl border border-dashed border-border p-4 text-sm text-muted-foreground">
               No payments recorded beyond the amount received with the admission form.

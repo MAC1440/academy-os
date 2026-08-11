@@ -67,13 +67,50 @@ export class ReportsController {
     @Query() q: StudentReportQuery,
     @CurrentUser() user: AuthenticatedUser,
   ) {
-    const report = await this.studentAttendance(q, user);
+    const offering = await this.prisma.academicOffering.findUnique({
+      where: { id: q.academicOfferingId },
+    });
+    if (
+      !offering ||
+      !(await this.access.canAccessBranch(user.id, offering.branchId))
+    )
+      throw new Error('Branch access denied');
+
+    const from = new Date(`${q.from}T00:00:00.000Z`);
+    const to = new Date(`${q.to}T00:00:00.000Z`);
+    const dates: string[] = [];
+    for (
+      const date = new Date(from);
+      date <= to;
+      date.setUTCDate(date.getUTCDate() + 1)
+    ) {
+      dates.push(date.toISOString().slice(0, 10));
+    }
+    const students = await this.prisma.student.findMany({
+      where: { academicOfferingId: q.academicOfferingId, deletedAt: null },
+      include: {
+        attendance: { where: { attendanceDate: { gte: from, lte: to } } },
+      },
+      orderBy: { studentFullName: 'asc' },
+    });
+    const csv = (value: string | null | undefined) =>
+      `"${(value ?? '').replace(/"/g, '""')}"`;
     return [
-      'student_id,name,present,marked,unmarked_treated_as_absent',
-      ...report.students.map(
-        (s) =>
-          `${s.id},"${s.name.replace(/"/g, '""')}",${s.present},${s.marked},true`,
-      ),
+      ['student_id', 'registration_number', 'name', ...dates].join(','),
+      ...students.map((student) => {
+        const attendanceByDate = new Map(
+          student.attendance.map((attendance) => [
+            attendance.attendanceDate.toISOString().slice(0, 10),
+            attendance.status,
+          ]),
+        );
+        return [
+          student.id,
+          csv(student.registrationNumber),
+          csv(student.studentFullName),
+          ...dates.map((date) => attendanceByDate.get(date) ?? ''),
+        ].join(',');
+      }),
     ].join('\n');
   }
   @Get('staff-attendance')

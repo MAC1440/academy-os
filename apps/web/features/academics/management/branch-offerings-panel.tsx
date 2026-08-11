@@ -3,6 +3,7 @@
 import { FormEvent, useEffect, useState } from 'react';
 import { skipToken } from '@reduxjs/toolkit/query';
 import { BookMarked, Plus } from 'lucide-react';
+import { DataTable, TableEmpty } from '@web/components/data-table';
 import { useToast } from '@web/components/toast-provider';
 import { useListBranchesQuery } from '@web/features/organization/organization.api';
 import {
@@ -37,6 +38,7 @@ export function BranchOfferingsPanel() {
   const [create] = useCreateOfferingMutation();
   const toast = useToast();
   const [open, setOpen] = useState(false);
+  const [subjectEditorOfferingId, setSubjectEditorOfferingId] = useState<string | null>(null);
   const [form, setForm] = useState({
     offeringType: 'SCHOOL_CLASS' as 'SCHOOL_CLASS' | 'COURSE',
     sourceId: '',
@@ -182,16 +184,72 @@ export function BranchOfferingsPanel() {
           No offerings at this campus yet. Add a class or course to begin enrollment.
         </p>
       ) : null}
-      <div className="grid gap-3">
-        {(offerings.data ?? []).map((offering) => (
-          <OfferingCard
-            key={offering.id}
-            branchId={branchId}
-            offering={offering as Offering}
-            subjects={subjects}
-          />
-        ))}
-      </div>
+      <DataTable minWidth="46rem">
+        <thead className="border-b border-border bg-muted/45 text-xs uppercase tracking-wide text-muted-foreground">
+          <tr>
+            <th className="px-4 py-3 font-semibold">Class or course</th>
+            <th className="px-4 py-3 font-semibold">Group / section</th>
+            <th className="px-4 py-3 font-semibold">Subjects</th>
+            <th className="px-4 py-3 text-right font-semibold">Action</th>
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-border">
+          {!offerings.isLoading && (offerings.data?.length ?? 0) === 0 ? (
+            <TableEmpty colSpan={4}>No classes or courses at this campus yet.</TableEmpty>
+          ) : null}
+          {(offerings.data ?? []).map((item) => {
+            const offering = item as Offering;
+            const title = String(
+              offering.schoolClass?.name ?? offering.course?.name ?? 'Academic offering',
+            );
+            const placement =
+              [
+                offering.academicGroup?.name,
+                offering.sectionName ? `Section ${String(offering.sectionName)}` : '',
+              ]
+                .filter(Boolean)
+                .join(' · ') || '—';
+            const subjectCount = offering.subjects?.length ?? 0;
+            return (
+              <tr
+                key={offering.id}
+                className={
+                  subjectEditorOfferingId === offering.id ? 'bg-teal-50/70' : 'hover:bg-muted/30'
+                }
+              >
+                <td className="px-4 py-3 font-medium">{title}</td>
+                <td className="px-4 py-3 text-muted-foreground">{placement}</td>
+                <td className="px-4 py-3 text-muted-foreground">
+                  {subjectCount ? `${subjectCount} assigned` : 'Not configured'}
+                </td>
+                <td className="px-4 py-3 text-right">
+                  <button
+                    type="button"
+                    className="text-sm font-semibold text-teal-700 hover:underline"
+                    onClick={() => setSubjectEditorOfferingId(offering.id)}
+                  >
+                    Manage subjects
+                  </button>
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </DataTable>
+      {subjectEditorOfferingId ? (
+        <div className="mt-5">
+          {(offerings.data ?? [])
+            .filter((item) => item.id === subjectEditorOfferingId)
+            .map((offering) => (
+              <OfferingCard
+                key={offering.id}
+                branchId={branchId}
+                offering={offering as Offering}
+                subjects={subjects}
+              />
+            ))}
+        </div>
+      ) : null}
     </div>
   );
 }

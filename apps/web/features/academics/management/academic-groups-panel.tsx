@@ -2,6 +2,7 @@
 
 import { FormEvent, useState } from 'react';
 import { Plus } from 'lucide-react';
+import { DataTable, TableEmpty } from '@web/components/data-table';
 import { useToast } from '@web/components/toast-provider';
 import {
   useCreateAcademicGroupMutation,
@@ -18,6 +19,7 @@ export function AcademicGroupsPanel() {
   const toast = useToast();
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState({ name: '', code: '', schoolClassIds: [] as string[] });
+
   function toggle(classId: string) {
     setForm((current) => ({
       ...current,
@@ -26,6 +28,7 @@ export function AcademicGroupsPanel() {
         : [...current.schoolClassIds, classId],
     }));
   }
+
   async function submit(event: FormEvent) {
     event.preventDefault();
     try {
@@ -37,6 +40,7 @@ export function AcademicGroupsPanel() {
       toast.error('Academic group could not be added. Select at least one class.');
     }
   }
+
   async function removeGroup(id: string, name: string) {
     if (
       !window.confirm(`Remove ${name}? It can be restored later if it has no active offerings.`)
@@ -52,6 +56,7 @@ export function AcademicGroupsPanel() {
       );
     }
   }
+
   return (
     <div className="space-y-5">
       <div className="flex flex-wrap items-start justify-between gap-3">
@@ -118,46 +123,49 @@ export function AcademicGroupsPanel() {
           </div>
         </form>
       ) : null}
-      <div className="grid gap-3">
-        {groups.length === 0 ? (
-          <p className="rounded-xl border border-dashed border-border p-5 text-sm text-muted-foreground">
-            No academic groups yet.
-          </p>
-        ) : (
-          groups.map((group) => (
-            <article key={group.id} className="rounded-xl border border-border bg-card p-4">
-              <div className="flex items-start justify-between gap-3">
-                <p className="font-medium">{String(group.name)}</p>
-                <button
-                  type="button"
-                  className="button-secondary shrink-0 text-xs text-destructive"
-                  onClick={() => removeGroup(group.id, String(group.name))}
-                >
-                  Remove
-                </button>
-              </div>
-              <p className="mt-1 text-sm text-muted-foreground">
-                {String(group.code ?? 'No code')} ·{' '}
-                {Array.isArray(group.schoolClasses)
-                  ? group.schoolClasses
-                      .map((item) =>
-                        String(
-                          (item as Record<string, unknown>).schoolClass &&
-                            (
-                              (item as Record<string, unknown>).schoolClass as Record<
-                                string,
-                                unknown
-                              >
-                            ).name,
-                        ),
-                      )
-                      .join(', ')
-                  : 'No classes'}
-              </p>
-            </article>
-          ))
-        )}
-      </div>
+      <DataTable minWidth="42rem">
+        <thead className="border-b border-border bg-muted/45 text-xs uppercase tracking-wide text-muted-foreground">
+          <tr>
+            <th className="px-4 py-3 font-semibold">Group</th>
+            <th className="px-4 py-3 font-semibold">Code</th>
+            <th className="px-4 py-3 font-semibold">Available classes</th>
+            <th className="px-4 py-3 text-right font-semibold">Actions</th>
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-border">
+          {groups.length === 0 ? (
+            <TableEmpty colSpan={4}>No academic groups yet.</TableEmpty>
+          ) : null}
+          {groups.map((group) => {
+            const classes = Array.isArray(group.schoolClasses)
+              ? group.schoolClasses
+                  .map((item) => {
+                    const schoolClass = (item as Record<string, unknown>).schoolClass as
+                      Record<string, unknown> | undefined;
+                    return String(schoolClass?.name ?? '');
+                  })
+                  .filter(Boolean)
+                  .join(', ')
+              : 'No classes';
+            return (
+              <tr key={group.id}>
+                <td className="px-4 py-3 font-medium">{String(group.name)}</td>
+                <td className="px-4 py-3 text-muted-foreground">{String(group.code ?? '—')}</td>
+                <td className="px-4 py-3 text-muted-foreground">{classes || 'No classes'}</td>
+                <td className="px-4 py-3 text-right">
+                  <button
+                    type="button"
+                    className="text-sm font-semibold text-destructive hover:underline"
+                    onClick={() => removeGroup(group.id, String(group.name))}
+                  >
+                    Remove
+                  </button>
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </DataTable>
     </div>
   );
 }

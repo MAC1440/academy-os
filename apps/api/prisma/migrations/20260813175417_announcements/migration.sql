@@ -1,0 +1,2 @@
+-- RenameIndex
+ALTER INDEX "SchoolClassCurriculumSubject_schoolClassId_academicGroupId_subj" RENAME TO "SchoolClassCurriculumSubject_schoolClassId_academicGroupId__key";

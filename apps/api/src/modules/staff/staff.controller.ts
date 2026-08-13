@@ -35,6 +35,14 @@ export class StaffController {
     );
   }
 
+  @Get('portal/overview')
+  async portalOverview(@CurrentUser() user: AuthenticatedUser) {
+    return successResponse(
+      'Staff portal overview retrieved',
+      await this.staffService.portalOverview(user.id),
+    );
+  }
+
   @Get(':staffId')
   @RequirePermissions('staff.read')
   async getStaff(

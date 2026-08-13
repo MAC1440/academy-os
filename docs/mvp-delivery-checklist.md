@@ -1,6 +1,6 @@
 # AcademyOS MVP — Backend Delivery Status
 
-Last updated: 10 August 2026
+Last updated: 13 August 2026
 
 This is the working PRD/status record for the backend-first MVP. It records both implemented work and intentional product decisions, so deferred behavior is not mistaken for a missing feature.
 
@@ -45,7 +45,7 @@ This is the working PRD/status record for the backend-first MVP. It records both
 - [ ] Backend letter-grade scales, grade-boundary configuration, or report-card formatting. Frontend can derive letters from percentage.
 - [ ] Payment gateway integration, invoice automation, or digital attachment storage.
 - [ ] Fully normalized storage for every historical admission-form field. The current `formData` supports the physical form while the core admission fields are structured. Normalize more fields only when reporting/search needs demand it.
-- [ ] Spreadsheet/PDF formatting for exports. Current attendance exports provide report data/CSV; presentation can be completed in the frontend when required.
+- [ ] Organization-wide report-card templates, letter-grade scales, and advanced OCR (handwritten/Urdu/scanned-PDF extraction). Deferred until after MVP validation.
 
 ## Current Checkpoint: Manual API Testing
 
@@ -69,10 +69,18 @@ This is the working PRD/status record for the backend-first MVP. It records both
 - [x] Attendance operations: one-click student roster marking, staff attendance reports with CSV download, and editable kiosk default shift/workday settings.
 - [x] Public teacher-attendance kiosk: campus selection, staff-name selection, private four-digit PIN verification, and check-in/check-out recording.
 - [x] Grades and performance: regular/festival assessments, subject-based mark entry, and student performance history.
-- [x] Finance operations: per-student fee summary, payment history, and receipt-numbered payment recording in PKR.
+- [x] Grades polish: class-tabbed roster table, planned/impromptu test entry, persisted-mark editing, and printable/PDF student performance reports.
+- [x] Finance operations: per-student fee summary, payment history, receipt-numbered payment recording in PKR, plus payment edit/delete.
+- [x] Shared notes: organization-wide CRUD, search, Markdown rendering with KaTeX equations, and client-side text extraction from images, text PDFs, and DOCX files.
 - [x] Operations table foundation: responsive, horizontally scrollable data tables for academic catalogues/groups, student and staff directories, and finance payment history.
-- [ ] Build feature screens one module at a time, continuing with shared notes.
+- [x] All planned admin feature screens have been implemented.
+- [ ] Final admin pass: dashboard utility, cross-module empty/error/loading states, responsive QA, and manual browser verification.
+- [x] Learner/guardian portal core: contact-number sign-in, linked-student dashboard, attendance, performance, finance, announcements, shared notes, and forced temporary-password replacement.
+- [x] Staff portal core: contact-number sign-in, forced temporary-password replacement, todayâ€™s attendance status, assigned-class reference, announcements, and shared notes.
+- [x] Admin announcement management: audience targeting, optional event dates, full CRUD, search, and staff/learner portal delivery.
+- [ ] Final cross-portal responsive/manual QA.
+- [ ] Advanced OCR (handwritten/Urdu/scanned-PDF extraction) after MVP validation.
 
 ## Backend Stop Line
 
-The essential backend MVP is implemented for testing. Remaining backend work is limited to defects uncovered during verification; the deliberately deferred items above do not block frontend development.
+The essential backend MVP is implemented. Remaining backend work is limited to defects found during manual verification; deferred items do not block admin MVP acceptance.

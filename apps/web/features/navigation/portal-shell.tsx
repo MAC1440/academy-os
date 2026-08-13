@@ -6,6 +6,7 @@ import {
   BookOpen,
   Building2,
   CalendarDays,
+  Megaphone,
   ChartNoAxesCombined,
   ClipboardCheck,
   CircleDollarSign,
@@ -40,6 +41,7 @@ const items = [
   { href: '/grades', label: 'Grades', icon: ChartNoAxesCombined, roles: ['ADMIN', 'STAFF'] },
   { href: '/finance', label: 'Finance', icon: CircleDollarSign, roles: ['ADMIN'] },
   { href: '/notes', label: 'Notes', icon: NotebookPen, roles: ['ADMIN', 'STAFF'] },
+  { href: '/announcements', label: 'Announcements', icon: Megaphone, roles: ['ADMIN'] },
   { href: '/staff', label: 'Staff', icon: UserRoundCog, roles: ['ADMIN'] },
   { href: '/settings/organization', label: 'Settings', icon: Settings, roles: ['ADMIN'] },
 ];

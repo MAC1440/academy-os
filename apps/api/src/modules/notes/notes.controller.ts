@@ -34,6 +34,22 @@ export class NotesController {
       await this.notesService.listNotes(),
     );
   }
+  @Get('learner')
+  @UseGuards(JwtAuthGuard)
+  async learnerNotes() {
+    return successResponse(
+      'Shared notes retrieved',
+      await this.notesService.listNotes(),
+    );
+  }
+  @Get('staff')
+  @UseGuards(JwtAuthGuard)
+  async staffNotes() {
+    return successResponse(
+      'Shared notes retrieved',
+      await this.notesService.listNotes(),
+    );
+  }
 
   @Post()
   @RequirePermissions('notes.manage')

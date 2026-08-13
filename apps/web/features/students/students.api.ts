@@ -35,6 +35,16 @@ export const studentsApi = baseApi.injectEndpoints({
       transformResponse: unwrap,
       invalidatesTags: ['Academic'],
     }),
+    resetGuardianCredentials: build.mutation<
+      { contactNumber: string; temporaryPassword: string },
+      string
+    >({
+      query: (studentId) => ({
+        url: `/students/${studentId}/guardian-credentials/reset`,
+        method: 'POST',
+      }),
+      transformResponse: unwrap,
+    }),
     bulkImportStudents: build.mutation<ApiRecord, { rows: ApiRecord[] }>({
       query: (body) => ({ url: '/students/bulk-import', method: 'POST', body }),
       transformResponse: unwrap,
@@ -52,6 +62,7 @@ export const {
   useGetStudentQuery,
   useUpdateStudentMutation,
   useDeleteStudentMutation,
+  useResetGuardianCredentialsMutation,
   useBulkImportStudentsMutation,
   usePreviewStudentBulkImportMutation,
 } = studentsApi;

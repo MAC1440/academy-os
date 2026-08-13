@@ -18,6 +18,7 @@ import { StaffModule } from './modules/staff/staff.module';
 import { SettingsModule } from './modules/settings/settings.module';
 import { StudentAttendanceModule } from './modules/student-attendance/student-attendance.module';
 import { PrismaModule } from './prisma/prisma.module';
+import { AnnouncementsModule } from './modules/announcements/announcements.module';
 
 @Module({
   imports: [
@@ -38,6 +39,7 @@ import { PrismaModule } from './prisma/prisma.module';
     StudentAttendanceModule,
     GradesModule,
     FinanceModule,
+    AnnouncementsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

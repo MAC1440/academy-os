@@ -110,6 +110,20 @@ export class AdmissionsController {
     );
   }
 
+  @Post('students/:studentId/guardian-credentials/reset')
+  @ApiBearerAuth('JWT-auth')
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @RequirePermissions('admissions.manage')
+  async resetGuardianCredentials(
+    @Param('studentId') studentId: string,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return successResponse(
+      'Guardian temporary credentials reset',
+      await this.admissions.resetGuardianCredentials(studentId, user.id),
+    );
+  }
+
   @Delete('students/:studentId')
   @ApiBearerAuth('JWT-auth')
   @UseGuards(JwtAuthGuard, PermissionsGuard)

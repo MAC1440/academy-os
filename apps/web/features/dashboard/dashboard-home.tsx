@@ -3,6 +3,9 @@
 import Link from 'next/link';
 import { ArrowRight, BookOpenCheck, ClipboardPlus, UserRoundPlus } from 'lucide-react';
 import { useAppSelector } from '@web/store/hooks';
+import { useListAdmissionsQuery } from '@web/features/admissions/admissions.api';
+import { useListStudentsQuery } from '@web/features/students/students.api';
+import { useListStaffQuery } from '@web/features/staff/staff.api';
 
 const actions = [
   {
@@ -27,6 +30,9 @@ const actions = [
 
 export function DashboardHome() {
   const user = useAppSelector((state) => state.auth.user);
+  const pendingAdmissions = useListAdmissionsQuery({ status: 'PENDING' });
+  const students = useListStudentsQuery();
+  const staff = useListStaffQuery();
   const firstName = user?.fullName.split(' ')[0] || 'there';
   const visibleActions = actions.filter(
     (action) => user?.accountType === 'ADMIN' || action.href === '/academics',
@@ -55,6 +61,18 @@ export function DashboardHome() {
           <ArrowRight size={17} />
         </Link>
       </div>
+
+      {user?.accountType === 'ADMIN' ? (
+        <div className="mt-8 grid gap-3 sm:grid-cols-3">
+          <DashboardCount
+            label="Pending admissions"
+            value={pendingAdmissions.data?.length}
+            href="/admissions"
+          />
+          <DashboardCount label="Active students" value={students.data?.length} href="/students" />
+          <DashboardCount label="Staff members" value={staff.data?.length} href="/staff" />
+        </div>
+      ) : null}
 
       <div className="mt-8 flex items-baseline justify-between gap-4">
         <h2 className="font-display text-2xl tracking-[-.025em]">What would you like to do?</h2>
@@ -92,5 +110,17 @@ export function DashboardHome() {
         </p>
       ) : null}
     </section>
+  );
+}
+
+function DashboardCount({ label, value, href }: { label: string; value?: number; href: string }) {
+  return (
+    <Link
+      href={href}
+      className="rounded-xl border border-border bg-card p-4 transition hover:bg-muted/40 focus:outline-none focus:ring-2 focus:ring-primary"
+    >
+      <p className="text-sm text-muted-foreground">{label}</p>
+      <p className="mt-2 text-2xl font-semibold tabular-nums">{value ?? '—'}</p>
+    </Link>
   );
 }

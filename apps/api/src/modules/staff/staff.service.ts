@@ -61,6 +61,44 @@ export class StaffService {
     return staff;
   }
 
+  async portalOverview(userId: string) {
+    const staff = await this.prisma.staffProfile.findUnique({
+      where: { userId },
+      include: {
+        user: { select: { fullName: true } },
+        academicOfferingAssignments: {
+          include: {
+            academicOffering: {
+              include: {
+                branch: { select: { id: true, name: true } },
+                schoolClass: { select: { id: true, name: true } },
+                course: { select: { id: true, name: true } },
+                academicGroup: { select: { id: true, name: true } },
+                subjects: {
+                  include: { subject: { select: { id: true, name: true } } },
+                },
+              },
+            },
+          },
+        },
+      },
+    });
+    if (!staff) throw new NotFoundException('Staff profile not found');
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const attendance = await this.prisma.staffAttendance.findUnique({
+      where: {
+        staffProfileId_attendanceDate: {
+          staffProfileId: staff.id,
+          attendanceDate: today,
+        },
+      },
+      include: { branch: { select: { id: true, name: true } } },
+    });
+    return { staff, attendance };
+  }
+
   async createStaff(dto: CreateStaffDto, actorUserId: string) {
     const organization = await this.organization();
     await this.verifyBranches(dto.branchIds);

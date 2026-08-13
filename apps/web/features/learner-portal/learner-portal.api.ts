@@ -21,6 +21,14 @@ export const learnerPortalApi = baseApi.injectEndpoints({
       query: (studentId) => `/learner-portal/students/${studentId}/finance`,
       transformResponse: unwrap,
     }),
+    listLearnerAnnouncements: build.query<ApiRecord[], void>({
+      query: () => '/announcements/learner',
+      transformResponse: unwrap,
+    }),
+    listLearnerNotes: build.query<ApiRecord[], void>({
+      query: () => '/notes/learner',
+      transformResponse: unwrap,
+    }),
   }),
 });
 export const {
@@ -28,4 +36,6 @@ export const {
   useGetLinkedStudentAttendanceQuery,
   useGetLinkedStudentPerformanceQuery,
   useGetLinkedStudentFinanceQuery,
+  useListLearnerAnnouncementsQuery,
+  useListLearnerNotesQuery,
 } = learnerPortalApi;

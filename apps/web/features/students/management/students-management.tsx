@@ -2,7 +2,7 @@
 
 import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { skipToken } from '@reduxjs/toolkit/query';
-import { Pencil, Trash2, UserPlus, Users } from 'lucide-react';
+import { KeyRound, Pencil, Trash2, UserPlus, Users } from 'lucide-react';
 import { DirectEnrollment } from './direct-enrollment';
 import { BulkStudentImport } from './bulk-student-import';
 import { useListOfferingsQuery } from '@web/features/academics/academics.api';
@@ -18,6 +18,7 @@ import {
 import {
   useGetStudentQuery,
   useDeleteStudentMutation,
+  useResetGuardianCredentialsMutation,
   useListStudentsQuery,
   useUpdateStudentMutation,
 } from '../students.api';
@@ -306,6 +307,11 @@ function StudentRecord({
 }) {
   const [editing, setEditing] = useState(false);
   const [remove, { isLoading: isDeleting }] = useDeleteStudentMutation();
+  const [resetGuardian, { isLoading: isResettingGuardian }] = useResetGuardianCredentialsMutation();
+  const [guardianCredential, setGuardianCredential] = useState<{
+    contactNumber: string;
+    temporaryPassword: string;
+  } | null>(null);
   const toast = useToast();
   if (isLoading) return <p className="text-sm text-muted-foreground">Loading student record...</p>;
   if (!student)
@@ -339,6 +345,21 @@ function StudentRecord({
       toast.error('Student could not be deleted.');
     }
   }
+  async function resetCredentials() {
+    if (
+      !window.confirm(
+        'Reset the shared guardian portal password? Every linked student uses this same guardian account.',
+      )
+    )
+      return;
+    try {
+      const credentials = await resetGuardian(currentStudent.id).unwrap();
+      setGuardianCredential(credentials);
+      toast.success('Temporary guardian password created.');
+    } catch {
+      toast.error('Guardian credentials could not be reset.');
+    }
+  }
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-start justify-between gap-3">
@@ -367,6 +388,15 @@ function StudentRecord({
           >
             <Trash2 className="mr-1 inline" size={14} />
             {isDeleting ? 'Deleting...' : 'Delete student'}
+          </button>
+          <button
+            type="button"
+            className="button-secondary inline-flex items-center gap-1"
+            disabled={isResettingGuardian}
+            onClick={resetCredentials}
+          >
+            <KeyRound size={14} />
+            {isResettingGuardian ? 'Resetting...' : 'Reset guardian login'}
           </button>
           <button type="button" className="button-secondary" onClick={onBack}>
             Back to directory
@@ -411,6 +441,18 @@ function StudentRecord({
           />
         </div>
       )}
+      {guardianCredential ? (
+        <div className="rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm text-amber-950 dark:bg-amber-950/30 dark:text-amber-100">
+          <p className="font-semibold">Share these temporary guardian credentials now</p>
+          <p className="mt-2">
+            Contact: <strong>{guardianCredential.contactNumber}</strong>
+          </p>
+          <p>
+            Password: <strong>{guardianCredential.temporaryPassword}</strong>
+          </p>
+          <p className="mt-2 text-xs">The guardian must set a new password after signing in.</p>
+        </div>
+      ) : null}
     </div>
   );
 }

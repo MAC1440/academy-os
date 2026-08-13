@@ -15,6 +15,8 @@ import {
 } from '@prisma/client';
 import * as bcrypt from 'bcryptjs';
 import { randomInt } from 'node:crypto';
+import { encryptTemporaryCredential } from '../../common/temporary-credential-vault';
+import { jwtSecret } from '../../config/environment';
 import { AuditService } from '../audit/audit.service';
 import { PrismaService } from '../../prisma/prisma.service';
 import { AdmissionListQueryDto } from './dto/admission-list-query.dto';
@@ -189,6 +191,31 @@ export class AdmissionsService {
       studentCnic: student.studentCnic,
     });
     return { id: student.id };
+  }
+
+  async resetGuardianCredentials(studentId: string, actorUserId: string) {
+    const student = await this.getStudent(studentId, actorUserId);
+    const temporaryPassword = this.generatePassword();
+    const guardian = await this.prisma.user.update({
+      where: { id: student.guardianPortalUserId },
+      data: {
+        passwordHash: await bcrypt.hash(temporaryPassword, 12),
+        mustCompleteProfile: true,
+        temporaryPasswordEncrypted: encryptTemporaryCredential(
+          temporaryPassword,
+          jwtSecret,
+        ),
+      },
+      select: { contactNumber: true },
+    });
+    await this.audit(
+      actorUserId,
+      AuditAction.UPDATE,
+      'GuardianPortalCredential',
+      student.guardianPortalUserId,
+      { studentId },
+    );
+    return { contactNumber: guardian.contactNumber, temporaryPassword };
   }
 
   async bulkImportStudents(dto: BulkStudentImportDto, actorUserId: string) {

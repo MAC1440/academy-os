@@ -86,6 +86,12 @@ enum AcademicTermType {
   SEMESTER
 }
 
+enum AnnouncementAudience {
+  ALL
+  LEARNER
+  STAFF
+}
+
 model Organization {
   id        String   @id @default(cuid())
   name      String
@@ -110,6 +116,7 @@ model Organization {
   academicTerms AcademicTerm[]
   admissionRegistrationSettings AdmissionRegistrationSettings?
   calendarDays AcademicCalendarDay[]
+  announcements Announcement[]
 }
 
 model User {
@@ -534,6 +541,21 @@ model SharedNote {
   author      User     @relation("SharedNoteAuthor", fields: [authorUserId], references: [id], onDelete: Restrict)
 
   @@index([organizationId, deletedAt])
+}
+
+model Announcement {
+  id             String               @id @default(cuid())
+  organizationId String
+  title          String
+  content        String
+  audience       AnnouncementAudience @default(ALL)
+  eventDate      DateTime?            @db.Date
+  createdAt      DateTime             @default(now())
+  updatedAt      DateTime             @updatedAt
+  deletedAt      DateTime?
+  organization   Organization         @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId, audience, eventDate])
 }
 
 model Permission {

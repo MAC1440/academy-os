@@ -1,9 +1,11 @@
-import { baseApi, type ApiRecord } from '@web/store/api/base-api';
+import { baseApi, unwrap, type ApiRecord } from '@web/store/api/base-api';
 type Mark = { studentId: string; subjectId: string; maximumMarks: number; obtainedMarks: number };
 export const gradesApi = baseApi.injectEndpoints({
   endpoints: (build) => ({
     listAssessments: build.query<ApiRecord[], string>({
       query: (offeringId) => `/academic-offerings/${offeringId}/assessments`,
+      transformResponse: unwrap,
+      providesTags: ['Academic'],
     }),
     createAssessment: build.mutation<
       ApiRecord,
@@ -14,6 +16,8 @@ export const gradesApi = baseApi.injectEndpoints({
         method: 'POST',
         body,
       }),
+      transformResponse: unwrap,
+      invalidatesTags: ['Academic'],
     }),
     updateAssessment: build.mutation<
       ApiRecord,
@@ -29,14 +33,17 @@ export const gradesApi = baseApi.injectEndpoints({
         method: 'PATCH',
         body,
       }),
+      transformResponse: unwrap,
       invalidatesTags: ['Academic'],
     }),
     deleteAssessment: build.mutation<void, string>({
       query: (assessmentId) => ({ url: `/assessments/${assessmentId}`, method: 'DELETE' }),
+      transformResponse: unwrap,
       invalidatesTags: ['Academic'],
     }),
     getAssessmentMarks: build.query<ApiRecord[], string>({
       query: (assessmentId) => `/assessments/${assessmentId}/marks`,
+      transformResponse: unwrap,
     }),
     saveAssessmentMarks: build.mutation<{ saved: number }, { assessmentId: string; marks: Mark[] }>(
       {
@@ -45,10 +52,12 @@ export const gradesApi = baseApi.injectEndpoints({
           method: 'PUT',
           body: { marks },
         }),
+        transformResponse: unwrap,
       },
     ),
     getStudentPerformance: build.query<ApiRecord[], string>({
       query: (studentId) => `/students/${studentId}/performance`,
+      transformResponse: unwrap,
     }),
   }),
 });

@@ -24,6 +24,8 @@ Started: 14 August 2026
 - [x] Weekly student attendance loads the roster, cycles a status, and persists it.
 - [x] QA defect identified: direct enrollment generated learner credentials but navigated away before displaying them.
 - [ ] Deploy and recheck the direct-enrollment credential handoff fix.
+- [x] QA defect identified: grades RTK Query endpoints did not unwrap the API response envelope, leaving new assessments invisible.
+- [ ] Deploy and recheck assessment list, marks entry, and performance history.
 
 ## Next QA Scenarios
 

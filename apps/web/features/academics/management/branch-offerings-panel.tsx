@@ -2,18 +2,20 @@
 
 import { FormEvent, useEffect, useState } from 'react';
 import { skipToken } from '@reduxjs/toolkit/query';
-import { BookMarked, Plus } from 'lucide-react';
-import { DataTable, TableEmpty } from '@web/components/data-table';
+import { BookMarked, Pencil, Plus, Trash2 } from 'lucide-react';
+import { DataTable, DataTableControls, TableEmpty } from '@web/components/data-table';
 import { useToast } from '@web/components/toast-provider';
 import { useListBranchesQuery } from '@web/features/organization/organization.api';
 import {
   useCreateOfferingMutation,
+  useDeleteOfferingMutation,
   useListAcademicGroupsQuery,
   useListCoursesQuery,
   useListOfferingsQuery,
   useListSchoolClassesQuery,
   useListSubjectsQuery,
   useReplaceOfferingSubjectsMutation,
+  useUpdateOfferingMutation,
 } from '../academics.api';
 import type { ApiRecord } from '@web/store/api/base-api';
 
@@ -36,8 +38,12 @@ export function BranchOfferingsPanel() {
   const { data: groups = [] } = useListAcademicGroupsQuery();
   const { data: subjects = [] } = useListSubjectsQuery();
   const [create] = useCreateOfferingMutation();
+  const [update] = useUpdateOfferingMutation();
+  const [remove] = useDeleteOfferingMutation();
   const toast = useToast();
   const [open, setOpen] = useState(false);
+  const [editingOfferingId, setEditingOfferingId] = useState<string | null>(null);
+  const [search, setSearch] = useState('');
   const [subjectEditorOfferingId, setSubjectEditorOfferingId] = useState<string | null>(null);
   const [form, setForm] = useState({
     offeringType: 'SCHOOL_CLASS' as 'SCHOOL_CLASS' | 'COURSE',
@@ -58,14 +64,55 @@ export function BranchOfferingsPanel() {
           }
         : { offeringType: form.offeringType, courseId: form.sourceId };
     try {
-      await create({ branchId, body }).unwrap();
+      if (editingOfferingId) {
+        await update({
+          branchId,
+          offeringId: editingOfferingId,
+          body: {
+            academicGroupId: form.academicGroupId || undefined,
+            sectionName: form.sectionName || undefined,
+          },
+        }).unwrap();
+      } else await create({ branchId, body }).unwrap();
       setOpen(false);
+      setEditingOfferingId(null);
       setForm({ offeringType: 'SCHOOL_CLASS', sourceId: '', academicGroupId: '', sectionName: '' });
-      toast.success('Academic offering added to this branch.');
+      toast.success(
+        editingOfferingId
+          ? 'Academic offering updated.'
+          : 'Academic offering added to this branch.',
+      );
     } catch {
       toast.error('Offering could not be added. Check the selected class, group, and section.');
     }
   }
+  function editOffering(offering: Offering) {
+    setEditingOfferingId(offering.id);
+    setForm({
+      offeringType: offering.offeringType as 'SCHOOL_CLASS' | 'COURSE',
+      sourceId: String(offering.schoolClass?.id ?? offering.course?.id ?? ''),
+      academicGroupId: String(offering.academicGroup?.id ?? ''),
+      sectionName: String(offering.sectionName ?? ''),
+    });
+    setOpen(true);
+  }
+  async function deleteOffering(offering: Offering) {
+    if (!window.confirm(`Delete ${String(offering.schoolClass?.name ?? offering.course?.name)}?`))
+      return;
+    try {
+      await remove({ branchId, offeringId: offering.id }).unwrap();
+      if (subjectEditorOfferingId === offering.id) setSubjectEditorOfferingId(null);
+      toast.success('Academic offering deleted.');
+    } catch {
+      toast.error('Move or delete enrolled students before deleting this offering.');
+    }
+  }
+  const visibleOfferings = (offerings.data ?? []).filter((item) => {
+    const offering = item as Offering;
+    return `${String(offering.schoolClass?.name ?? offering.course?.name ?? '')} ${String(offering.academicGroup?.name ?? '')} ${String(offering.sectionName ?? '')}`
+      .toLowerCase()
+      .includes(search.trim().toLowerCase());
+  });
   const sourceOptions = form.offeringType === 'SCHOOL_CLASS' ? schoolClasses : courses;
   return (
     <div className="space-y-5">
@@ -89,7 +136,16 @@ export function BranchOfferingsPanel() {
           <button
             type="button"
             className="button-primary inline-flex items-center gap-2"
-            onClick={() => setOpen(true)}
+            onClick={() => {
+              setEditingOfferingId(null);
+              setForm({
+                offeringType: 'SCHOOL_CLASS',
+                sourceId: '',
+                academicGroupId: '',
+                sectionName: '',
+              });
+              setOpen(true);
+            }}
           >
             <Plus size={16} />
             Add offering
@@ -107,9 +163,13 @@ export function BranchOfferingsPanel() {
           className="grid gap-3 rounded-xl border border-teal-300 bg-teal-50/60 p-4 md:grid-cols-2"
         >
           <label className="grid gap-1 text-sm font-medium">
-            Offering type
+            Offering type{' '}
+            {editingOfferingId ? (
+              <span className="font-normal text-muted-foreground">(fixed after creation)</span>
+            ) : null}
             <select
               className="field"
+              disabled={Boolean(editingOfferingId)}
               value={form.offeringType}
               onChange={(event) =>
                 setForm({
@@ -129,6 +189,7 @@ export function BranchOfferingsPanel() {
             <select
               className="field"
               required
+              disabled={Boolean(editingOfferingId)}
               value={form.sourceId}
               onChange={(event) => setForm({ ...form, sourceId: event.target.value })}
             >
@@ -169,13 +230,30 @@ export function BranchOfferingsPanel() {
             </>
           ) : null}
           <div className="flex gap-2">
-            <button className="button-primary">Save offering</button>
-            <button type="button" className="button-secondary" onClick={() => setOpen(false)}>
+            <button className="button-primary">
+              {editingOfferingId ? 'Save changes' : 'Save offering'}
+            </button>
+            <button
+              type="button"
+              className="button-secondary"
+              onClick={() => {
+                setOpen(false);
+                setEditingOfferingId(null);
+              }}
+            >
               Cancel
             </button>
           </div>
         </form>
       ) : null}
+      <DataTableControls
+        searchValue={search}
+        onSearchChange={setSearch}
+        searchPlaceholder="Search class, course, group, or section"
+        sortValue="name"
+        onSortChange={() => undefined}
+        sortOptions={[{ value: 'name', label: 'Name: A to Z' }]}
+      />
       {branchId && offerings.isLoading ? (
         <p className="text-sm text-muted-foreground">Loading offerings...</p>
       ) : null}
@@ -197,7 +275,7 @@ export function BranchOfferingsPanel() {
           {!offerings.isLoading && (offerings.data?.length ?? 0) === 0 ? (
             <TableEmpty colSpan={4}>No classes or courses at this campus yet.</TableEmpty>
           ) : null}
-          {(offerings.data ?? []).map((item) => {
+          {visibleOfferings.map((item) => {
             const offering = item as Offering;
             const title = String(
               offering.schoolClass?.name ?? offering.course?.name ?? 'Academic offering',
@@ -223,13 +301,29 @@ export function BranchOfferingsPanel() {
                   {subjectCount ? `${subjectCount} assigned` : 'Not configured'}
                 </td>
                 <td className="px-4 py-3 text-right">
-                  <button
-                    type="button"
-                    className="text-sm font-semibold text-teal-700 hover:underline"
-                    onClick={() => setSubjectEditorOfferingId(offering.id)}
-                  >
-                    Manage subjects
-                  </button>
+                  <div className="flex justify-end gap-3">
+                    <button
+                      type="button"
+                      className="inline-flex items-center gap-1 text-sm font-semibold text-primary hover:underline"
+                      onClick={() => editOffering(offering)}
+                    >
+                      <Pencil size={14} /> Edit
+                    </button>
+                    <button
+                      type="button"
+                      className="text-sm font-semibold text-teal-700 hover:underline"
+                      onClick={() => setSubjectEditorOfferingId(offering.id)}
+                    >
+                      Manage subjects
+                    </button>
+                    <button
+                      type="button"
+                      className="inline-flex items-center gap-1 text-sm font-semibold text-destructive hover:underline"
+                      onClick={() => deleteOffering(offering)}
+                    >
+                      <Trash2 size={14} /> Delete
+                    </button>
+                  </div>
                 </td>
               </tr>
             );

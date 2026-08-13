@@ -1,25 +1,64 @@
 'use client';
 
-import { FormEvent, useState } from 'react';
-import { Plus } from 'lucide-react';
-import { DataTable, TableEmpty } from '@web/components/data-table';
+import { FormEvent, useMemo, useState } from 'react';
+import { Pencil, Plus, Search, Trash2, X } from 'lucide-react';
+import { DataTable, DataTableControls, TableEmpty } from '@web/components/data-table';
 import { useToast } from '@web/components/toast-provider';
 import {
   useCreateAcademicGroupMutation,
+  useDeleteAcademicGroupMutation,
   useListAcademicGroupsQuery,
   useListSchoolClassesQuery,
+  useReplaceAcademicGroupClassesMutation,
   useUpdateAcademicGroupMutation,
 } from '../academics.api';
+import type { ApiRecord } from '@web/store/api/base-api';
+
+type GroupForm = { name: string; code: string; schoolClassIds: string[] };
+const blankForm: GroupForm = { name: '', code: '', schoolClassIds: [] };
 
 export function AcademicGroupsPanel() {
   const { data: groups = [] } = useListAcademicGroupsQuery();
   const { data: schoolClasses = [] } = useListSchoolClassesQuery();
-  const [create] = useCreateAcademicGroupMutation();
-  const [update] = useUpdateAcademicGroupMutation();
+  const [create, { isLoading: isCreating }] = useCreateAcademicGroupMutation();
+  const [update, { isLoading: isUpdating }] = useUpdateAcademicGroupMutation();
+  const [replaceClasses] = useReplaceAcademicGroupClassesMutation();
+  const [remove] = useDeleteAcademicGroupMutation();
   const toast = useToast();
-  const [open, setOpen] = useState(false);
-  const [form, setForm] = useState({ name: '', code: '', schoolClassIds: [] as string[] });
+  const [form, setForm] = useState<GroupForm>(blankForm);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [search, setSearch] = useState('');
 
+  const visibleGroups = useMemo(
+    () =>
+      groups.filter((group) =>
+        `${String(group.name)} ${String(group.code ?? '')}`
+          .toLowerCase()
+          .includes(search.trim().toLowerCase()),
+      ),
+    [groups, search],
+  );
+
+  function classesFor(group: ApiRecord) {
+    const linked = Array.isArray(group.schoolClasses) ? group.schoolClasses : [];
+    return linked
+      .map((item) =>
+        String(
+          (item as ApiRecord).schoolClass ? ((item as ApiRecord).schoolClass as ApiRecord).id : '',
+        ),
+      )
+      .filter(Boolean);
+  }
+  function classNames(group: ApiRecord) {
+    return (Array.isArray(group.schoolClasses) ? group.schoolClasses : [])
+      .map((item) => String(((item as ApiRecord).schoolClass as ApiRecord | undefined)?.name ?? ''))
+      .filter(Boolean)
+      .join(', ');
+  }
+  function reset() {
+    setForm(blankForm);
+    setEditingId(null);
+  }
   function toggle(classId: string) {
     setForm((current) => ({
       ...current,
@@ -28,56 +67,79 @@ export function AcademicGroupsPanel() {
         : [...current.schoolClassIds, classId],
     }));
   }
-
   async function submit(event: FormEvent) {
     event.preventDefault();
     try {
-      await create(form).unwrap();
-      setForm({ name: '', code: '', schoolClassIds: [] });
-      setOpen(false);
-      toast.success('Academic group added.');
+      if (editingId && editingId !== 'new') {
+        await update({
+          id: editingId,
+          body: { name: form.name, code: form.code || undefined },
+        }).unwrap();
+        await replaceClasses({ id: editingId, schoolClassIds: form.schoolClassIds }).unwrap();
+        toast.success('Academic group updated.');
+      } else {
+        await create(form).unwrap();
+        toast.success('Academic group added.');
+      }
+      reset();
     } catch {
-      toast.error('Academic group could not be added. Select at least one class.');
+      toast.error('Group could not be saved. Choose at least one valid school class.');
     }
   }
-
-  async function removeGroup(id: string, name: string) {
-    if (
-      !window.confirm(`Remove ${name}? It can be restored later if it has no active offerings.`)
-    ) {
+  function startEdit(group: ApiRecord) {
+    setEditingId(group.id);
+    setForm({
+      name: String(group.name),
+      code: String(group.code ?? ''),
+      schoolClassIds: classesFor(group),
+    });
+  }
+  async function deleteGroup(group: ApiRecord) {
+    if (!window.confirm(`Delete ${String(group.name)}? It must not be used by an active offering.`))
       return;
-    }
     try {
-      await update({ id, body: { status: 'ARCHIVED' } }).unwrap();
-      toast.success('Academic group removed.');
+      await remove(group.id).unwrap();
+      if (editingId === group.id) reset();
+      toast.success('Academic group deleted.');
     } catch {
-      toast.error(
-        'This group is still used by an active class offering. Move or archive it first.',
-      );
+      toast.error('Move or delete the offerings using this group before deleting it.');
     }
   }
 
   return (
     <div className="space-y-5">
-      <div className="flex flex-wrap items-start justify-between gap-3">
+      <div className="flex flex-wrap items-end justify-between gap-3">
         <p className="max-w-2xl text-sm leading-6 text-muted-foreground">
-          Use groups for streams such as Pre-Medical, ICS, Computer, or Arts. A group can be
-          available to multiple school classes.
+          Groups define streams such as Pre-Medical, ICS, Computer, or Arts, and can be reused by
+          multiple classes.
         </p>
-        <button
-          type="button"
-          className="button-primary inline-flex items-center gap-2"
-          onClick={() => setOpen(true)}
-        >
-          <Plus size={16} />
-          Add group
-        </button>
+        {!editingId ? (
+          <button
+            type="button"
+            className="button-primary inline-flex items-center gap-2"
+            onClick={() => setEditingId('new')}
+          >
+            <Plus size={16} /> Add group
+          </button>
+        ) : null}
       </div>
-      {open ? (
+      {editingId ? (
         <form
           onSubmit={submit}
-          className="space-y-4 rounded-xl border border-teal-300 bg-teal-50/60 p-4"
+          className="space-y-4 rounded-xl border border-border bg-muted/30 p-4"
         >
+          <div className="flex items-center justify-between gap-3">
+            <h3 className="font-semibold">
+              {editingId === 'new' ? 'New academic group' : 'Edit academic group'}
+            </h3>
+            <button
+              type="button"
+              className="button-secondary inline-flex items-center gap-1"
+              onClick={reset}
+            >
+              <X size={15} /> Close
+            </button>
+          </div>
           <div className="grid gap-3 md:grid-cols-2">
             <label className="grid gap-1 text-sm font-medium">
               Group name
@@ -89,7 +151,7 @@ export function AcademicGroupsPanel() {
               />
             </label>
             <label className="grid gap-1 text-sm font-medium">
-              Code
+              Code <span className="font-normal text-muted-foreground">(optional)</span>
               <input
                 className="field"
                 value={form.code}
@@ -99,7 +161,7 @@ export function AcademicGroupsPanel() {
           </div>
           <fieldset>
             <legend className="text-sm font-medium">Available for classes</legend>
-            <div className="mt-2 grid gap-2 sm:grid-cols-2">
+            <div className="mt-2 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
               {schoolClasses.map((schoolClass) => (
                 <label
                   key={schoolClass.id}
@@ -115,14 +177,19 @@ export function AcademicGroupsPanel() {
               ))}
             </div>
           </fieldset>
-          <div className="flex gap-2">
-            <button className="button-primary">Save group</button>
-            <button type="button" className="button-secondary" onClick={() => setOpen(false)}>
-              Cancel
-            </button>
-          </div>
+          <button className="button-primary" disabled={isCreating || isUpdating}>
+            {isCreating || isUpdating ? 'Saving...' : 'Save group'}
+          </button>
         </form>
       ) : null}
+      <DataTableControls
+        searchValue={search}
+        onSearchChange={setSearch}
+        searchPlaceholder="Search groups or codes"
+        sortValue="name"
+        onSortChange={() => undefined}
+        sortOptions={[{ value: 'name', label: 'Name: A to Z' }]}
+      />
       <DataTable minWidth="42rem">
         <thead className="border-b border-border bg-muted/45 text-xs uppercase tracking-wide text-muted-foreground">
           <tr>
@@ -133,37 +200,36 @@ export function AcademicGroupsPanel() {
           </tr>
         </thead>
         <tbody className="divide-y divide-border">
-          {groups.length === 0 ? (
-            <TableEmpty colSpan={4}>No academic groups yet.</TableEmpty>
+          {visibleGroups.length === 0 ? (
+            <TableEmpty colSpan={4}>No academic groups match this view.</TableEmpty>
           ) : null}
-          {groups.map((group) => {
-            const classes = Array.isArray(group.schoolClasses)
-              ? group.schoolClasses
-                  .map((item) => {
-                    const schoolClass = (item as Record<string, unknown>).schoolClass as
-                      Record<string, unknown> | undefined;
-                    return String(schoolClass?.name ?? '');
-                  })
-                  .filter(Boolean)
-                  .join(', ')
-              : 'No classes';
-            return (
-              <tr key={group.id}>
-                <td className="px-4 py-3 font-medium">{String(group.name)}</td>
-                <td className="px-4 py-3 text-muted-foreground">{String(group.code ?? '—')}</td>
-                <td className="px-4 py-3 text-muted-foreground">{classes || 'No classes'}</td>
-                <td className="px-4 py-3 text-right">
+          {visibleGroups.map((group) => (
+            <tr key={group.id}>
+              <td className="px-4 py-3 font-medium">{String(group.name)}</td>
+              <td className="px-4 py-3 text-muted-foreground">{String(group.code ?? '—')}</td>
+              <td className="max-w-xl px-4 py-3 text-muted-foreground">
+                {classNames(group) || 'No classes'}
+              </td>
+              <td className="px-4 py-3">
+                <div className="flex justify-end gap-3">
                   <button
                     type="button"
-                    className="text-sm font-semibold text-destructive hover:underline"
-                    onClick={() => removeGroup(group.id, String(group.name))}
+                    className="inline-flex items-center gap-1 text-sm font-semibold text-primary hover:underline"
+                    onClick={() => startEdit(group)}
                   >
-                    Remove
+                    <Pencil size={14} /> Edit
                   </button>
-                </td>
-              </tr>
-            );
-          })}
+                  <button
+                    type="button"
+                    className="inline-flex items-center gap-1 text-sm font-semibold text-destructive hover:underline"
+                    onClick={() => deleteGroup(group)}
+                  >
+                    <Trash2 size={14} /> Delete
+                  </button>
+                </div>
+              </td>
+            </tr>
+          ))}
         </tbody>
       </DataTable>
     </div>

@@ -62,6 +62,11 @@ export const academicsApi = baseApi.injectEndpoints({
       transformResponse: unwrap,
       invalidatesTags: ['Academic'],
     }),
+    deleteAcademicGroup: build.mutation<ApiRecord, string>({
+      query: (id) => ({ url: `/academic-groups/${id}`, method: 'DELETE' }),
+      transformResponse: unwrap,
+      invalidatesTags: ['Academic'],
+    }),
     listCourses: build.query<ApiRecord[], void>({
       query: () => '/courses',
       transformResponse: unwrap,
@@ -118,6 +123,14 @@ export const academicsApi = baseApi.injectEndpoints({
       transformResponse: unwrap,
       invalidatesTags: ['Academic'],
     }),
+    deleteOffering: build.mutation<ApiRecord, { branchId: string; offeringId: string }>({
+      query: ({ branchId, offeringId }) => ({
+        url: `/branches/${branchId}/academic-offerings/${offeringId}`,
+        method: 'DELETE',
+      }),
+      transformResponse: unwrap,
+      invalidatesTags: ['Academic'],
+    }),
     replaceOfferingSubjects: build.mutation<
       ApiRecord,
       { branchId: string; offeringId: string; subjectIds: string[] }
@@ -152,6 +165,7 @@ export const {
   useCreateAcademicGroupMutation,
   useUpdateAcademicGroupMutation,
   useReplaceAcademicGroupClassesMutation,
+  useDeleteAcademicGroupMutation,
   useListCoursesQuery,
   useCreateCourseMutation,
   useUpdateCourseMutation,
@@ -161,6 +175,7 @@ export const {
   useListOfferingsQuery,
   useCreateOfferingMutation,
   useUpdateOfferingMutation,
+  useDeleteOfferingMutation,
   useReplaceOfferingSubjectsMutation,
   useReplaceOfferingTeachersMutation,
 } = academicsApi;

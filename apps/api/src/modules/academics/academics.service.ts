@@ -190,6 +190,14 @@ export class AcademicsService {
     return updated;
   }
 
+  async deleteAcademicGroup(id: string, actor: string) {
+    return this.updateAcademicGroup(
+      id,
+      { status: EntityStatus.ARCHIVED },
+      actor,
+    );
+  }
+
   async listCourses() {
     const organization = await this.organization();
     return this.prisma.course.findMany({
@@ -267,7 +275,7 @@ export class AcademicsService {
   async listOfferings(branchId: string) {
     await this.branch(branchId);
     return this.prisma.academicOffering.findMany({
-      where: { branchId },
+      where: { branchId, status: EntityStatus.ACTIVE },
       include: this.offeringInclude,
       orderBy: { createdAt: 'asc' },
     });
@@ -363,6 +371,23 @@ export class AcademicsService {
         },
         include: this.offeringInclude,
       }),
+    );
+  }
+  async deleteOffering(branchId: string, offeringId: string, actor: string) {
+    const offering = await this.offering(branchId, offeringId);
+    const studentCount = await this.prisma.student.count({
+      where: { academicOfferingId: offering.id, deletedAt: null },
+    });
+    if (studentCount) {
+      throw new BadRequestException(
+        'This offering has enrolled students. Move or delete them before deleting the offering.',
+      );
+    }
+    return this.updateOffering(
+      branchId,
+      offeringId,
+      { status: EntityStatus.ARCHIVED },
+      actor,
     );
   }
   async replaceOfferingSubjects(

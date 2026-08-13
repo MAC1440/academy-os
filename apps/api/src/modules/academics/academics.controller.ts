@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   Param,
   Patch,
@@ -118,6 +119,17 @@ export class AcademicsController {
       await this.academics.replaceAcademicGroupSchoolClasses(id, dto, user.id),
     );
   }
+  @Delete('academic-groups/:academicGroupId')
+  @RequirePermissions('academics.manage')
+  async deleteAcademicGroup(
+    @Param('academicGroupId') id: string,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return successResponse(
+      'Academic group deleted',
+      await this.academics.deleteAcademicGroup(id, user.id),
+    );
+  }
 
   @Get('courses') @RequirePermissions('academics.read') async listCourses() {
     return successResponse(
@@ -212,6 +224,20 @@ export class AcademicsController {
     return successResponse(
       'Academic offering updated',
       await this.academics.updateOffering(branchId, offeringId, dto, user.id),
+    );
+  }
+  @Delete('branches/:branchId/academic-offerings/:offeringId')
+  @RequirePermissions('academics.manage')
+  @RequireBranchAccess()
+  @UseGuards(BranchAccessGuard)
+  async deleteOffering(
+    @Param('branchId') branchId: string,
+    @Param('offeringId') offeringId: string,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return successResponse(
+      'Academic offering deleted',
+      await this.academics.deleteOffering(branchId, offeringId, user.id),
     );
   }
   @Put('branches/:branchId/academic-offerings/:offeringId/subjects')

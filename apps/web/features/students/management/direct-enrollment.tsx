@@ -24,6 +24,7 @@ export function DirectEnrollment({ onCreated }: { onCreated: (studentId: string)
     contactNumber?: string;
     initialPassword?: string;
   } | null>(null);
+  const [createdStudentId, setCreatedStudentId] = useState<string | null>(null);
   const [form, setForm] = useState({
     studentFullName: '',
     studentCnic: '',
@@ -79,7 +80,7 @@ export function DirectEnrollment({ onCreated }: { onCreated: (studentId: string)
         credentials?: { contactNumber?: string; initialPassword?: string };
       };
       setCredentials(result.credentials ?? null);
-      if (result.student?.id) onCreated(result.student.id);
+      setCreatedStudentId(result.student?.id ?? null);
       toast.success('Student enrolled and admission approved.');
     } catch {
       toast.error(
@@ -281,7 +282,7 @@ export function DirectEnrollment({ onCreated }: { onCreated: (studentId: string)
           />
           Physical admission documents have been verified
         </label>
-        <button className="button-primary w-fit" disabled={isLoading}>
+        <button className="button-primary w-fit" disabled={isLoading || Boolean(createdStudentId)}>
           {isLoading ? 'Enrolling...' : 'Enroll and approve student'}
         </button>
       </form>
@@ -291,6 +292,15 @@ export function DirectEnrollment({ onCreated }: { onCreated: (studentId: string)
           <p className="mt-2 font-mono text-sm text-amber-950">
             Contact: {credentials.contactNumber} · Password: {credentials.initialPassword}
           </p>
+          {createdStudentId ? (
+            <button
+              type="button"
+              className="button-secondary mt-4"
+              onClick={() => onCreated(createdStudentId)}
+            >
+              I have saved these credentials — view student record
+            </button>
+          ) : null}
         </div>
       ) : null}
     </section>

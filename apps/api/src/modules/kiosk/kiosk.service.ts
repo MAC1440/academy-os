@@ -1,5 +1,4 @@
 import {
-  BadRequestException,
   ConflictException,
   Injectable,
   NotFoundException,
@@ -301,7 +300,7 @@ export class KioskService {
       action,
       entityType,
       entityId,
-      changes: changes as unknown as Prisma.InputJsonValue | undefined,
+      changes: changes,
     });
   }
 }

@@ -29,6 +29,10 @@ Started: 14 August 2026
 - [x] Finance summary shows admission balance and recorded payments correctly; a payment can be recorded against the QA student and the updated paid amount/balance are returned by production.
 - [x] Shared notes create, update (including Markdown/math content), and archive correctly in production.
 - [x] QA defect identified: announcement endpoints wrapped unresolved service calls, returning an empty object instead of the requested feed.
+- [x] Announcement response fix deployed and rechecked: create, audience filtering, update, and delete pass.
+- [x] Learner portal API journey passes with a QA guardian: linked student, attendance, performance, finance, notes, and audience-filtered announcements load correctly.
+- [x] Staff portal API journey passes with a QA staff account: temporary login, profile overview, staff notes, and staff announcements load correctly.
+- [x] Full workspace production build and lint pass (non-blocking lint warnings remain for future polish).
 
 ## Next QA Scenarios
 
@@ -40,5 +44,5 @@ Started: 14 August 2026
 - [ ] Student attendance marking, monthly view, and CSV export.
 - [ ] Assessments, marks entry, print/PDF report, and performance history.
 - [ ] Fees: edit and delete a recorded payment from the interface.
-- [ ] Announcements (retest after deploying controller response fix), learner/guardian portal, and staff portal.
+- [ ] Responsive checks on small screens and final error/empty/loading states.
 - [ ] Responsive checks on small screens and final error/empty/loading states.

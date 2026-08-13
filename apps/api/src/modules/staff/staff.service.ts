@@ -397,7 +397,7 @@ export class StaffService {
       action,
       entityType,
       entityId,
-      changes: changes as unknown as Prisma.InputJsonValue | undefined,
+      changes: changes,
     });
   }
 }

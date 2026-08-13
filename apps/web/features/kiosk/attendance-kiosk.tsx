@@ -1,6 +1,7 @@
 'use client';
 
 import { FormEvent, useState } from 'react';
+import Link from 'next/link';
 import { skipToken } from '@reduxjs/toolkit/query';
 import { Clock3, LockKeyhole, MapPin } from 'lucide-react';
 import { useToast } from '@web/components/toast-provider';
@@ -53,9 +54,9 @@ export function AttendanceKiosk() {
   return (
     <main className="kiosk-shell">
       <header className="mx-auto flex max-w-6xl items-center justify-between px-5 py-6 sm:px-8">
-        <a href="/" className="brand-mark text-xl">
+        <Link href="/" className="brand-mark text-xl">
           Vision <span className="text-[var(--accent)]">Preparation</span> Academy
-        </a>
+        </Link>
         <span className="inline-flex items-center gap-2 text-sm font-medium text-[var(--muted)]">
           <Clock3 size={16} />
           Staff attendance

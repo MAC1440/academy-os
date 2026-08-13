@@ -112,15 +112,15 @@ export function FinanceManagement() {
 }
 
 function FinanceSummary({ summary, isLoading }: { summary?: ApiRecord; isLoading: boolean }) {
+  const [search, setSearch] = useState('');
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+  const [editingId, setEditingId] = useState<string | null>(null);
   if (isLoading) return <p className="text-sm text-muted-foreground">Loading fee summary...</p>;
   if (!summary) return null;
   const amount = (value: unknown) =>
     `PKR ${Number(value ?? 0).toLocaleString('en-PK', { minimumFractionDigits: 2 })}`;
   const payments = Array.isArray(summary.payments) ? (summary.payments as ApiRecord[]) : [];
-  const [search, setSearch] = useState('');
-  const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
-  const [editingId, setEditingId] = useState<string | null>(null);
   const filteredPayments = payments.filter((payment) =>
     `${String(payment.receiptNumber)} ${String(payment.remarks ?? '')}`
       .toLowerCase()

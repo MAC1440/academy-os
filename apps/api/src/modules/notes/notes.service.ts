@@ -1,5 +1,5 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { AuditAction, Prisma } from '@prisma/client';
+import { AuditAction } from '@prisma/client';
 import { AuditService } from '../audit/audit.service';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreateNoteDto } from './dto/create-note.dto';
@@ -88,7 +88,7 @@ export class NotesService {
       action,
       entityType: 'SharedNote',
       entityId,
-      changes: changes as unknown as Prisma.InputJsonValue | undefined,
+      changes: changes,
     });
   }
 }

@@ -104,7 +104,7 @@ export class RolesService {
   }
 
   async assignRole(dto: AssignRoleDto, actorUserId: string) {
-    const role = await this.role(dto.roleId);
+    await this.role(dto.roleId);
     const user = await this.prisma.user.findFirst({
       where: { id: dto.userId, deletedAt: null },
     });
@@ -191,7 +191,7 @@ export class RolesService {
       action,
       entityType,
       entityId,
-      changes: changes as Prisma.InputJsonValue | undefined,
+      changes: changes,
     });
   }
 }

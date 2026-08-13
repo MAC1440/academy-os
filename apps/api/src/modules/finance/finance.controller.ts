@@ -17,7 +17,6 @@ import {
   IsString,
   Min,
 } from 'class-validator';
-import { PrismaService } from '../../prisma/prisma.service';
 import { RequirePermissions } from '../access/decorators/require-permissions.decorator';
 import { PermissionsGuard } from '../access/guards/permissions.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';

@@ -38,7 +38,10 @@ class UpdateAnnouncementDto {
 export class AnnouncementsController {
   constructor(private readonly service: AnnouncementsService) {}
   @Get() @RequirePermissions('notes.read') async list() {
-    return successResponse('Announcements retrieved', await this.service.list());
+    return successResponse(
+      'Announcements retrieved',
+      await this.service.list(),
+    );
   }
   @Get('learner') async listLearner() {
     return successResponse(
@@ -55,7 +58,10 @@ export class AnnouncementsController {
   @Post() @RequirePermissions('notes.manage') async create(
     @Body() dto: AnnouncementDto,
   ) {
-    return successResponse('Announcement created', await this.service.create(dto));
+    return successResponse(
+      'Announcement created',
+      await this.service.create(dto),
+    );
   }
   @Patch(':id') @RequirePermissions('notes.manage') async update(
     @Param('id') id: string,
@@ -69,6 +75,9 @@ export class AnnouncementsController {
   @Delete(':id') @RequirePermissions('notes.manage') async remove(
     @Param('id') id: string,
   ) {
-    return successResponse('Announcement deleted', await this.service.remove(id));
+    return successResponse(
+      'Announcement deleted',
+      await this.service.remove(id),
+    );
   }
 }

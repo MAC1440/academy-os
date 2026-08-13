@@ -114,7 +114,7 @@ export function BranchOperatingHours({
         <div>
           <h3 className="font-semibold">{branchName} operating hours</h3>
           <p className="text-sm text-muted-foreground">
-            These hours are the branch's editable attendance baseline.
+            These hours are the branch&apos;s editable attendance baseline.
           </p>
         </div>
       </div>

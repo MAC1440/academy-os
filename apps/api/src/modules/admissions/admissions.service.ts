@@ -819,7 +819,7 @@ export class AdmissionsService {
       action,
       entityType,
       entityId,
-      changes: changes as unknown as Prisma.InputJsonValue | undefined,
+      changes: changes,
     });
   }
 }

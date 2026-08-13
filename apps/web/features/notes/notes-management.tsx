@@ -1,7 +1,7 @@
 'use client';
 
-import { FormEvent, useState } from 'react';
-import { FileText, Pencil, Plus, Trash2 } from 'lucide-react';
+import { FormEvent, useMemo, useRef, useState } from 'react';
+import { FileText, Pencil, Plus, Search, Trash2 } from 'lucide-react';
 import { useToast } from '@web/components/toast-provider';
 import type { ApiRecord } from '@web/store/api/base-api';
 import {
@@ -10,6 +10,12 @@ import {
   useListNotesQuery,
   useUpdateNoteMutation,
 } from './notes.api';
+import { NoteComposer } from './note-composer';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+import remarkMath from 'remark-math';
+import rehypeKatex from 'rehype-katex';
+import 'katex/dist/katex.min.css';
 
 type Note = ApiRecord & { author?: ApiRecord };
 
@@ -19,6 +25,17 @@ export function NotesManagement() {
   const toast = useToast();
   const [creating, setCreating] = useState(false);
   const [form, setForm] = useState({ title: '', content: '' });
+  const contentRef = useRef<HTMLTextAreaElement>(null);
+  const [search, setSearch] = useState('');
+  const filteredNotes = useMemo(
+    () =>
+      notes.filter((note) =>
+        `${String(note.title)} ${String(note.content)}`
+          .toLowerCase()
+          .includes(search.trim().toLowerCase()),
+      ),
+    [notes, search],
+  );
 
   async function submit(event: FormEvent) {
     event.preventDefault();
@@ -55,27 +72,7 @@ export function NotesManagement() {
           onSubmit={submit}
           className="grid gap-3 rounded-2xl border border-teal-300 bg-teal-50/60 p-5"
         >
-          <label className="grid gap-1 text-sm font-medium">
-            Title
-            <input
-              className="field"
-              required
-              autoFocus
-              value={form.title}
-              onChange={(event) => setForm({ ...form, title: event.target.value })}
-              placeholder="e.g. Saturday mock test"
-            />
-          </label>
-          <label className="grid gap-1 text-sm font-medium">
-            Note
-            <textarea
-              className="field min-h-32 resize-y"
-              required
-              value={form.content}
-              onChange={(event) => setForm({ ...form, content: event.target.value })}
-              placeholder="Write the details your team needs."
-            />
-          </label>
+          <NoteComposer form={form} onChange={setForm} contentRef={contentRef} />
           <div className="flex gap-2">
             <button className="button-primary">Share note</button>
             <button type="button" className="button-secondary" onClick={() => setCreating(false)}>
@@ -85,6 +82,20 @@ export function NotesManagement() {
         </form>
       ) : null}
       {isLoading ? <p className="text-sm text-muted-foreground">Loading notes...</p> : null}
+      {notes.length ? (
+        <label className="relative block max-w-lg">
+          <Search
+            className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+            size={16}
+          />
+          <input
+            className="field pl-10"
+            value={search}
+            onChange={(event) => setSearch(event.target.value)}
+            placeholder="Search shared notes"
+          />
+        </label>
+      ) : null}
       {!isLoading && notes.length === 0 ? (
         <div className="max-w-xl py-10 text-center">
           <FileText className="mx-auto text-teal-600" size={28} />
@@ -98,9 +109,12 @@ export function NotesManagement() {
         </div>
       ) : null}
       <div className="divide-y divide-border rounded-2xl border border-border bg-card">
-        {notes.map((item) => (
+        {filteredNotes.map((item) => (
           <NoteRow key={item.id} note={item as Note} onChanged={refetch} />
         ))}
+        {notes.length && filteredNotes.length === 0 ? (
+          <p className="p-5 text-sm text-muted-foreground">No notes match that search.</p>
+        ) : null}
       </div>
     </div>
   );
@@ -112,6 +126,7 @@ function NoteRow({ note, onChanged }: { note: Note; onChanged: () => unknown }) 
   const toast = useToast();
   const [editing, setEditing] = useState(false);
   const [form, setForm] = useState({ title: String(note.title), content: String(note.content) });
+  const contentRef = useRef<HTMLTextAreaElement>(null);
   async function save(event: FormEvent) {
     event.preventDefault();
     try {
@@ -136,18 +151,7 @@ function NoteRow({ note, onChanged }: { note: Note; onChanged: () => unknown }) 
   if (editing)
     return (
       <form onSubmit={save} className="grid gap-3 p-5">
-        <input
-          className="field"
-          required
-          value={form.title}
-          onChange={(event) => setForm({ ...form, title: event.target.value })}
-        />
-        <textarea
-          className="field min-h-28 resize-y"
-          required
-          value={form.content}
-          onChange={(event) => setForm({ ...form, content: event.target.value })}
-        />
+        <NoteComposer form={form} onChange={setForm} contentRef={contentRef} />
         <div className="flex gap-2">
           <button className="button-primary">Save</button>
           <button type="button" className="button-secondary" onClick={() => setEditing(false)}>
@@ -161,9 +165,11 @@ function NoteRow({ note, onChanged }: { note: Note; onChanged: () => unknown }) 
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div className="min-w-0 max-w-3xl">
           <h2 className="font-semibold">{String(note.title)}</h2>
-          <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-muted-foreground">
-            {String(note.content)}
-          </p>
+          <div className="prose prose-sm mt-2 max-w-none whitespace-pre-wrap text-muted-foreground dark:prose-invert">
+            <ReactMarkdown remarkPlugins={[remarkGfm, remarkMath]} rehypePlugins={[rehypeKatex]}>
+              {String(note.content)}
+            </ReactMarkdown>
+          </div>
           <p className="mt-3 text-xs text-muted-foreground">
             Updated {String(note.updatedAt).slice(0, 10)} by{' '}
             {String(note.author?.fullName ?? 'Team member')}

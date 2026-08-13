@@ -56,14 +56,9 @@ async function main() {
   const passwordHash = await bcrypt.hash('Welcome123!', 12);
   const administrator = await prisma.user.upsert({
     where: { username: 'admin' },
-    update: {
-      accountType: AccountType.ADMIN,
-      fullName: 'Default Administrator',
-      passwordHash,
-      status: 'ACTIVE',
-      deletedAt: null,
-      mustCompleteProfile: true,
-    },
+    // A seed can be intentionally rerun to fill reference data. Never overwrite
+    // a live administrator's password or profile in that case.
+    update: {},
     create: {
       accountType: AccountType.ADMIN,
       username: 'admin',

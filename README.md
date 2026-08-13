@@ -16,6 +16,21 @@ their branches.
 
 The web application expects `NEXT_PUBLIC_API_URL=http://localhost:3000`.
 
+## Production deployment
+
+- Deploy `apps/web` to Vercel with `NEXT_PUBLIC_API_URL` set to the public API URL.
+- Deploy the repository root as one Railway API service. The committed
+  [`railway.toml`](railway.toml) builds the API, applies committed Prisma
+  migrations before deployment, starts the API, and health-checks `/health`.
+- Add a Railway PostgreSQL service and set the API service's `DATABASE_URL` to
+  its reference variable. Also set strong, unique `JWT_SECRET` and
+  `REFRESH_SECRET` values, `NODE_ENV=production`, and `ALLOWED_ORIGINS` to the
+  production Vercel URL.
+- On a brand-new database only, run `npm run prisma:seed --workspace=api` once
+  from Railway. The seed creates the initial administrator and academic reference
+  data, but is now safe to rerun without replacing an existing administrator's
+  credentials.
+
 ## Quality commands
 
 | Command                                       | Purpose                                 |

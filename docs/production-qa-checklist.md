@@ -23,8 +23,8 @@ Started: 14 August 2026
 - [x] Staff temporary portal login reaches mandatory password replacement.
 - [x] Weekly student attendance loads the roster, cycles a status, and persists it.
 - [x] QA defect identified: direct enrollment generated learner credentials but navigated away before displaying them.
-- [ ] Deploy and recheck the direct-enrollment credential handoff fix.
-- [x] QA defect identified: grades RTK Query endpoints did not unwrap the API response envelope, leaving new assessments invisible.
+- [x] Direct-enrollment credential handoff fix deployed and rechecked.
+- [x] QA defect identified: Grades queries were not invalidated after creates/saves, leaving stale assessment data on screen.
 - [ ] Deploy and recheck assessment list, marks entry, and performance history.
 
 ## Next QA Scenarios

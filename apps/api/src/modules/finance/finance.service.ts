@@ -3,7 +3,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { AuditAction } from '@prisma/client';
+import { AuditAction, Prisma } from '@prisma/client';
 import { AuditService } from '../audit/audit.service';
 import { PrismaService } from '../../prisma/prisma.service';
 @Injectable()
@@ -71,6 +71,76 @@ export class FinanceService {
       },
     });
     return payment;
+  }
+  async updatePayment(
+    studentId: string,
+    paymentId: string,
+    dto: {
+      amount?: number;
+      receiptNumber?: string;
+      receivedOn?: string;
+      remarks?: string;
+    },
+    actor: string,
+  ) {
+    const payment = await this.paymentForStudent(studentId, paymentId, actor);
+    const updated = await this.prisma.studentPayment.update({
+      where: { id: payment.id },
+      data: {
+        ...(dto.amount !== undefined ? { amount: dto.amount } : {}),
+        ...(dto.receiptNumber !== undefined
+          ? { receiptNumber: dto.receiptNumber.trim() }
+          : {}),
+        ...(dto.receivedOn !== undefined
+          ? { receivedOn: new Date(dto.receivedOn) }
+          : {}),
+        ...(dto.remarks !== undefined
+          ? { remarks: dto.remarks.trim() || null }
+          : {}),
+      },
+    });
+    await this.recordAudit(actor, AuditAction.UPDATE, updated.id, {
+      studentId,
+      ...dto,
+    });
+    return updated;
+  }
+  async deletePayment(studentId: string, paymentId: string, actor: string) {
+    const payment = await this.paymentForStudent(studentId, paymentId, actor);
+    await this.prisma.studentPayment.delete({ where: { id: payment.id } });
+    await this.recordAudit(actor, AuditAction.DELETE, payment.id, {
+      studentId,
+    });
+    return { id: payment.id };
+  }
+  private async paymentForStudent(
+    studentId: string,
+    paymentId: string,
+    actor: string,
+  ) {
+    const payment = await this.prisma.studentPayment.findFirst({
+      where: { id: paymentId, studentId },
+      include: { student: true },
+    });
+    if (!payment) throw new NotFoundException('Payment not found');
+    await this.ensureBranchAccess(actor, payment.student.branchId);
+    return payment;
+  }
+  private async recordAudit(
+    actor: string,
+    action: AuditAction,
+    entityId: string,
+    changes: Record<string, unknown>,
+  ) {
+    const org = await this.prisma.organization.findFirstOrThrow();
+    await this.audit.record({
+      organizationId: org.id,
+      actorUserId: actor,
+      action,
+      entityType: 'StudentPayment',
+      entityId,
+      changes: changes as Prisma.InputJsonValue,
+    });
   }
   private async ensureBranchAccess(actor: string, branchId: string) {
     const access = await this.prisma.roleAssignment.findFirst({

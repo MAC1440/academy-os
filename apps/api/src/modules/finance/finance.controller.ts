@@ -1,4 +1,13 @@
-import { Body, Controller, Get, Param, Post, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Patch,
+  Post,
+  UseGuards,
+} from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import {
@@ -21,6 +30,12 @@ class CreatePaymentDto {
   @IsDateString() receivedOn!: string;
   @IsOptional() @IsString() remarks?: string;
 }
+class UpdatePaymentDto {
+  @IsOptional() @Type(() => Number) @IsNumber() @Min(0.01) amount?: number;
+  @IsOptional() @IsString() receiptNumber?: string;
+  @IsOptional() @IsDateString() receivedOn?: string;
+  @IsOptional() @IsString() remarks?: string;
+}
 @ApiTags('Finance')
 @ApiBearerAuth('JWT-auth')
 @UseGuards(JwtAuthGuard, PermissionsGuard)
@@ -39,5 +54,20 @@ export class FinanceController {
     @CurrentUser() user: AuthenticatedUser,
   ) {
     return this.service.createPayment(studentId, dto, user.id);
+  }
+  @Patch('payments/:paymentId') @RequirePermissions('finance.manage') update(
+    @Param('studentId') studentId: string,
+    @Param('paymentId') paymentId: string,
+    @Body() dto: UpdatePaymentDto,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return this.service.updatePayment(studentId, paymentId, dto, user.id);
+  }
+  @Delete('payments/:paymentId') @RequirePermissions('finance.manage') remove(
+    @Param('studentId') studentId: string,
+    @Param('paymentId') paymentId: string,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return this.service.deletePayment(studentId, paymentId, user.id);
   }
 }

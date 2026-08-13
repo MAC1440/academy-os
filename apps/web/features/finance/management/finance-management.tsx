@@ -2,12 +2,22 @@
 
 import { FormEvent, useState } from 'react';
 import { skipToken } from '@reduxjs/toolkit/query';
-import { CreditCard, ReceiptText } from 'lucide-react';
+import { CreditCard, Pencil, ReceiptText, Trash2 } from 'lucide-react';
 import { useToast } from '@web/components/toast-provider';
-import { DataTable, TableEmpty } from '@web/components/data-table';
+import {
+  DataTable,
+  DataTableControls,
+  DataTablePagination,
+  TableEmpty,
+} from '@web/components/data-table';
 import { useListBranchesQuery } from '@web/features/organization/organization.api';
 import { useListStudentsQuery } from '@web/features/students/students.api';
-import { useCreatePaymentMutation, useGetStudentFinanceQuery } from '../finance.api';
+import {
+  useCreatePaymentMutation,
+  useDeletePaymentMutation,
+  useGetStudentFinanceQuery,
+  useUpdatePaymentMutation,
+} from '../finance.api';
 import type { ApiRecord } from '@web/store/api/base-api';
 
 const today = new Date().toISOString().slice(0, 10);
@@ -107,6 +117,17 @@ function FinanceSummary({ summary, isLoading }: { summary?: ApiRecord; isLoading
   const amount = (value: unknown) =>
     `PKR ${Number(value ?? 0).toLocaleString('en-PK', { minimumFractionDigits: 2 })}`;
   const payments = Array.isArray(summary.payments) ? (summary.payments as ApiRecord[]) : [];
+  const [search, setSearch] = useState('');
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const filteredPayments = payments.filter((payment) =>
+    `${String(payment.receiptNumber)} ${String(payment.remarks ?? '')}`
+      .toLowerCase()
+      .includes(search.trim().toLowerCase()),
+  );
+  const pageCount = Math.max(1, Math.ceil(filteredPayments.length / pageSize));
+  const paginatedPayments = filteredPayments.slice((page - 1) * pageSize, page * pageSize);
   return (
     <div className="space-y-5">
       <div className="grid gap-3 md:grid-cols-3">
@@ -121,6 +142,16 @@ function FinanceSummary({ summary, isLoading }: { summary?: ApiRecord; isLoading
       </div>
       <div>
         <h2 className="font-display text-2xl">Payment history</h2>
+        <div className="mt-3">
+          <DataTableControls
+            searchValue={search}
+            onSearchChange={setSearch}
+            searchPlaceholder="Search receipt or remarks"
+            sortValue="received"
+            onSortChange={() => undefined}
+            sortOptions={[{ value: 'received', label: 'Newest first' }]}
+          />
+        </div>
         <DataTable minWidth="36rem">
           <thead className="border-b border-border bg-muted/45 text-xs uppercase tracking-wide text-muted-foreground">
             <tr>
@@ -128,29 +159,51 @@ function FinanceSummary({ summary, isLoading }: { summary?: ApiRecord; isLoading
               <th className="px-4 py-3 font-semibold">Received on</th>
               <th className="px-4 py-3 font-semibold">Remarks</th>
               <th className="px-4 py-3 text-right font-semibold">Amount</th>
+              <th className="px-4 py-3 text-right font-semibold">Actions</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-border">
             {payments.length === 0 ? (
-              <TableEmpty colSpan={4}>
+              <TableEmpty colSpan={5}>
                 No payments recorded beyond the amount received with the admission form.
               </TableEmpty>
             ) : (
-              payments.map((payment) => (
-                <tr key={payment.id}>
-                  <td className="px-4 py-3 font-medium">{String(payment.receiptNumber)}</td>
-                  <td className="px-4 py-3 text-muted-foreground">
-                    {String(payment.receivedOn).slice(0, 10)}
-                  </td>
-                  <td className="px-4 py-3 text-muted-foreground">
-                    {String(payment.remarks ?? 'No remarks')}
-                  </td>
-                  <td className="px-4 py-3 text-right font-semibold">{amount(payment.amount)}</td>
-                </tr>
-              ))
+              paginatedPayments.map((payment) =>
+                editingId === payment.id ? (
+                  <PaymentEditor
+                    key={payment.id}
+                    payment={payment}
+                    onClose={() => setEditingId(null)}
+                  />
+                ) : (
+                  <tr key={payment.id}>
+                    <td className="px-4 py-3 font-medium">{String(payment.receiptNumber)}</td>
+                    <td className="px-4 py-3 text-muted-foreground">
+                      {String(payment.receivedOn).slice(0, 10)}
+                    </td>
+                    <td className="px-4 py-3 text-muted-foreground">
+                      {String(payment.remarks ?? 'No remarks')}
+                    </td>
+                    <td className="px-4 py-3 text-right font-semibold">{amount(payment.amount)}</td>
+                    <td className="px-4 py-3 text-right">
+                      <PaymentActions payment={payment} onEdit={() => setEditingId(payment.id)} />
+                    </td>
+                  </tr>
+                ),
+              )
             )}
           </tbody>
         </DataTable>
+        <div className="mt-4">
+          <DataTablePagination
+            page={page}
+            pageCount={pageCount}
+            itemCount={filteredPayments.length}
+            pageSize={pageSize}
+            onPageChange={setPage}
+            onPageSizeChange={setPageSize}
+          />
+        </div>
         <div className="hidden">
           {payments.length === 0 ? (
             <p className="rounded-xl border border-dashed border-border p-4 text-sm text-muted-foreground">
@@ -176,6 +229,109 @@ function FinanceSummary({ summary, isLoading }: { summary?: ApiRecord; isLoading
         </div>
       </div>
     </div>
+  );
+}
+function PaymentActions({ payment, onEdit }: { payment: ApiRecord; onEdit: () => void }) {
+  const [remove, { isLoading }] = useDeletePaymentMutation();
+  const toast = useToast();
+  async function deletePayment() {
+    if (!window.confirm(`Delete receipt ${String(payment.receiptNumber)}?`)) return;
+    try {
+      await remove({ studentId: String(payment.studentId), paymentId: payment.id }).unwrap();
+      toast.success('Payment deleted.');
+    } catch {
+      toast.error('Payment could not be deleted.');
+    }
+  }
+  return (
+    <div className="flex justify-end gap-3">
+      <button
+        type="button"
+        className="inline-flex items-center gap-1 text-sm font-semibold text-primary hover:underline"
+        onClick={onEdit}
+      >
+        <Pencil size={14} /> Edit
+      </button>
+      <button
+        type="button"
+        className="inline-flex items-center gap-1 text-sm font-semibold text-destructive hover:underline"
+        disabled={isLoading}
+        onClick={deletePayment}
+      >
+        <Trash2 size={14} /> Delete
+      </button>
+    </div>
+  );
+}
+function PaymentEditor({ payment, onClose }: { payment: ApiRecord; onClose: () => void }) {
+  const [update, { isLoading }] = useUpdatePaymentMutation();
+  const toast = useToast();
+  const [form, setForm] = useState({
+    amount: String(payment.amount),
+    receiptNumber: String(payment.receiptNumber),
+    receivedOn: String(payment.receivedOn).slice(0, 10),
+    remarks: String(payment.remarks ?? ''),
+  });
+  async function save() {
+    try {
+      await update({
+        studentId: String(payment.studentId),
+        paymentId: payment.id,
+        amount: Number(form.amount),
+        receiptNumber: form.receiptNumber,
+        receivedOn: form.receivedOn,
+        remarks: form.remarks,
+      }).unwrap();
+      toast.success('Payment updated.');
+      onClose();
+    } catch {
+      toast.error('Payment could not be updated.');
+    }
+  }
+  return (
+    <tr className="bg-muted/40">
+      <td className="px-4 py-3">
+        <input
+          className="field"
+          value={form.receiptNumber}
+          onChange={(e) => setForm({ ...form, receiptNumber: e.target.value })}
+        />
+      </td>
+      <td className="px-4 py-3">
+        <input
+          className="field"
+          type="date"
+          value={form.receivedOn}
+          onChange={(e) => setForm({ ...form, receivedOn: e.target.value })}
+        />
+      </td>
+      <td className="px-4 py-3">
+        <input
+          className="field"
+          value={form.remarks}
+          onChange={(e) => setForm({ ...form, remarks: e.target.value })}
+        />
+      </td>
+      <td className="px-4 py-3">
+        <input
+          className="field text-right"
+          type="number"
+          min="0.01"
+          value={form.amount}
+          onChange={(e) => setForm({ ...form, amount: e.target.value })}
+        />
+      </td>
+      <td className="px-4 py-3">
+        <div className="flex justify-end gap-2">
+          <button type="button" className="button-primary" disabled={isLoading} onClick={save}>
+            Save
+          </button>
+          <button type="button" className="button-secondary" onClick={onClose}>
+            Cancel
+          </button>
+        </div>
+      </td>
+    </tr>
   );
 }
 function FinanceCard({

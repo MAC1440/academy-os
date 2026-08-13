@@ -47,6 +47,7 @@ export const admissionsApi = baseApi.injectEndpoints({
     deleteAdmission: build.mutation<{ id: string }, string>({
       query: (id) => ({ url: `/admissions/${id}`, method: 'DELETE' }),
       transformResponse: unwrap,
+      invalidatesTags: ['Academic'],
     }),
   }),
 });

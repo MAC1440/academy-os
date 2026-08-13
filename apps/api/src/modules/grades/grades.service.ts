@@ -7,7 +7,11 @@ import {
 import { PrismaService } from '../../prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
 import { AuditAction } from '@prisma/client';
-import { CreateAssessmentDto, SaveMarksDto } from './dto/grades.dto';
+import {
+  CreateAssessmentDto,
+  SaveMarksDto,
+  UpdateAssessmentDto,
+} from './dto/grades.dto';
 @Injectable()
 export class GradesService {
   constructor(
@@ -49,6 +53,45 @@ export class GradesService {
       where: { academicOfferingId: offeringId },
       include: { _count: { select: { marks: true } } },
       orderBy: { heldOn: 'desc' },
+    });
+  }
+  async update(id: string, dto: UpdateAssessmentDto, actor: string) {
+    const assessment = await this.assessment(id, actor);
+    const updated = await this.prisma.assessment.update({
+      where: { id: assessment.id },
+      data: {
+        ...(dto.title !== undefined ? { title: dto.title.trim() } : {}),
+        ...(dto.assessmentType !== undefined
+          ? { assessmentType: dto.assessmentType }
+          : {}),
+        ...(dto.heldOn !== undefined ? { heldOn: new Date(dto.heldOn) } : {}),
+      },
+    });
+    await this.auditRecord(
+      actor,
+      AuditAction.UPDATE,
+      'Assessment',
+      updated.id,
+      dto as Record<string, unknown>,
+    );
+    return updated;
+  }
+  async remove(id: string, actor: string) {
+    const assessment = await this.assessment(id, actor);
+    await this.prisma.assessment.delete({ where: { id: assessment.id } });
+    await this.auditRecord(actor, AuditAction.DELETE, 'Assessment', id, {});
+    return { id };
+  }
+  async marks(id: string, actor: string) {
+    await this.assessment(id, actor);
+    return this.prisma.studentAssessmentMark.findMany({
+      where: { assessmentId: id },
+      select: {
+        studentId: true,
+        subjectId: true,
+        maximumMarks: true,
+        obtainedMarks: true,
+      },
     });
   }
   async saveMarks(assessmentId: string, dto: SaveMarksDto, actor?: string) {
@@ -146,5 +189,31 @@ export class GradesService {
     });
     if (!a)
       throw new ForbiddenException('You do not have access to this branch');
+  }
+  private async assessment(id: string, actor: string) {
+    const assessment = await this.prisma.assessment.findUnique({
+      where: { id },
+      include: { academicOffering: true },
+    });
+    if (!assessment) throw new NotFoundException('Assessment not found');
+    await this.ensureBranchAccess(actor, assessment.academicOffering.branchId);
+    return assessment;
+  }
+  private async auditRecord(
+    actor: string,
+    action: AuditAction,
+    entityType: string,
+    entityId: string,
+    changes: Record<string, unknown>,
+  ) {
+    const organization = await this.prisma.organization.findFirstOrThrow();
+    await this.audit.record({
+      organizationId: organization.id,
+      actorUserId: actor,
+      action,
+      entityType,
+      entityId,
+      changes: changes as import('@prisma/client').Prisma.InputJsonValue,
+    });
   }
 }

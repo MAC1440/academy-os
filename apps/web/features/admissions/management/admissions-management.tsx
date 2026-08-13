@@ -1,14 +1,20 @@
 'use client';
 
-import { FormEvent, useEffect, useState } from 'react';
+import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { skipToken } from '@reduxjs/toolkit/query';
-import { CheckCircle2, ClipboardList, XCircle } from 'lucide-react';
-import { DataTable, TableEmpty } from '@web/components/data-table';
+import { CheckCircle2, ClipboardList, Trash2, XCircle } from 'lucide-react';
+import {
+  DataTable,
+  DataTableControls,
+  DataTablePagination,
+  TableEmpty,
+} from '@web/components/data-table';
 import { useToast } from '@web/components/toast-provider';
 import { useListOfferingsQuery } from '@web/features/academics/academics.api';
 import { useListAcademicTermsQuery } from '@web/features/settings/settings.api';
 import {
   useGetAdmissionQuery,
+  useDeleteAdmissionMutation,
   useListAdmissionsQuery,
   useReviewAdmissionMutation,
 } from '../admissions.api';
@@ -31,11 +37,38 @@ const queueTabs = [
 export function AdmissionsManagement() {
   const [status, setStatus] = useState<(typeof queueTabs)[number]['id']>('PENDING');
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [search, setSearch] = useState('');
+  const [sort, setSort] = useState('newest');
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
   const admissions = useListAdmissionsQuery({ status });
   const selected = useGetAdmissionQuery(selectedId ?? skipToken);
   useEffect(() => {
     setSelectedId(null);
   }, [status]);
+  const filteredAdmissions = useMemo(
+    () =>
+      [...(admissions.data ?? [])]
+        .filter((item) =>
+          `${String(item.studentFullName)} ${String(item.studentCnic)} ${String(item.guardianFullName)} ${String(item.guardianContactNumber)}`
+            .toLowerCase()
+            .includes(search.trim().toLowerCase()),
+        )
+        .sort((left, right) =>
+          sort === 'name'
+            ? String(left.studentFullName).localeCompare(String(right.studentFullName))
+            : String(right.createdAt).localeCompare(String(left.createdAt)),
+        ),
+    [admissions.data, search, sort],
+  );
+  const pageCount = Math.max(1, Math.ceil(filteredAdmissions.length / pageSize));
+  const paginatedAdmissions = filteredAdmissions.slice((page - 1) * pageSize, page * pageSize);
+  useEffect(() => {
+    setPage(1);
+  }, [status, search, sort, pageSize]);
+  useEffect(() => {
+    if (page > pageCount) setPage(pageCount);
+  }, [page, pageCount]);
   return (
     <div className="space-y-6">
       <header className="max-w-2xl">
@@ -80,6 +113,19 @@ export function AdmissionsManagement() {
             {status.slice(1).toLowerCase()} applications
           </p>
           <div className="mt-3">
+            <DataTableControls
+              searchValue={search}
+              onSearchChange={setSearch}
+              searchPlaceholder="Student, CNIC, guardian, or phone"
+              sortValue={sort}
+              onSortChange={setSort}
+              sortOptions={[
+                { value: 'newest', label: 'Newest first' },
+                { value: 'name', label: 'Student: A to Z' },
+              ]}
+            />
+          </div>
+          <div className="mt-3">
             <DataTable minWidth="38rem">
               <thead className="border-b border-border bg-muted/45 text-xs uppercase tracking-wide text-muted-foreground">
                 <tr>
@@ -93,10 +139,10 @@ export function AdmissionsManagement() {
                 {admissions.isLoading ? (
                   <TableEmpty colSpan={4}>Loading applications...</TableEmpty>
                 ) : null}
-                {!admissions.isLoading && (admissions.data?.length ?? 0) === 0 ? (
+                {!admissions.isLoading && filteredAdmissions.length === 0 ? (
                   <TableEmpty colSpan={4}>No {status.toLowerCase()} applications.</TableEmpty>
                 ) : null}
-                {(admissions.data ?? []).map((item) => {
+                {paginatedAdmissions.map((item) => {
                   const application = item as Admission;
                   const offering = String(
                     application.academicOffering?.schoolClass?.name ??
@@ -124,6 +170,16 @@ export function AdmissionsManagement() {
                 })}
               </tbody>
             </DataTable>
+            <div className="mt-4">
+              <DataTablePagination
+                page={page}
+                pageCount={pageCount}
+                itemCount={filteredAdmissions.length}
+                pageSize={pageSize}
+                onPageChange={setPage}
+                onPageSizeChange={setPageSize}
+              />
+            </div>
           </div>
           <div className="hidden">
             {admissions.isLoading ? (
@@ -148,6 +204,7 @@ export function AdmissionsManagement() {
           <AdmissionDetail
             application={selected.data as Admission | undefined}
             isLoading={selected.isLoading}
+            onDeleted={() => setSelectedId(null)}
           />
         </section>
       </div>
@@ -189,9 +246,11 @@ function AdmissionRow({
 function AdmissionDetail({
   application,
   isLoading,
+  onDeleted,
 }: {
   application?: Admission;
   isLoading: boolean;
+  onDeleted: () => void;
 }) {
   const [view, setView] = useState<'application' | 'decision'>('application');
   useEffect(() => {
@@ -244,7 +303,7 @@ function AdmissionDetail({
       {view === 'application' ? (
         <ApplicationData application={application} />
       ) : (
-        <DecisionPanel application={application} />
+        <DecisionPanel application={application} onDeleted={onDeleted} />
       )}
     </div>
   );
@@ -273,19 +332,59 @@ function ApplicationData({ application }: { application: Admission }) {
   );
 }
 
-function DecisionPanel({ application }: { application: Admission }) {
+function DecisionPanel({
+  application,
+  onDeleted,
+}: {
+  application: Admission;
+  onDeleted: () => void;
+}) {
   if (String(application.status) !== 'PENDING')
-    return (
-      <div role="tabpanel" className="rounded-xl border border-border bg-muted/30 p-5">
-        <p className="font-semibold">
-          This application is {String(application.status).toLowerCase()}.
-        </p>
-        <p className="mt-2 text-sm text-muted-foreground">
-          Review note: {String(application.reviewNote ?? 'None')}
-        </p>
-      </div>
-    );
+    return <ReviewedAdmission application={application} onDeleted={onDeleted} />;
   return <ReviewForm application={application} />;
+}
+
+function ReviewedAdmission({
+  application,
+  onDeleted,
+}: {
+  application: Admission;
+  onDeleted: () => void;
+}) {
+  const [remove, { isLoading }] = useDeleteAdmissionMutation();
+  const toast = useToast();
+  const rejected = String(application.status) === 'REJECTED';
+  async function deleteApplication() {
+    if (!window.confirm('Permanently delete this rejected application?')) return;
+    try {
+      await remove(application.id).unwrap();
+      toast.success('Rejected application deleted.');
+      onDeleted();
+    } catch {
+      toast.error('This application could not be deleted.');
+    }
+  }
+  return (
+    <div role="tabpanel" className="rounded-xl border border-border bg-muted/30 p-5">
+      <p className="font-semibold">
+        This application is {String(application.status).toLowerCase()}.
+      </p>
+      <p className="mt-2 text-sm text-muted-foreground">
+        Review note: {String(application.reviewNote ?? 'None')}
+      </p>
+      {rejected ? (
+        <button
+          type="button"
+          className="button-secondary mt-4 inline-flex items-center gap-2 text-destructive"
+          disabled={isLoading}
+          onClick={deleteApplication}
+        >
+          <Trash2 size={15} />
+          {isLoading ? 'Deleting...' : 'Delete rejected application'}
+        </button>
+      ) : null}
+    </div>
+  );
 }
 
 function ReviewForm({ application }: { application: Admission }) {

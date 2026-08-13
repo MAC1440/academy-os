@@ -15,6 +15,29 @@ export const gradesApi = baseApi.injectEndpoints({
         body,
       }),
     }),
+    updateAssessment: build.mutation<
+      ApiRecord,
+      {
+        assessmentId: string;
+        title?: string;
+        assessmentType?: 'REGULAR' | 'FESTIVAL';
+        heldOn?: string;
+      }
+    >({
+      query: ({ assessmentId, ...body }) => ({
+        url: `/assessments/${assessmentId}`,
+        method: 'PATCH',
+        body,
+      }),
+      invalidatesTags: ['Academic'],
+    }),
+    deleteAssessment: build.mutation<void, string>({
+      query: (assessmentId) => ({ url: `/assessments/${assessmentId}`, method: 'DELETE' }),
+      invalidatesTags: ['Academic'],
+    }),
+    getAssessmentMarks: build.query<ApiRecord[], string>({
+      query: (assessmentId) => `/assessments/${assessmentId}/marks`,
+    }),
     saveAssessmentMarks: build.mutation<{ saved: number }, { assessmentId: string; marks: Mark[] }>(
       {
         query: ({ assessmentId, marks }) => ({
@@ -32,6 +55,9 @@ export const gradesApi = baseApi.injectEndpoints({
 export const {
   useListAssessmentsQuery,
   useCreateAssessmentMutation,
+  useUpdateAssessmentMutation,
+  useDeleteAssessmentMutation,
+  useGetAssessmentMarksQuery,
   useSaveAssessmentMarksMutation,
   useGetStudentPerformanceQuery,
 } = gradesApi;

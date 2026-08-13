@@ -25,7 +25,10 @@ Started: 14 August 2026
 - [x] QA defect identified: direct enrollment generated learner credentials but navigated away before displaying them.
 - [x] Direct-enrollment credential handoff fix deployed and rechecked.
 - [x] QA defect identified: Grades queries were not invalidated after creates/saves, leaving stale assessment data on screen.
-- [ ] Deploy and recheck assessment list, marks entry, and performance history.
+- [x] Assessment cache fix deployed and rechecked: assessment list, marks entry, and performance history pass.
+- [x] Finance summary shows admission balance and recorded payments correctly; a payment can be recorded against the QA student and the updated paid amount/balance are returned by production.
+- [x] Shared notes create, update (including Markdown/math content), and archive correctly in production.
+- [x] QA defect identified: announcement endpoints wrapped unresolved service calls, returning an empty object instead of the requested feed.
 
 ## Next QA Scenarios
 
@@ -36,6 +39,6 @@ Started: 14 August 2026
 - [ ] Staff credentials, kiosk check-in/out, and attendance reports.
 - [ ] Student attendance marking, monthly view, and CSV export.
 - [ ] Assessments, marks entry, print/PDF report, and performance history.
-- [ ] Fees, payments, edits/deletes, and finance summary.
-- [ ] Notes, announcements, learner/guardian portal, and staff portal.
+- [ ] Fees: edit and delete a recorded payment from the interface.
+- [ ] Announcements (retest after deploying controller response fix), learner/guardian portal, and staff portal.
 - [ ] Responsive checks on small screens and final error/empty/loading states.

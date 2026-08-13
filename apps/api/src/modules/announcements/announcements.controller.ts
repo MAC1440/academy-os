@@ -37,38 +37,38 @@ class UpdateAnnouncementDto {
 @UseGuards(JwtAuthGuard, PermissionsGuard)
 export class AnnouncementsController {
   constructor(private readonly service: AnnouncementsService) {}
-  @Get() @RequirePermissions('notes.read') list() {
-    return successResponse('Announcements retrieved', this.service.list());
+  @Get() @RequirePermissions('notes.read') async list() {
+    return successResponse('Announcements retrieved', await this.service.list());
   }
-  @Get('learner') listLearner() {
+  @Get('learner') async listLearner() {
     return successResponse(
       'Learner announcements retrieved',
-      this.service.list(AnnouncementAudience.LEARNER),
+      await this.service.list(AnnouncementAudience.LEARNER),
     );
   }
-  @Get('staff') listStaff() {
+  @Get('staff') async listStaff() {
     return successResponse(
       'Staff announcements retrieved',
-      this.service.list(AnnouncementAudience.STAFF),
+      await this.service.list(AnnouncementAudience.STAFF),
     );
   }
-  @Post() @RequirePermissions('notes.manage') create(
+  @Post() @RequirePermissions('notes.manage') async create(
     @Body() dto: AnnouncementDto,
   ) {
-    return successResponse('Announcement created', this.service.create(dto));
+    return successResponse('Announcement created', await this.service.create(dto));
   }
-  @Patch(':id') @RequirePermissions('notes.manage') update(
+  @Patch(':id') @RequirePermissions('notes.manage') async update(
     @Param('id') id: string,
     @Body() dto: UpdateAnnouncementDto,
   ) {
     return successResponse(
       'Announcement updated',
-      this.service.update(id, dto),
+      await this.service.update(id, dto),
     );
   }
-  @Delete(':id') @RequirePermissions('notes.manage') remove(
+  @Delete(':id') @RequirePermissions('notes.manage') async remove(
     @Param('id') id: string,
   ) {
-    return successResponse('Announcement deleted', this.service.remove(id));
+    return successResponse('Announcement deleted', await this.service.remove(id));
   }
 }

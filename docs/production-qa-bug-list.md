@@ -15,16 +15,23 @@ Only reproducible defects belong in this list. Scenarios that have not yet been 
 - **Status:** Fixed and verified in production on 16 August 2026.
 - **Fix location:** `apps/web/features/timetable/timetable-management.tsx`
 
-## Open
-
 ### QA-002 — Assessment records cannot be managed after creation
 
 - **Severity:** P1
 - **Area:** Admin > Grades > Assessments
 - **Reproduction:** Create an assessment. Its card shows the title, type, date, and mark count but provides no Edit or Delete action.
 - **Expected:** Administrators can update or delete assessments, including their associated marks, through the Grades interface.
-- **Status:** Fixed locally; awaiting push and Vercel deployment.
+- **Status:** Fixed and verified in production on 16 August 2026.
 - **Fix location:** `apps/web/features/grades/management/grades-management.tsx`
+
+### QA-003 — Kiosk does not distinguish today's check-in state
+
+- **Severity:** P1
+- **Area:** Public kiosk and Admin > Attendance > Staff reports
+- **Reproduction:** Open the kiosk after one or more staff members have checked in. The page lists every staff member together and still presents check-in as an available action.
+- **Expected:** The kiosk shows the Pakistan date and separates pending staff, open check-ins, and completed check-outs. An open check-in only permits check-out; an admin can correct a missing or incorrect checkout time in the staff attendance report.
+- **Status:** Fixed locally; pending deployment and production verification.
+- **Fix location:** `apps/api/src/modules/kiosk/kiosk.service.ts`, `apps/web/features/kiosk/attendance-kiosk.tsx`, and `apps/web/features/attendance/management/attendance-management.tsx`
 
 ## Verified in this QA pass
 

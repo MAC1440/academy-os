@@ -133,12 +133,14 @@ export class ReportsController {
       orderBy: { attendanceDate: 'asc' },
     });
     return records.map((r) => ({
+      id: r.id,
       staffId: r.staffProfileId,
       name: r.staffProfile.user.fullName,
       date: r.attendanceDate,
       status: r.status,
       checkInAt: r.checkInAt,
       checkOutAt: r.checkOutAt,
+      overrideReason: r.overrideReason,
       missingCheckout: !r.checkOutAt,
     }));
   }

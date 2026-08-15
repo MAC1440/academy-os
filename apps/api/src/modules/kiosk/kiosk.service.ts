@@ -69,7 +69,8 @@ export class KioskService {
 
   async listBranchStaff(branchId: string) {
     await this.branch(branchId);
-    return this.prisma.staffProfile.findMany({
+    const today = this.dateOnly(this.karachiNow(new Date()).date);
+    const staff = await this.prisma.staffProfile.findMany({
       where: {
         user: {
           status: AccountStatus.ACTIVE,
@@ -85,6 +86,27 @@ export class KioskService {
       },
       orderBy: { user: { fullName: 'asc' } },
     });
+    const attendance = await this.prisma.staffAttendance.findMany({
+      where: {
+        branchId,
+        attendanceDate: today,
+        staffProfileId: { in: staff.map((member) => member.id) },
+      },
+      select: {
+        id: true,
+        staffProfileId: true,
+        checkInAt: true,
+        checkOutAt: true,
+        status: true,
+      },
+    });
+    const attendanceByStaffId = new Map(
+      attendance.map((record) => [record.staffProfileId, record]),
+    );
+    return staff.map((member) => ({
+      ...member,
+      todayAttendance: attendanceByStaffId.get(member.id) ?? null,
+    }));
   }
 
   async listKioskBranches() {

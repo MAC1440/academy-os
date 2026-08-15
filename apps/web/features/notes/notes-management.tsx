@@ -97,7 +97,7 @@ export function NotesManagement() {
         </label>
       ) : null}
       {!isLoading && notes.length === 0 ? (
-        <div className="max-w-xl py-10 text-center">
+        <div className="mx-auto flex min-h-64 max-w-xl flex-col items-center justify-center py-10 text-center">
           <FileText className="mx-auto text-teal-600" size={28} />
           <h2 className="mt-4 font-display text-2xl">Nothing to hand over yet.</h2>
           <p className="mt-2 text-sm leading-6 text-muted-foreground">

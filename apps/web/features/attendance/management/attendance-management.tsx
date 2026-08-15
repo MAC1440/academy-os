@@ -14,6 +14,7 @@ import { useToast } from '@web/components/toast-provider';
 import { useListBranchesQuery } from '@web/features/organization/organization.api';
 import {
   useGetKioskSettingsQuery,
+  useOverrideStaffAttendanceMutation,
   useUpdateKioskSettingsMutation,
 } from '@web/features/kiosk/kiosk.api';
 import {
@@ -680,6 +681,40 @@ function StaffAttendanceReports() {
   const [to, setTo] = useState(today);
   const report = useGetStaffAttendanceReportQuery(branchId ? { branchId, from, to } : skipToken);
   const [downloadCsv] = useLazyGetStaffAttendanceCsvQuery();
+  const [overrideAttendance, { isLoading: isSavingOverride }] =
+    useOverrideStaffAttendanceMutation();
+  const [editingRecord, setEditingRecord] = useState<ApiRecord | null>(null);
+  const [checkOutAt, setCheckOutAt] = useState('');
+  const [overrideReason, setOverrideReason] = useState('');
+  const toast = useToast();
+
+  function startEditing(record: ApiRecord) {
+    setEditingRecord(record);
+    setCheckOutAt(
+      record.checkOutAt ? new Date(String(record.checkOutAt)).toISOString().slice(0, 16) : '',
+    );
+    setOverrideReason(String(record.overrideReason ?? ''));
+  }
+
+  async function saveOverride() {
+    if (!branchId || !editingRecord || !checkOutAt) return;
+    try {
+      await overrideAttendance({
+        branchId,
+        attendanceId: editingRecord.id,
+        body: {
+          status: String(editingRecord.status),
+          checkOutAt: new Date(checkOutAt).toISOString(),
+          overrideReason,
+        },
+      }).unwrap();
+      toast.success('Staff attendance updated.');
+      setEditingRecord(null);
+      await report.refetch();
+    } catch {
+      toast.error('Could not update this attendance record.');
+    }
+  }
   async function download() {
     if (!branchId) return;
     const csv = await downloadCsv({ branchId, from, to }).unwrap();
@@ -746,12 +781,13 @@ function StaffAttendanceReports() {
                   <th className="p-3">Status</th>
                   <th className="p-3">Check in</th>
                   <th className="p-3">Check out</th>
+                  <th className="p-3 text-right">Action</th>
                 </tr>
               </thead>
               <tbody>
                 {report.isLoading ? (
                   <tr>
-                    <td className="p-3 text-muted-foreground" colSpan={5}>
+                    <td className="p-3 text-muted-foreground" colSpan={6}>
                       Loading attendance...
                     </td>
                   </tr>
@@ -770,11 +806,69 @@ function StaffAttendanceReports() {
                         ? String(record.checkOutAt).slice(11, 16)
                         : 'Not checked out'}
                     </td>
+                    <td className="p-3 text-right">
+                      <button
+                        type="button"
+                        className="button-ghost text-xs"
+                        onClick={() => startEditing(record)}
+                      >
+                        {record.checkOutAt ? 'Edit' : 'Add check-out'}
+                      </button>
+                    </td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
+          {editingRecord ? (
+            <div className="rounded-xl border border-teal-200 bg-teal-50/60 p-4 dark:border-teal-900 dark:bg-teal-950/30">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div>
+                  <p className="font-semibold">Edit staff attendance</p>
+                  <p className="text-sm text-muted-foreground">
+                    {String(editingRecord.name)} · {String(editingRecord.date).slice(0, 10)}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  className="button-ghost text-sm"
+                  onClick={() => setEditingRecord(null)}
+                >
+                  Cancel
+                </button>
+              </div>
+              <div className="mt-4 grid gap-3 md:grid-cols-[minmax(0,1fr)_minmax(0,2fr)_auto] md:items-end">
+                <label className="grid gap-1 text-sm font-medium">
+                  Check-out time
+                  <input
+                    className="field"
+                    type="datetime-local"
+                    value={checkOutAt}
+                    onChange={(event) => setCheckOutAt(event.target.value)}
+                    required
+                  />
+                </label>
+                <label className="grid gap-1 text-sm font-medium">
+                  Correction note
+                  <input
+                    className="field"
+                    maxLength={500}
+                    placeholder="For example, confirmed by the principal"
+                    value={overrideReason}
+                    onChange={(event) => setOverrideReason(event.target.value)}
+                  />
+                </label>
+                <button
+                  type="button"
+                  className="button-primary"
+                  disabled={!checkOutAt || isSavingOverride}
+                  onClick={saveOverride}
+                >
+                  {isSavingOverride ? 'Saving...' : 'Save correction'}
+                </button>
+              </div>
+            </div>
+          ) : null}
         </>
       ) : (
         <p className="text-sm text-muted-foreground">

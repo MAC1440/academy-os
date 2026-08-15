@@ -15,6 +15,7 @@ export const kioskApi = baseApi.injectEndpoints({
     listKioskStaff: build.query<ApiRecord[], string>({
       query: (branchId) => `/kiosk/branches/${branchId}/staff`,
       transformResponse: unwrap,
+      providesTags: (_result, _error, branchId) => [{ type: 'KioskStaff', id: branchId }],
     }),
     kioskCheckIn: build.mutation<ApiRecord, { branchId: string; body: PinInput }>({
       query: ({ branchId, body }) => ({
@@ -23,6 +24,7 @@ export const kioskApi = baseApi.injectEndpoints({
         body,
       }),
       transformResponse: unwrap,
+      invalidatesTags: (_result, _error, { branchId }) => [{ type: 'KioskStaff', id: branchId }],
     }),
     kioskCheckOut: build.mutation<ApiRecord, { branchId: string; body: PinInput }>({
       query: ({ branchId, body }) => ({
@@ -31,6 +33,7 @@ export const kioskApi = baseApi.injectEndpoints({
         body,
       }),
       transformResponse: unwrap,
+      invalidatesTags: (_result, _error, { branchId }) => [{ type: 'KioskStaff', id: branchId }],
     }),
     getKioskSettings: build.query<ApiRecord, void>({
       query: () => '/attendance-kiosk/settings',

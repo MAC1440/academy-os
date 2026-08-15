@@ -36,7 +36,9 @@ Started: 14 August 2026
 - [x] Announcement lifecycle QA: a dedicated QA announcement was created, edited, and deleted successfully.
 - [x] Shared-notes lifecycle QA: a dedicated Markdown/KaTeX note was created, edited, rendered, and deleted successfully.
 - [x] Student-attendance lifecycle QA: a weekly attendance cell cycled, saved successfully, and was restored to its original unmarked state.
-- [x] Grades lifecycle QA: a dedicated assessment was created and saved marks persisted for two QA students. Cleanup is pending the deployed assessment-delete control.
+- [x] Grades lifecycle QA: assessments and marks can be created; assessment edit/delete controls persist correctly, and QA assessments plus their marks were cleaned up.
+- [x] Finance lifecycle QA: duplicate receipt numbers are rejected; a PKR 1 QA payment can be created and edited, and deletion restores the student's original finance summary.
+- [x] Temporary QA staff account removed after staff-portal and kiosk validation.
 
 ## Next QA Scenarios
 
@@ -45,8 +47,8 @@ Started: 14 August 2026
 - [ ] Direct student enrollment, edit, search, and delete.
 - [ ] Admissions review and approval.
 - [ ] Staff credentials, kiosk check-in/out, and attendance reports.
+- [ ] Kiosk attendance-state tabs, duplicate-check-in prevention, and admin checkout correction (pending deployment).
 - [ ] Student attendance marking, monthly view, and CSV export.
 - [ ] Assessments, marks entry, print/PDF report, and performance history.
 - [ ] Fees: edit and delete a recorded payment from the interface.
-- [ ] Responsive checks on small screens and final error/empty/loading states.
 - [ ] Responsive checks on small screens and final error/empty/loading states.

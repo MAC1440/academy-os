@@ -327,6 +327,16 @@ function AssignmentEditor({
       ((person.user as ApiRecord | undefined)?.roleAssignments as ApiRecord[] | undefined) ?? [];
     return roleAssignments.some((assignment) => String(assignment.branchId) === branchId);
   });
+  const subjectsAvailableForSlot = (slotId: string) => {
+    const selectedInOtherPeriods = new Set(
+      Object.entries(draft)
+        .filter(([otherSlotId, value]) => otherSlotId !== slotId && value.subjectId)
+        .map(([, value]) => value.subjectId),
+    );
+    return subjects
+      .filter((subject) => allowedSubjectIds.has(String(subject.id)))
+      .filter((subject) => !selectedInOtherPeriods.has(String(subject.id)));
+  };
   const change = (slotId: string, key: 'subjectId' | 'staffProfileId', value: string) =>
     setDraft({
       ...draft,
@@ -383,13 +393,11 @@ function AssignmentEditor({
                       onChange={(e) => change(row.id, 'subjectId', e.target.value)}
                     >
                       <option value="">Free period</option>
-                      {subjects
-                        .filter((subject) => allowedSubjectIds.has(subject.id))
-                        .map((subject) => (
-                          <option key={subject.id} value={subject.id}>
-                            {String(subject.name)}
-                          </option>
-                        ))}
+                      {subjectsAvailableForSlot(row.id).map((subject) => (
+                        <option key={subject.id} value={subject.id}>
+                          {String(subject.name)}
+                        </option>
+                      ))}
                     </select>
                   </td>
                   <td>

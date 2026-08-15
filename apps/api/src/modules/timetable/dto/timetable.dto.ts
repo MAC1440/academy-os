@@ -35,16 +35,23 @@ export class CreateTimetableProfileDto {
   @IsEnum(TimetableProfileScope) scope!: TimetableProfileScope;
   @IsOptional() @IsString() academicOfferingId?: string;
   @IsEnum(TimetableMode) timetableMode!: TimetableMode;
-  @IsArray() @ArrayMinSize(1) @ArrayMaxSize(100)
-  @ValidateNested({ each: true }) @Type(() => TimetableSlotDto)
+  @IsArray()
+  @ArrayMinSize(1)
+  @ArrayMaxSize(100)
+  @ValidateNested({ each: true })
+  @Type(() => TimetableSlotDto)
   slots!: TimetableSlotDto[];
 }
 
 export class UpdateTimetableProfileDto {
   @IsOptional() @IsString() @IsNotEmpty() name?: string;
   @IsOptional() @IsEnum(TimetableMode) timetableMode?: TimetableMode;
-  @IsOptional() @IsArray() @ArrayMinSize(1) @ArrayMaxSize(100)
-  @ValidateNested({ each: true }) @Type(() => TimetableSlotDto)
+  @IsOptional()
+  @IsArray()
+  @ArrayMinSize(1)
+  @ArrayMaxSize(100)
+  @ValidateNested({ each: true })
+  @Type(() => TimetableSlotDto)
   slots?: TimetableSlotDto[];
 }
 
@@ -55,14 +62,20 @@ export class BulkTimetableAssignmentItemDto {
 }
 
 export class BulkSaveTimetableAssignmentsDto {
-  @IsArray() @ArrayMaxSize(100)
-  @ValidateNested({ each: true }) @Type(() => BulkTimetableAssignmentItemDto)
+  @IsArray()
+  @ArrayMaxSize(100)
+  @ValidateNested({ each: true })
+  @Type(() => BulkTimetableAssignmentItemDto)
   assignments!: BulkTimetableAssignmentItemDto[];
+  @IsOptional() @IsBoolean() replaceTeacherConflicts?: boolean;
 }
 
 export class TimetablePreviewDto {
-  @IsArray() @ArrayMinSize(1) @ArrayMaxSize(100)
-  @ValidateNested({ each: true }) @Type(() => TimetableSlotDto)
+  @IsArray()
+  @ArrayMinSize(1)
+  @ArrayMaxSize(100)
+  @ValidateNested({ each: true })
+  @Type(() => TimetableSlotDto)
   slots!: TimetableSlotDto[];
   @IsEnum(TimetableMode) timetableMode!: TimetableMode;
 }

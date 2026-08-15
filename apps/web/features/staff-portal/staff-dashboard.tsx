@@ -63,6 +63,9 @@ export function StaffDashboard() {
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
+            <Link href="/timetable" className="button-secondary">
+              My schedule
+            </Link>
             <Link href="/attendance" className="button-secondary">
               Mark attendance
             </Link>

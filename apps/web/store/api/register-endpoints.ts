@@ -15,3 +15,4 @@ import '@web/features/settings/settings.api';
 import '@web/features/calendar/calendar.api';
 import '@web/features/reports/reports.api';
 import '@web/features/learner-portal/learner-portal.api';
+import '@web/features/timetable/timetable.api';

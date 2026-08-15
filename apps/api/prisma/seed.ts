@@ -1,5 +1,11 @@
 import * as bcrypt from 'bcryptjs';
-import { AccountType, PrismaClient } from '@prisma/client';
+import {
+  AccountType,
+  PrismaClient,
+  TimetableMode,
+  TimetableProfileScope,
+  TimetableSlotType,
+} from '@prisma/client';
 
 const prisma = new PrismaClient();
 
@@ -26,6 +32,8 @@ const permissions = [
   ['finance.read', 'Finance', 'View finance records'],
   ['finance.manage', 'Finance', 'Manage finance records'],
   ['reports.read', 'Reports', 'View and export reports'],
+  ['timetable.read', 'Timetable', 'View class and teacher timetables'],
+  ['timetable.manage', 'Timetable', 'Manage timetable profiles and assignments'],
 ] as const;
 
 const systemRoles: Record<string, string[]> = {
@@ -40,9 +48,24 @@ const systemRoles: Record<string, string[]> = {
     'notes.manage',
     'grades.read',
     'grades.manage',
+    'timetable.read',
   ],
   Staff: ['branches.read', 'notes.read'],
 };
+
+const defaultSchoolTimetableSlots = [
+  { slotType: TimetableSlotType.ASSEMBLY, startsAt: '07:30', endsAt: '07:40' },
+  { slotType: TimetableSlotType.TEACHING, periodNumber: 1, startsAt: '07:40', endsAt: '08:20' },
+  { slotType: TimetableSlotType.TEACHING, periodNumber: 2, startsAt: '08:20', endsAt: '09:00' },
+  { slotType: TimetableSlotType.TEACHING, periodNumber: 3, startsAt: '09:00', endsAt: '09:40' },
+  { slotType: TimetableSlotType.TEACHING, periodNumber: 4, startsAt: '09:40', endsAt: '10:20' },
+  { slotType: TimetableSlotType.TEACHING, periodNumber: 5, startsAt: '10:20', endsAt: '11:00' },
+  { slotType: TimetableSlotType.BREAK, startsAt: '11:00', endsAt: '11:20' },
+  { slotType: TimetableSlotType.TEACHING, periodNumber: 6, startsAt: '11:20', endsAt: '12:00' },
+  { slotType: TimetableSlotType.TEACHING, periodNumber: 7, startsAt: '12:00', endsAt: '12:40' },
+  { slotType: TimetableSlotType.TEACHING, periodNumber: 8, startsAt: '12:40', endsAt: '13:20' },
+  { slotType: TimetableSlotType.TEACHING, periodNumber: 9, startsAt: '13:20', endsAt: '14:00' },
+];
 
 async function main() {
   const organization =
@@ -268,6 +291,23 @@ async function main() {
       ['General Science', 'Statistics', 'Economics'],
       'Arts / General Science / Statistics / Economics',
     );
+  }
+
+  const branchesWithoutTimetable = await prisma.branch.findMany({
+    where: { deletedAt: null, timetableProfiles: { none: {} } },
+    select: { id: true },
+  });
+  for (const branch of branchesWithoutTimetable) {
+    await prisma.timetableProfile.create({
+      data: {
+        branchId: branch.id,
+        name: 'Default school schedule',
+        scope: TimetableProfileScope.BRANCH,
+        timetableMode: TimetableMode.SAME_DAILY,
+        isActive: true,
+        slots: { create: defaultSchoolTimetableSlots },
+      },
+    });
   }
 }
 

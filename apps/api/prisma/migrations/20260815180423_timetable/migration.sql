@@ -1,0 +1,2 @@
+-- RenameIndex
+ALTER INDEX "TimetableSlot_timetableProfileId_weekday_slotType_periodNumber_" RENAME TO "TimetableSlot_timetableProfileId_weekday_slotType_periodNum_key";

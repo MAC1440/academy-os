@@ -247,6 +247,7 @@ function AdminTimetable() {
                 offering={offerings.find((item) => item.id === offeringId)}
                 subjects={subjects}
                 staff={staff}
+                branchId={branchId}
               />
             ) : null}
           </section>
@@ -273,6 +274,7 @@ function AssignmentEditor({
   offering,
   subjects,
   staff,
+  branchId,
 }: {
   timetable?: ApiRecord;
   loading: boolean;
@@ -280,6 +282,7 @@ function AssignmentEditor({
   offering?: ApiRecord;
   subjects: ApiRecord[];
   staff: ApiRecord[];
+  branchId: string;
 }) {
   const toast = useToast();
   const [save, { isLoading }] = useSaveTimetableAssignmentsMutation();
@@ -318,11 +321,12 @@ function AssignmentEditor({
       String(item.subjectId),
     ),
   );
-  const allowedTeacherIds = new Set(
-    ((selectedOffering.teachers as ApiRecord[] | undefined) ?? []).map((item) =>
-      String(item.staffProfileId),
-    ),
-  );
+  const availableTeachers = staff.filter((person) => {
+    if (person.staffType !== 'TEACHER') return false;
+    const roleAssignments =
+      ((person.user as ApiRecord | undefined)?.roleAssignments as ApiRecord[] | undefined) ?? [];
+    return roleAssignments.some((assignment) => String(assignment.branchId) === branchId);
+  });
   const change = (slotId: string, key: 'subjectId' | 'staffProfileId', value: string) =>
     setDraft({
       ...draft,
@@ -395,13 +399,11 @@ function AssignmentEditor({
                       onChange={(e) => change(row.id, 'staffProfileId', e.target.value)}
                     >
                       <option value="">Choose teacher</option>
-                      {staff
-                        .filter((person) => allowedTeacherIds.has(person.id))
-                        .map((person) => (
-                          <option key={person.id} value={person.id}>
-                            {String((person.user as ApiRecord)?.fullName ?? 'Teacher')}
-                          </option>
-                        ))}
+                      {availableTeachers.map((person) => (
+                        <option key={person.id} value={person.id}>
+                          {String((person.user as ApiRecord)?.fullName ?? 'Teacher')}
+                        </option>
+                      ))}
                     </select>
                   </td>
                   <td className="px-4">

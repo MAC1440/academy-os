@@ -498,31 +498,21 @@ export class TimetableService {
     const teacherIds = [
       ...new Set(dto.assignments.map((item) => item.staffProfileId)),
     ];
-    const [subjects, teachers] = await Promise.all([
+    const [subjects, branchTeachers] = await Promise.all([
       this.prisma.academicOfferingSubject.count({
         where: {
           academicOfferingId: offeringId,
           subjectId: { in: subjectIds },
         },
       }),
-      this.prisma.academicOfferingTeacher.count({
-        where: {
-          academicOfferingId: offeringId,
-          staffProfileId: { in: teacherIds },
-        },
+      this.prisma.roleAssignment.count({
+        where: { branchId, user: { staffProfile: { id: { in: teacherIds } } } },
       }),
     ]);
     if (subjects !== subjectIds.length)
       throw new BadRequestException(
         'Every selected subject must belong to this class',
       );
-    if (teachers !== teacherIds.length)
-      throw new BadRequestException(
-        'Every selected teacher must be assigned to this class',
-      );
-    const branchTeachers = await this.prisma.roleAssignment.count({
-      where: { branchId, user: { staffProfile: { id: { in: teacherIds } } } },
-    });
     if (branchTeachers < teacherIds.length)
       throw new BadRequestException(
         'One or more teachers are not assigned to this branch',

@@ -18,10 +18,12 @@ import { useListBranchesQuery } from '@web/features/organization/organization.ap
 import { useListStudentsQuery } from '@web/features/students/students.api';
 import {
   useCreateAssessmentMutation,
+  useDeleteAssessmentMutation,
   useGetAssessmentMarksQuery,
   useGetStudentPerformanceQuery,
   useListAssessmentsQuery,
   useSaveAssessmentMarksMutation,
+  useUpdateAssessmentMutation,
 } from '../grades.api';
 import type { ApiRecord } from '@web/store/api/base-api';
 
@@ -132,20 +134,54 @@ function Assessments() {
   const [offeringId, setOfferingId] = useState('');
   const { data: assessments = [] } = useListAssessmentsQuery(offeringId || skipToken);
   const [create] = useCreateAssessmentMutation();
+  const [update] = useUpdateAssessmentMutation();
+  const [remove] = useDeleteAssessmentMutation();
   const toast = useToast();
+  const [editingAssessmentId, setEditingAssessmentId] = useState<string | null>(null);
   const [form, setForm] = useState({
     title: '',
     assessmentType: 'REGULAR' as 'REGULAR' | 'FESTIVAL',
     heldOn: today,
   });
+  useEffect(() => {
+    setEditingAssessmentId(null);
+    setForm({ title: '', assessmentType: 'REGULAR', heldOn: today });
+  }, [offeringId]);
   async function submit(event: FormEvent) {
     event.preventDefault();
     try {
-      await create({ offeringId, ...form }).unwrap();
+      if (editingAssessmentId) {
+        await update({ assessmentId: editingAssessmentId, ...form }).unwrap();
+      } else {
+        await create({ offeringId, ...form }).unwrap();
+      }
       setForm({ title: '', assessmentType: 'REGULAR', heldOn: today });
-      toast.success('Assessment created.');
+      setEditingAssessmentId(null);
+      toast.success(editingAssessmentId ? 'Assessment updated.' : 'Assessment created.');
     } catch {
-      toast.error('Assessment could not be created.');
+      toast.error(
+        editingAssessmentId
+          ? 'Assessment could not be updated.'
+          : 'Assessment could not be created.',
+      );
+    }
+  }
+  async function deleteAssessment(assessment: ApiRecord) {
+    if (
+      !window.confirm(
+        `Delete ${String(assessment.title)} and its saved marks? This cannot be undone.`,
+      )
+    )
+      return;
+    try {
+      await remove(String(assessment.id)).unwrap();
+      if (editingAssessmentId === assessment.id) {
+        setEditingAssessmentId(null);
+        setForm({ title: '', assessmentType: 'REGULAR', heldOn: today });
+      }
+      toast.success('Assessment deleted.');
+    } catch {
+      toast.error('Assessment could not be deleted.');
     }
   }
   return (
@@ -194,7 +230,23 @@ function Assessments() {
                 onChange={(event) => setForm({ ...form, heldOn: event.target.value })}
               />
             </label>
-            <button className="button-primary w-fit">Create assessment</button>
+            <div className="flex items-end gap-2">
+              <button className="button-primary w-fit">
+                {editingAssessmentId ? 'Save assessment' : 'Create assessment'}
+              </button>
+              {editingAssessmentId ? (
+                <button
+                  className="button-secondary"
+                  type="button"
+                  onClick={() => {
+                    setEditingAssessmentId(null);
+                    setForm({ title: '', assessmentType: 'REGULAR', heldOn: today });
+                  }}
+                >
+                  Cancel
+                </button>
+              ) : null}
+            </div>
           </form>
           <div className="grid gap-3">
             {assessments.length === 0 ? (
@@ -211,9 +263,32 @@ function Assessments() {
                       {String(assessment.assessmentType)} · {String(assessment.heldOn).slice(0, 10)}
                     </p>
                   </div>
-                  <span className="text-sm text-teal-700">
-                    {String((assessment._count as ApiRecord | undefined)?.marks ?? 0)} marks
-                  </span>
+                  <div className="flex items-center gap-3">
+                    <span className="text-sm text-teal-700">
+                      {String((assessment._count as ApiRecord | undefined)?.marks ?? 0)} marks
+                    </span>
+                    <button
+                      className="button-secondary px-3 py-1.5 text-xs"
+                      type="button"
+                      onClick={() => {
+                        setEditingAssessmentId(String(assessment.id));
+                        setForm({
+                          title: String(assessment.title),
+                          assessmentType: assessment.assessmentType as 'REGULAR' | 'FESTIVAL',
+                          heldOn: String(assessment.heldOn).slice(0, 10),
+                        });
+                      }}
+                    >
+                      Edit
+                    </button>
+                    <button
+                      className="text-xs font-semibold text-destructive hover:underline"
+                      type="button"
+                      onClick={() => deleteAssessment(assessment)}
+                    >
+                      Delete
+                    </button>
+                  </div>
                 </article>
               ))
             )}

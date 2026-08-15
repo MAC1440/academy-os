@@ -33,6 +33,10 @@ Started: 14 August 2026
 - [x] Learner portal API journey passes with a QA guardian: linked student, attendance, performance, finance, notes, and audience-filtered announcements load correctly.
 - [x] Staff portal API journey passes with a QA staff account: temporary login, profile overview, staff notes, and staff announcements load correctly.
 - [x] Full workspace production build and lint pass (non-blocking lint warnings remain for future polish).
+- [x] Announcement lifecycle QA: a dedicated QA announcement was created, edited, and deleted successfully.
+- [x] Shared-notes lifecycle QA: a dedicated Markdown/KaTeX note was created, edited, rendered, and deleted successfully.
+- [x] Student-attendance lifecycle QA: a weekly attendance cell cycled, saved successfully, and was restored to its original unmarked state.
+- [x] Grades lifecycle QA: a dedicated assessment was created and saved marks persisted for two QA students. Cleanup is pending the deployed assessment-delete control.
 
 ## Next QA Scenarios
 

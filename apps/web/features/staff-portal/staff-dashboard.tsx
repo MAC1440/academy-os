@@ -125,8 +125,8 @@ export function StaffDashboard() {
           </div>
         ) : (
           <p className="mt-5 rounded-xl bg-muted/50 p-4 text-sm text-muted-foreground">
-            No specific class assignment has been added yet. You can still use the attendance,
-            grades, and notes tools.
+            No specific class assignment has been added yet. You can still use attendance and
+            shared notes to support the team.
           </p>
         )}
       </section>

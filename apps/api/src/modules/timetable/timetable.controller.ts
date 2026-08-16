@@ -168,7 +168,9 @@ export class TimetableController {
     );
   }
 
-  @Get('staff/my-timetable')
+  // Keep this under the timetable namespace. `/staff/:staffId` is a generic
+  // staff route and would otherwise capture `staff/my-timetable` first.
+  @Get('timetable/staff/my-timetable')
   @RequirePermissions('timetable.read')
   async myTimetable(@CurrentUser() user: AuthenticatedUser) {
     return successResponse(

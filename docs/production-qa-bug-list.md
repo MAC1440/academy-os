@@ -39,8 +39,18 @@ Only reproducible defects belong in this list. Scenarios that have not yet been 
 - **Area:** Main portal, staff portal, learner portal, and role permissions
 - **Reproduction:** Sign in as a staff or learner account, then enter an admin route such as `/admissions` or `/finance` directly. The shared portal guard only requires a valid JWT, while the teacher system role also grants unrelated module permissions.
 - **Expected:** Admin routes are Admin-only; teachers can use student attendance, shared notes, and their read-only timetable; learners remain inside `/student/*`.
-- **Status:** Fixed locally; pending migration, role sync, deployment, and production verification.
+- **Status:** Fixed and partially verified in production on 16 August 2026. A QA teacher is redirected away from all admin routes, sees only Attendance, Timetable, and Notes navigation, and can create/edit notes and mark student attendance. Timetable loading is tracked separately in QA-005.
 - **Fix location:** `apps/web/features/auth/portal-route-guard.tsx`, `apps/api/prisma/seed.ts`, and the affected portal controllers.
+
+### QA-005 — Teacher timetable request is captured by the staff detail route
+
+- **Severity:** P1
+- **Area:** Staff portal > My schedule
+- **Reproduction:** Sign in as a teacher and open `/timetable`. The UI reports that the schedule could not be loaded even where the teacher has a timetable assignment.
+- **Cause:** The API request path `/staff/my-timetable` is matched by the generic `GET /staff/:staffId` route, which checks `staff.read` instead of the teacher's `timetable.read` permission.
+- **Expected:** Teachers can view their assigned periods alongside free periods, breaks, and assembly rows.
+- **Status:** Fixed locally; requires deployment and production verification.
+- **Fix location:** `apps/api/src/modules/timetable/timetable.controller.ts` and `apps/web/features/timetable/timetable.api.ts`.
 
 ## Verified in this QA pass
 

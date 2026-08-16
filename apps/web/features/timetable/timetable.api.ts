@@ -75,7 +75,7 @@ export const timetableApi = baseApi.injectEndpoints({
       invalidatesTags: ['Academic'],
     }),
     getMyTimetable: build.query<ApiRecord[], void>({
-      query: () => '/staff/my-timetable',
+      query: () => '/timetable/staff/my-timetable',
       transformResponse: unwrap,
       providesTags: ['Academic'],
     }),

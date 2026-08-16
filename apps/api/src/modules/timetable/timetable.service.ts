@@ -17,6 +17,7 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
 import {
   BulkSaveTimetableAssignmentsDto,
+  CreateTimetableDailyOverrideDto,
   CreateTimetableProfileDto,
   TimetablePreviewDto,
   TimetableSlotDto,
@@ -300,6 +301,111 @@ export class TimetableService {
     };
   }
 
+  async listDailyOverrides(branchId: string, date: string, actor: string) {
+    await this.ensureBranchAccess(actor, branchId);
+    const overrideDate = this.asDate(date);
+    return this.prisma.timetableDailyOverride.findMany({
+      where: { overrideDate, timetableAssignment: { branchId } },
+      include: {
+        overrideStaffProfile: {
+          include: { user: { select: { fullName: true } } },
+        },
+        timetableAssignment: {
+          include: {
+            timetableSlot: true,
+            subject: true,
+            staffProfile: { include: { user: { select: { fullName: true } } } },
+            academicOffering: { include: { schoolClass: true, course: true } },
+          },
+        },
+      },
+      orderBy: { createdAt: 'asc' },
+    });
+  }
+
+  async createDailyOverride(
+    dto: CreateTimetableDailyOverrideDto,
+    actor: string,
+  ) {
+    const assignment = await this.prisma.timetableAssignment.findUnique({
+      where: { id: dto.timetableAssignmentId },
+      include: { timetableSlot: true, timetableProfile: true },
+    });
+    if (!assignment) throw new NotFoundException('Timetable period not found');
+    await this.ensureBranchAccess(actor, assignment.branchId);
+    const overrideDate = this.asDate(dto.overrideDate);
+    const weekday = this.weekdayFor(overrideDate);
+    if (
+      !this.daysFor(
+        assignment.timetableSlot,
+        assignment.timetableProfileId,
+      ).includes(weekday)
+    )
+      throw new BadRequestException(
+        'This class is not scheduled for the selected date',
+      );
+    const substitute = await this.prisma.staffProfile.findUnique({
+      where: { id: dto.overrideStaffProfileId },
+      include: {
+        user: { include: { roleAssignments: { select: { branchId: true } } } },
+      },
+    });
+    if (
+      !substitute ||
+      !substitute.user.roleAssignments.some(
+        (item) => item.branchId === assignment.branchId,
+      )
+    )
+      throw new BadRequestException('Choose a teacher assigned to this campus');
+    await this.ensureTeacherIsFree(
+      substitute.id,
+      assignment.id,
+      assignment.branchId,
+      overrideDate,
+      assignment.timetableSlot.startsAt,
+      assignment.timetableSlot.endsAt,
+    );
+    const override = await this.prisma.timetableDailyOverride.upsert({
+      where: {
+        timetableAssignmentId_overrideDate: {
+          timetableAssignmentId: assignment.id,
+          overrideDate,
+        },
+      },
+      create: {
+        timetableAssignmentId: assignment.id,
+        overrideStaffProfileId: substitute.id,
+        overrideDate,
+        createdByUserId: actor,
+      },
+      update: { overrideStaffProfileId: substitute.id, createdByUserId: actor },
+    });
+    await this.recordAudit(actor, AuditAction.UPDATE, override.id, {
+      type: 'TIMETABLE_DAILY_OVERRIDE',
+      timetableAssignmentId: assignment.id,
+      overrideDate: dto.overrideDate,
+      overrideStaffProfileId: substitute.id,
+    });
+    return override;
+  }
+
+  async removeDailyOverride(overrideId: string, actor: string) {
+    const override = await this.prisma.timetableDailyOverride.findUnique({
+      where: { id: overrideId },
+      include: { timetableAssignment: true },
+    });
+    if (!override)
+      throw new NotFoundException('Daily timetable cover not found');
+    await this.ensureBranchAccess(actor, override.timetableAssignment.branchId);
+    await this.prisma.timetableDailyOverride.delete({
+      where: { id: override.id },
+    });
+    await this.recordAudit(actor, AuditAction.DELETE, override.id, {
+      type: 'TIMETABLE_DAILY_OVERRIDE',
+    });
+    return { id: override.id };
+  }
+
   async teacherTimetable(staffProfileId: string, actor: string) {
     const staff = await this.prisma.staffProfile.findUnique({
       where: { id: staffProfileId },
@@ -318,15 +424,15 @@ export class TimetableService {
     return this.scheduleForTeacher(staffProfileId);
   }
 
-  async myTimetable(userId: string) {
+  async myTimetable(userId: string, weekOf?: string) {
     const staff = await this.prisma.staffProfile.findUnique({
       where: { userId },
     });
     if (!staff) throw new NotFoundException('Staff profile not found');
-    return this.scheduleForTeacher(staff.id);
+    return this.scheduleForTeacher(staff.id, weekOf);
   }
 
-  private async scheduleForTeacher(staffProfileId: string) {
+  private async scheduleForTeacher(staffProfileId: string, weekOf?: string) {
     const staff = await this.prisma.staffProfile.findUniqueOrThrow({
       where: { id: staffProfileId },
       include: {
@@ -336,9 +442,10 @@ export class TimetableService {
     const branchIds = staff.user.roleAssignments.flatMap((assignment) =>
       assignment.branchId ? [assignment.branchId] : [],
     );
+    const dates = this.schoolWeek(weekOf);
     const assignments = await this.prisma.timetableAssignment.findMany({
       where: {
-        staffProfileId,
+        branchId: { in: branchIds },
         timetableProfile: { isActive: true, deletedAt: null },
       },
       include: {
@@ -347,21 +454,39 @@ export class TimetableService {
         academicOffering: {
           include: { branch: true, schoolClass: true, course: true },
         },
+        dailyOverrides: { where: { overrideDate: { in: dates } } },
       },
     });
     const assignedRows = assignments.flatMap((assignment) =>
-      this.daysFor(assignment.timetableSlot, assignment.timetableProfileId).map(
-        (weekday) => ({
-          entryType: 'TEACHING',
-          weekday,
-          periodNumber: assignment.timetableSlot.periodNumber,
-          startsAt: assignment.timetableSlot.startsAt,
-          endsAt: assignment.timetableSlot.endsAt,
-          subject: assignment.subject,
-          offering: assignment.academicOffering,
-          branch: assignment.academicOffering.branch,
-        }),
-      ),
+      dates.flatMap((date) => {
+        const weekday = this.weekdayFor(date);
+        if (
+          !this.daysFor(
+            assignment.timetableSlot,
+            assignment.timetableProfileId,
+          ).includes(weekday)
+        )
+          return [];
+        const dailyOverride = assignment.dailyOverrides[0];
+        if (
+          (dailyOverride?.overrideStaffProfileId ??
+            assignment.staffProfileId) !== staffProfileId
+        )
+          return [];
+        return [
+          {
+            entryType: 'TEACHING',
+            date: this.dateKey(date),
+            weekday,
+            periodNumber: assignment.timetableSlot.periodNumber,
+            startsAt: assignment.timetableSlot.startsAt,
+            endsAt: assignment.timetableSlot.endsAt,
+            subject: assignment.subject,
+            offering: assignment.academicOffering,
+            branch: assignment.academicOffering.branch,
+          },
+        ];
+      }),
     );
     const branchProfiles = await this.prisma.timetableProfile.findMany({
       where: {
@@ -374,10 +499,12 @@ export class TimetableService {
     });
     const contextRows = branchProfiles.flatMap((profile) =>
       profile.slots.flatMap((slot) =>
-        this.daysFor(slot, profile.id).flatMap((weekday) => {
+        dates.flatMap((date) => {
+          const weekday = this.weekdayFor(date);
+          if (!this.daysFor(slot, profile.id).includes(weekday)) return [];
           const overlapsTeaching = assignedRows.some(
             (row) =>
-              row.weekday === weekday &&
+              row.date === this.dateKey(date) &&
               row.branch.id === profile.branchId &&
               minutes(row.startsAt) < minutes(slot.endsAt) &&
               minutes(slot.startsAt) < minutes(row.endsAt),
@@ -387,6 +514,7 @@ export class TimetableService {
             return [
               {
                 entryType: 'FREE',
+                date: this.dateKey(date),
                 weekday,
                 periodNumber: slot.periodNumber,
                 startsAt: slot.startsAt,
@@ -398,6 +526,7 @@ export class TimetableService {
           return [
             {
               entryType: slot.slotType,
+              date: this.dateKey(date),
               weekday,
               periodNumber: null,
               startsAt: slot.startsAt,
@@ -410,7 +539,7 @@ export class TimetableService {
     );
     return [...assignedRows, ...contextRows].sort(
       (a, b) =>
-        a.weekday.localeCompare(b.weekday) ||
+        a.date.localeCompare(b.date) ||
         a.startsAt.localeCompare(b.startsAt) ||
         a.branch.name.localeCompare(b.branch.name),
     );
@@ -594,6 +723,99 @@ export class TimetableService {
         conflicts.map((conflict) => [conflict.assignmentId, conflict]),
       ).values(),
     );
+  }
+
+  private async ensureTeacherIsFree(
+    staffProfileId: string,
+    excludedAssignmentId: string,
+    branchId: string,
+    overrideDate: Date,
+    startsAt: string,
+    endsAt: string,
+  ) {
+    const weekday = this.weekdayFor(overrideDate);
+    const assignments = await this.prisma.timetableAssignment.findMany({
+      where: {
+        branchId,
+        timetableProfile: { isActive: true, deletedAt: null },
+      },
+      include: {
+        timetableSlot: true,
+        dailyOverrides: { where: { overrideDate } },
+      },
+    });
+    const conflict = assignments.some((assignment) => {
+      if (assignment.id === excludedAssignmentId) return false;
+      if (
+        !this.daysFor(
+          assignment.timetableSlot,
+          assignment.timetableProfileId,
+        ).includes(weekday)
+      )
+        return false;
+      const effectiveStaffId =
+        assignment.dailyOverrides[0]?.overrideStaffProfileId ??
+        assignment.staffProfileId;
+      return (
+        effectiveStaffId === staffProfileId &&
+        minutes(assignment.timetableSlot.startsAt) < minutes(endsAt) &&
+        minutes(startsAt) < minutes(assignment.timetableSlot.endsAt)
+      );
+    });
+    if (conflict)
+      throw new ConflictException(
+        'This teacher is already teaching during the selected period on that date',
+      );
+  }
+
+  private asDate(value: string) {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(value))
+      throw new BadRequestException('Choose a valid calendar date');
+    const date = new Date(`${value}T00:00:00.000Z`);
+    if (Number.isNaN(date.valueOf()) || this.dateKey(date) !== value)
+      throw new BadRequestException('Choose a valid calendar date');
+    return date;
+  }
+
+  private schoolWeek(reference?: string) {
+    const date = reference ? this.asDate(reference) : this.pakistanToday();
+    const offset = (date.getUTCDay() + 6) % 7;
+    const monday = new Date(date);
+    monday.setUTCDate(date.getUTCDate() - offset);
+    return Array.from({ length: 6 }, (_, index) => {
+      const day = new Date(monday);
+      day.setUTCDate(monday.getUTCDate() + index);
+      return day;
+    });
+  }
+
+  private pakistanToday() {
+    const parts = new Intl.DateTimeFormat('en-US', {
+      timeZone: 'Asia/Karachi',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+    }).formatToParts(new Date());
+    const value = Object.fromEntries(
+      parts.map((part) => [part.type, part.value]),
+    );
+    return this.asDate(`${value.year}-${value.month}-${value.day}`);
+  }
+
+  private dateKey(date: Date) {
+    return date.toISOString().slice(0, 10);
+  }
+
+  private weekdayFor(date: Date) {
+    return [
+      Weekday.SUNDAY,
+      Weekday.MONDAY,
+      Weekday.TUESDAY,
+      Weekday.WEDNESDAY,
+      Weekday.THURSDAY,
+      Weekday.FRIDAY,
+      Weekday.SATURDAY,
+    ][date.getUTCDay()]!;
   }
 
   private daysFor(slot: { weekday: Weekday | null }, _profileId: string) {

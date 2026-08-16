@@ -19,6 +19,7 @@
     "lint": "npm run lint --workspaces --if-present",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
+    "ci:check": "npm run format:check && npm run prisma:generate --workspace=api && npm run build",
     "clean": "git clean -xdf node_modules"
   },
   "devDependencies": {

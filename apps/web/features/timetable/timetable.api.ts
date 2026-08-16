@@ -1,4 +1,4 @@
-import { baseApi, type ApiRecord, unwrap } from '@web/store/api/base-api';
+import { baseApi, queryString, type ApiRecord, unwrap } from '@web/store/api/base-api';
 
 export type TimetableSlotInput = {
   weekday?: 'MONDAY' | 'TUESDAY' | 'WEDNESDAY' | 'THURSDAY' | 'FRIDAY' | 'SATURDAY';
@@ -74,6 +74,27 @@ export const timetableApi = baseApi.injectEndpoints({
       transformResponse: unwrap,
       invalidatesTags: ['Academic'],
     }),
+    listDailyTimetableOverrides: build.query<ApiRecord[], { branchId: string; date: string }>({
+      query: ({ branchId, date }) => `/timetable/daily-overrides${queryString({ branchId, date })}`,
+      transformResponse: unwrap,
+      providesTags: ['Academic'],
+    }),
+    createDailyTimetableOverride: build.mutation<
+      ApiRecord,
+      { timetableAssignmentId: string; overrideStaffProfileId: string; overrideDate: string }
+    >({
+      query: (body) => ({ url: '/timetable/daily-overrides', method: 'POST', body }),
+      transformResponse: unwrap,
+      invalidatesTags: ['Academic'],
+    }),
+    deleteDailyTimetableOverride: build.mutation<ApiRecord, string>({
+      query: (overrideId) => ({
+        url: `/timetable/daily-overrides/${overrideId}`,
+        method: 'DELETE',
+      }),
+      transformResponse: unwrap,
+      invalidatesTags: ['Academic'],
+    }),
     getMyTimetable: build.query<ApiRecord[], void>({
       query: () => '/timetable/staff/my-timetable',
       transformResponse: unwrap,
@@ -89,5 +110,8 @@ export const {
   useDeleteTimetableProfileMutation,
   useGetClassTimetableQuery,
   useSaveTimetableAssignmentsMutation,
+  useListDailyTimetableOverridesQuery,
+  useCreateDailyTimetableOverrideMutation,
+  useDeleteDailyTimetableOverrideMutation,
   useGetMyTimetableQuery,
 } = timetableApi;

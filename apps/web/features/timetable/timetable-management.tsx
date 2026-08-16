@@ -12,10 +12,13 @@ import type { ApiRecord } from '@web/store/api/base-api';
 import {
   TimetableSlotInput,
   useCreateTimetableProfileMutation,
+  useCreateDailyTimetableOverrideMutation,
+  useDeleteDailyTimetableOverrideMutation,
   useDeleteTimetableProfileMutation,
   useGetClassTimetableQuery,
   useGetMyTimetableQuery,
   useListTimetableProfilesQuery,
+  useListDailyTimetableOverridesQuery,
   useSaveTimetableAssignmentsMutation,
   useSetTimetableProfileActiveMutation,
   useUpdateTimetableProfileMutation,
@@ -240,15 +243,22 @@ function AdminTimetable() {
               </select>
             </label>
             {offeringId ? (
-              <AssignmentEditor
-                timetable={timetable.data}
-                loading={timetable.isLoading}
-                error={timetable.isError}
-                offering={offerings.find((item) => item.id === offeringId)}
-                subjects={subjects}
-                staff={staff}
-                branchId={branchId}
-              />
+              <>
+                <AssignmentEditor
+                  timetable={timetable.data}
+                  loading={timetable.isLoading}
+                  error={timetable.isError}
+                  offering={offerings.find((item) => item.id === offeringId)}
+                  subjects={subjects}
+                  staff={staff}
+                  branchId={branchId}
+                />
+                <DailyCoverageManager
+                  branchId={branchId}
+                  timetable={timetable.data}
+                  staff={staff}
+                />
+              </>
             ) : null}
           </section>
         </>
@@ -475,6 +485,161 @@ function AssignmentEditor({
         </div>
       ) : null}
     </>
+  );
+}
+
+function DailyCoverageManager({
+  branchId,
+  timetable,
+  staff,
+}: {
+  branchId: string;
+  timetable?: ApiRecord;
+  staff: ApiRecord[];
+}) {
+  const toast = useToast();
+  const [date, setDate] = useState(todayKey());
+  const [assignmentId, setAssignmentId] = useState('');
+  const [teacherId, setTeacherId] = useState('');
+  const { data: overrides = [] } = useListDailyTimetableOverridesQuery(
+    branchId && date ? { branchId, date } : skipToken,
+  );
+  const [create, { isLoading: isSaving }] = useCreateDailyTimetableOverrideMutation();
+  const [remove] = useDeleteDailyTimetableOverrideMutation();
+  const rows = Array.isArray(timetable?.rows) ? (timetable.rows as ApiRecord[]) : [];
+  const assignments = rows.filter(
+    (row) => row.slotType === 'TEACHING' && (row.assignment as ApiRecord | null)?.id,
+  );
+  const teachers = staff.filter((person) => person.staffType === 'TEACHER');
+  async function saveCover() {
+    if (!assignmentId || !teacherId) {
+      toast.error('Choose the class period and the covering teacher.');
+      return;
+    }
+    try {
+      await create({
+        timetableAssignmentId: assignmentId,
+        overrideStaffProfileId: teacherId,
+        overrideDate: date,
+      }).unwrap();
+      setAssignmentId('');
+      setTeacherId('');
+      toast.success('Daily cover saved. The regular timetable resumes tomorrow.');
+    } catch (error) {
+      const message = (error as { data?: { errors?: string[]; message?: string } }).data
+        ?.errors?.[0];
+      toast.error(message ?? 'That teacher is already teaching during the selected period.');
+    }
+  }
+  return (
+    <section className="space-y-4 border-t border-border pt-5">
+      <div>
+        <h3 className="font-semibold">Daily cover</h3>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Use this only for a one-day substitution. It never changes the regular timetable.
+        </p>
+      </div>
+      <div className="grid gap-3 md:grid-cols-3">
+        <label className="grid gap-2 text-sm font-medium">
+          Date
+          <input
+            className="field"
+            type="date"
+            value={date}
+            onChange={(event) => setDate(event.target.value)}
+          />
+        </label>
+        <label className="grid gap-2 text-sm font-medium">
+          Class period
+          <select
+            className="field"
+            value={assignmentId}
+            onChange={(event) => setAssignmentId(event.target.value)}
+          >
+            <option value="">Choose a scheduled period</option>
+            {assignments.map((row) => {
+              const assignment = row.assignment as ApiRecord;
+              return (
+                <option key={assignment.id} value={assignment.id}>
+                  Period {String(row.periodNumber)} ·{' '}
+                  {String((assignment.subject as ApiRecord).name)} ·{' '}
+                  {String(
+                    ((assignment.staffProfile as ApiRecord).user as ApiRecord).fullName ??
+                      'Teacher',
+                  )}
+                </option>
+              );
+            })}
+          </select>
+        </label>
+        <label className="grid gap-2 text-sm font-medium">
+          Covering teacher
+          <select
+            className="field"
+            value={teacherId}
+            onChange={(event) => setTeacherId(event.target.value)}
+          >
+            <option value="">Choose a teacher</option>
+            {teachers.map((teacher) => (
+              <option key={teacher.id} value={teacher.id}>
+                {String((teacher.user as ApiRecord).fullName)}
+              </option>
+            ))}
+          </select>
+        </label>
+      </div>
+      <button type="button" className="button-primary" disabled={isSaving} onClick={saveCover}>
+        {isSaving ? 'Saving…' : 'Save daily cover'}
+      </button>
+      {overrides.length ? (
+        <div className="overflow-x-auto rounded-xl border border-border">
+          <table className="w-full min-w-[46rem] text-left text-sm">
+            <thead className="bg-muted/40 text-muted-foreground">
+              <tr>
+                <th className="px-4 py-3">Period</th>
+                <th>Subject</th>
+                <th>Regular teacher</th>
+                <th>Covering teacher</th>
+                <th className="px-4 text-right">Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {overrides.map((item) => {
+                const assignment = item.timetableAssignment as ApiRecord;
+                return (
+                  <tr key={item.id} className="border-t border-border/70">
+                    <td className="px-4 py-3">
+                      {String((assignment.timetableSlot as ApiRecord).periodNumber)}
+                    </td>
+                    <td>{String((assignment.subject as ApiRecord).name)}</td>
+                    <td>
+                      {String(((assignment.staffProfile as ApiRecord).user as ApiRecord).fullName)}
+                    </td>
+                    <td>
+                      {String(
+                        ((item.overrideStaffProfile as ApiRecord).user as ApiRecord).fullName,
+                      )}
+                    </td>
+                    <td className="px-4 text-right">
+                      <button
+                        type="button"
+                        className="text-sm font-semibold text-destructive hover:underline"
+                        onClick={async () => {
+                          await remove(String(item.id)).unwrap();
+                          toast.success('Daily cover removed.');
+                        }}
+                      >
+                        Remove
+                      </button>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      ) : null}
+    </section>
   );
 }
 
@@ -718,24 +883,58 @@ function ProfileForm({
 
 function MySchedule() {
   const { data = [], isLoading, isError } = useGetMyTimetableQuery();
+  const dates = useMemo(
+    () => [...new Set(data.map((item) => String(item.date ?? '')))].filter(Boolean).sort(),
+    [data],
+  );
+  const [activeDate, setActiveDate] = useState('');
+  useEffect(() => {
+    if (!dates.length) return;
+    const today = todayKey();
+    if (!activeDate || !dates.includes(activeDate))
+      setActiveDate(dates.includes(today) ? today : dates[0]!);
+  }, [activeDate, dates]);
   if (isLoading) return <p className="text-sm text-muted-foreground">Loading your schedule...</p>;
   if (isError)
     return <p className="text-sm text-destructive">Your schedule could not be loaded.</p>;
+  const schedule = data.filter((item) => String(item.date) === activeDate);
   return (
     <main className="mx-auto min-h-screen max-w-6xl bg-background px-5 py-8">
       <header className="mb-6">
         <CalendarClock className="text-teal-600" />
         <h1 className="mt-3 font-display text-4xl tracking-[-.04em]">My schedule</h1>
         <p className="mt-2 text-sm text-muted-foreground">
-          Teaching periods from every campus are shown together.
+          Your current day is ready first. Choose another school day when you need it.
         </p>
       </header>
+      {dates.length ? (
+        <div
+          className="mb-5 flex gap-2 overflow-x-auto pb-1"
+          role="tablist"
+          aria-label="Schedule days"
+        >
+          {dates.map((date) => {
+            const isActive = date === activeDate;
+            return (
+              <button
+                key={date}
+                type="button"
+                role="tab"
+                aria-selected={isActive}
+                className={isActive ? 'button-primary shrink-0' : 'button-secondary shrink-0'}
+                onClick={() => setActiveDate(date)}
+              >
+                {scheduleDayLabel(date)}
+              </button>
+            );
+          })}
+        </div>
+      ) : null}
       <div className="overflow-x-auto rounded-2xl border border-border bg-card">
         <table className="w-full min-w-[44rem] text-left text-sm">
           <thead className="border-b border-border bg-muted/40 text-muted-foreground">
             <tr>
-              <th className="px-5 py-3">Day</th>
-              <th>Period</th>
+              <th className="px-5 py-3">Period</th>
               <th>Subject</th>
               <th>Class / section</th>
               <th>Campus</th>
@@ -743,17 +942,18 @@ function MySchedule() {
             </tr>
           </thead>
           <tbody>
-            {data.map((item) => {
+            {schedule.map((item) => {
               const offering = item.offering as ApiRecord | undefined;
               const entryType = String(item.entryType ?? 'TEACHING');
               const isTeaching = entryType === 'TEACHING';
               return (
                 <tr
-                  key={`${item.weekday}-${item.periodNumber}-${item.startsAt}-${entryType}`}
+                  key={`${item.date}-${item.periodNumber}-${item.startsAt}-${entryType}`}
                   className="border-b border-border/70 last:border-0"
                 >
-                  <td className="px-5 py-3">{String(item.weekday).toLowerCase()}</td>
-                  <td>{item.periodNumber ? String(item.periodNumber) : '—'}</td>
+                  <td className="px-5 py-3">
+                    {item.periodNumber ? String(item.periodNumber) : '—'}
+                  </td>
                   <td>
                     {isTeaching
                       ? String((item.subject as ApiRecord).name)
@@ -782,10 +982,10 @@ function MySchedule() {
                 </tr>
               );
             })}
-            {!data.length ? (
+            {!schedule.length ? (
               <tr>
-                <td colSpan={6} className="px-5 py-10 text-center text-muted-foreground">
-                  No teaching periods have been assigned to you yet.
+                <td colSpan={5} className="px-5 py-10 text-center text-muted-foreground">
+                  No schedule is available for this day.
                 </td>
               </tr>
             ) : null}
@@ -794,4 +994,26 @@ function MySchedule() {
       </div>
     </main>
   );
+}
+
+function todayKey() {
+  const formatter = new Intl.DateTimeFormat('en-US', {
+    timeZone: 'Asia/Karachi',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  });
+  const parts = Object.fromEntries(
+    formatter.formatToParts().map((part) => [part.type, part.value]),
+  );
+  return `${parts.year}-${parts.month}-${parts.day}`;
+}
+
+function scheduleDayLabel(date: string) {
+  return new Intl.DateTimeFormat('en-US', {
+    timeZone: 'Asia/Karachi',
+    weekday: 'short',
+    day: 'numeric',
+    month: 'short',
+  }).format(new Date(`${date}T12:00:00Z`));
 }

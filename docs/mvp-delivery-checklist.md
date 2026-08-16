@@ -77,6 +77,7 @@ This is the working PRD/status record for the backend-first MVP. It records both
 - [ ] Final admin pass: dashboard utility, cross-module empty/error/loading states, responsive QA, and manual browser verification.
 - [x] Learner/guardian portal core: contact-number sign-in, linked-student dashboard, attendance, performance, finance, announcements, shared notes, and forced temporary-password replacement.
 - [x] Staff portal core: contact-number sign-in, forced temporary-password replacement, todayâ€™s attendance status, assigned-class reference, announcements, and shared notes.
+- [x] Staff timetable: today-first weekday tabs with read-only assigned, free, assembly, and break periods; administrators can add or remove one-day teacher cover overrides without altering the regular timetable.
 - [x] Admin announcement management: audience targeting, optional event dates, full CRUD, search, and staff/learner portal delivery.
 - [ ] Final cross-portal responsive/manual QA.
 - [ ] Advanced OCR (handwritten/Urdu/scanned-PDF extraction) after MVP validation.

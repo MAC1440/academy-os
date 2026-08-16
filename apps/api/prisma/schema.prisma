@@ -212,6 +212,7 @@ model StaffProfile {
   attendance                  StaffAttendance[]
   academicOfferingAssignments AcademicOfferingTeacher[]
   timetableAssignments        TimetableAssignment[]
+  timetableDailyOverrides     TimetableDailyOverride[]
 
   @@index([staffType])
 }
@@ -435,25 +436,42 @@ model TimetableSlot {
 }
 
 model TimetableAssignment {
-  id                 String           @id @default(cuid())
+  id                 String                   @id @default(cuid())
   branchId           String
   academicOfferingId String
   timetableProfileId String
   timetableSlotId    String
   subjectId          String
   staffProfileId     String
-  createdAt          DateTime         @default(now())
-  updatedAt          DateTime         @updatedAt
-  branch             Branch           @relation(fields: [branchId], references: [id], onDelete: Cascade)
-  academicOffering   AcademicOffering @relation(fields: [academicOfferingId], references: [id], onDelete: Cascade)
-  timetableProfile   TimetableProfile @relation(fields: [timetableProfileId], references: [id], onDelete: Cascade)
-  timetableSlot      TimetableSlot    @relation(fields: [timetableSlotId], references: [id], onDelete: Cascade)
-  subject            Subject          @relation(fields: [subjectId], references: [id], onDelete: Restrict)
-  staffProfile       StaffProfile     @relation(fields: [staffProfileId], references: [id], onDelete: Restrict)
+  createdAt          DateTime                 @default(now())
+  updatedAt          DateTime                 @updatedAt
+  branch             Branch                   @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  academicOffering   AcademicOffering         @relation(fields: [academicOfferingId], references: [id], onDelete: Cascade)
+  timetableProfile   TimetableProfile         @relation(fields: [timetableProfileId], references: [id], onDelete: Cascade)
+  timetableSlot      TimetableSlot            @relation(fields: [timetableSlotId], references: [id], onDelete: Cascade)
+  subject            Subject                  @relation(fields: [subjectId], references: [id], onDelete: Restrict)
+  staffProfile       StaffProfile             @relation(fields: [staffProfileId], references: [id], onDelete: Restrict)
+  dailyOverrides     TimetableDailyOverride[]
 
   @@unique([academicOfferingId, timetableSlotId])
   @@index([staffProfileId])
   @@index([branchId, academicOfferingId])
+}
+
+model TimetableDailyOverride {
+  id                     String              @id @default(cuid())
+  timetableAssignmentId  String
+  overrideStaffProfileId String
+  overrideDate           DateTime            @db.Date
+  createdByUserId        String
+  createdAt              DateTime            @default(now())
+  updatedAt              DateTime            @updatedAt
+  timetableAssignment    TimetableAssignment @relation(fields: [timetableAssignmentId], references: [id], onDelete: Cascade)
+  overrideStaffProfile   StaffProfile        @relation(fields: [overrideStaffProfileId], references: [id], onDelete: Restrict)
+
+  @@unique([timetableAssignmentId, overrideDate])
+  @@index([overrideStaffProfileId, overrideDate])
+  @@index([overrideDate])
 }
 
 model AdmissionApplication {

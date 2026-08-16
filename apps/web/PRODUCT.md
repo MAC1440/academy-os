@@ -37,4 +37,3 @@ AcademyOS uses a maroon-and-gold identity for public/authentication surfaces and
 - Make branch and class context explicit before changing data.
 - Prefer reusable, modular modules over role-specific duplication.
 - Protect teaching time by preventing conflicting teacher assignments.
-

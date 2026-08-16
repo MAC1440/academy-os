@@ -4,6 +4,7 @@ import {
   ArrayMinSize,
   IsArray,
   IsBoolean,
+  IsDateString,
   IsEnum,
   IsInt,
   IsNotEmpty,
@@ -82,4 +83,10 @@ export class TimetablePreviewDto {
 
 export class TimetableProfileStateDto {
   @IsBoolean() isActive!: boolean;
+}
+
+export class CreateTimetableDailyOverrideDto {
+  @IsString() timetableAssignmentId!: string;
+  @IsString() overrideStaffProfileId!: string;
+  @IsDateString() overrideDate!: string;
 }

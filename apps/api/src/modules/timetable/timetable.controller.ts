@@ -7,6 +7,7 @@ import {
   Patch,
   Post,
   Put,
+  Query,
   UseGuards,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
@@ -18,6 +19,7 @@ import type { AuthenticatedUser } from '../auth/decorators/current-user.decorato
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import {
   BulkSaveTimetableAssignmentsDto,
+  CreateTimetableDailyOverrideDto,
   CreateTimetableProfileDto,
   TimetablePreviewDto,
   TimetableProfileStateDto,
@@ -156,6 +158,43 @@ export class TimetableController {
     );
   }
 
+  @Get('timetable/daily-overrides')
+  @RequirePermissions('timetable.manage')
+  async listDailyOverrides(
+    @Query('branchId') branchId: string,
+    @Query('date') date: string,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return successResponse(
+      'Daily timetable overrides retrieved',
+      await this.timetable.listDailyOverrides(branchId, date, user.id),
+    );
+  }
+
+  @Post('timetable/daily-overrides')
+  @RequirePermissions('timetable.manage')
+  async createDailyOverride(
+    @Body() dto: CreateTimetableDailyOverrideDto,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return successResponse(
+      'Daily timetable cover saved',
+      await this.timetable.createDailyOverride(dto, user.id),
+    );
+  }
+
+  @Delete('timetable/daily-overrides/:overrideId')
+  @RequirePermissions('timetable.manage')
+  async removeDailyOverride(
+    @Param('overrideId') overrideId: string,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return successResponse(
+      'Daily timetable cover removed',
+      await this.timetable.removeDailyOverride(overrideId, user.id),
+    );
+  }
+
   @Get('staff/:staffProfileId/timetable')
   @RequirePermissions('timetable.read')
   async teacherTimetable(
@@ -172,10 +211,13 @@ export class TimetableController {
   // staff route and would otherwise capture `staff/my-timetable` first.
   @Get('timetable/staff/my-timetable')
   @RequirePermissions('timetable.read')
-  async myTimetable(@CurrentUser() user: AuthenticatedUser) {
+  async myTimetable(
+    @Query('weekOf') weekOf: string | undefined,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
     return successResponse(
       'My timetable retrieved',
-      await this.timetable.myTimetable(user.id),
+      await this.timetable.myTimetable(user.id, weekOf),
     );
   }
 }

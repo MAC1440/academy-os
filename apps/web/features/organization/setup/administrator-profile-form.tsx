@@ -62,7 +62,7 @@ export function AdministratorProfileForm() {
     <form onSubmit={submit} className="grid gap-4 md:grid-cols-2">
       <label className="grid gap-1 text-sm font-medium">
         Username
-        <PasswordInput
+        <input
           className="field"
           required
           value={form.username}
@@ -101,7 +101,7 @@ export function AdministratorProfileForm() {
       </label>
       <label className="grid gap-1 text-sm font-medium">
         New password <span className="font-normal text-muted-foreground">(optional)</span>
-        <input
+        <PasswordInput
           className="field"
           minLength={8}
           value={form.newPassword}

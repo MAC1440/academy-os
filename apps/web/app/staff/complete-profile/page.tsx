@@ -4,7 +4,8 @@ import { useRouter } from 'next/navigation';
 import { useCompleteProfileMutation } from '@web/features/auth/auth.api';
 import { useAppDispatch } from '@web/store/hooks';
 import { setUser } from '@web/store/slices/auth-slice';
-export default function StaffCompleteProfilePage() {
+import { AuthGuard } from '@web/features/auth';
+function StaffCompleteProfile() {
   const [password, setPassword] = useState('');
   const [confirm, setConfirm] = useState('');
   const [error, setError] = useState('');
@@ -64,5 +65,13 @@ export default function StaffCompleteProfilePage() {
         </button>
       </form>
     </main>
+  );
+}
+
+export default function StaffCompleteProfilePage() {
+  return (
+    <AuthGuard allowed={['STAFF']}>
+      <StaffCompleteProfile />
+    </AuthGuard>
   );
 }

@@ -169,6 +169,7 @@ export class TimetableController {
   }
 
   @Get('staff/my-timetable')
+  @RequirePermissions('timetable.read')
   async myTimetable(@CurrentUser() user: AuthenticatedUser) {
     return successResponse(
       'My timetable retrieved',

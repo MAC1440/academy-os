@@ -16,7 +16,10 @@ export class NotesService {
     const organization = await this.organization();
     return this.prisma.sharedNote.findMany({
       where: { organizationId: organization.id, deletedAt: null },
-      include: { author: { select: { id: true, fullName: true } } },
+      include: {
+        author: { select: { id: true, fullName: true } },
+        lastEditedBy: { select: { id: true, fullName: true } },
+      },
       orderBy: { updatedAt: 'desc' },
     });
   }
@@ -27,10 +30,14 @@ export class NotesService {
       data: {
         organizationId: organization.id,
         authorUserId,
+        lastEditedByUserId: authorUserId,
         title: dto.title.trim(),
         content: dto.content.trim(),
       },
-      include: { author: { select: { id: true, fullName: true } } },
+      include: {
+        author: { select: { id: true, fullName: true } },
+        lastEditedBy: { select: { id: true, fullName: true } },
+      },
     });
     await this.audit(authorUserId, AuditAction.CREATE, note.id, dto);
     return note;
@@ -43,8 +50,12 @@ export class NotesService {
       data: {
         ...(dto.title !== undefined ? { title: dto.title.trim() } : {}),
         ...(dto.content !== undefined ? { content: dto.content.trim() } : {}),
+        lastEditedByUserId: actorUserId,
       },
-      include: { author: { select: { id: true, fullName: true } } },
+      include: {
+        author: { select: { id: true, fullName: true } },
+        lastEditedBy: { select: { id: true, fullName: true } },
+      },
     });
     await this.audit(actorUserId, AuditAction.UPDATE, note.id, dto);
     return updated;

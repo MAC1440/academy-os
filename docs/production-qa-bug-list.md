@@ -30,8 +30,17 @@ Only reproducible defects belong in this list. Scenarios that have not yet been 
 - **Area:** Public kiosk and Admin > Attendance > Staff reports
 - **Reproduction:** Open the kiosk after one or more staff members have checked in. The page lists every staff member together and still presents check-in as an available action.
 - **Expected:** The kiosk shows the Pakistan date and separates pending staff, open check-ins, and completed check-outs. An open check-in only permits check-out; an admin can correct a missing or incorrect checkout time in the staff attendance report.
-- **Status:** Fixed locally; pending deployment and production verification.
+- **Status:** Fixed and verified in production on 16 August 2026.
 - **Fix location:** `apps/api/src/modules/kiosk/kiosk.service.ts`, `apps/web/features/kiosk/attendance-kiosk.tsx`, and `apps/web/features/attendance/management/attendance-management.tsx`
+
+### QA-004 — A valid session can open unauthorized portal routes
+
+- **Severity:** P0
+- **Area:** Main portal, staff portal, learner portal, and role permissions
+- **Reproduction:** Sign in as a staff or learner account, then enter an admin route such as `/admissions` or `/finance` directly. The shared portal guard only requires a valid JWT, while the teacher system role also grants unrelated module permissions.
+- **Expected:** Admin routes are Admin-only; teachers can use student attendance, shared notes, and their read-only timetable; learners remain inside `/student/*`.
+- **Status:** Fixed locally; pending migration, role sync, deployment, and production verification.
+- **Fix location:** `apps/web/features/auth/portal-route-guard.tsx`, `apps/api/prisma/seed.ts`, and the affected portal controllers.
 
 ## Verified in this QA pass
 

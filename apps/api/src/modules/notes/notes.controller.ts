@@ -7,7 +7,9 @@ import {
   Patch,
   Post,
   UseGuards,
+  ForbiddenException,
 } from '@nestjs/common';
+import { AccountType } from '@prisma/client';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { successResponse } from '../../common/api-response';
 import { RequirePermissions } from '../access/decorators/require-permissions.decorator';
@@ -36,7 +38,8 @@ export class NotesController {
   }
   @Get('learner')
   @UseGuards(JwtAuthGuard)
-  async learnerNotes() {
+  async learnerNotes(@CurrentUser() user: AuthenticatedUser) {
+    this.requireAccountType(user, AccountType.LEARNER);
     return successResponse(
       'Shared notes retrieved',
       await this.notesService.listNotes(),
@@ -44,7 +47,8 @@ export class NotesController {
   }
   @Get('staff')
   @UseGuards(JwtAuthGuard)
-  async staffNotes() {
+  async staffNotes(@CurrentUser() user: AuthenticatedUser) {
+    this.requireAccountType(user, AccountType.STAFF);
     return successResponse(
       'Shared notes retrieved',
       await this.notesService.listNotes(),
@@ -52,7 +56,7 @@ export class NotesController {
   }
 
   @Post()
-  @RequirePermissions('notes.manage')
+  @RequirePermissions('notes.create')
   async createNote(
     @Body() dto: CreateNoteDto,
     @CurrentUser() user: AuthenticatedUser,
@@ -64,7 +68,7 @@ export class NotesController {
   }
 
   @Patch(':noteId')
-  @RequirePermissions('notes.manage')
+  @RequirePermissions('notes.update')
   async updateNote(
     @Param('noteId') noteId: string,
     @Body() dto: UpdateNoteDto,
@@ -77,12 +81,23 @@ export class NotesController {
   }
 
   @Delete(':noteId')
-  @RequirePermissions('notes.manage')
+  @RequirePermissions('notes.delete')
   async archiveNote(
     @Param('noteId') noteId: string,
     @CurrentUser() user: AuthenticatedUser,
   ) {
+    this.requireAccountType(user, AccountType.ADMIN);
     await this.notesService.archiveNote(noteId, user.id);
     return successResponse('Shared note archived', { id: noteId });
+  }
+
+  private requireAccountType(
+    user: AuthenticatedUser,
+    accountType: AccountType,
+  ) {
+    if (user.accountType !== accountType)
+      throw new ForbiddenException(
+        'This portal endpoint is not available for this account',
+      );
   }
 }

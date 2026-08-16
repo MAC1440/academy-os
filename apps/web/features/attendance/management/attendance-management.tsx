@@ -11,6 +11,7 @@ import {
 } from '@web/components/data-table';
 import { useListOfferingsQuery } from '@web/features/academics/academics.api';
 import { useToast } from '@web/components/toast-provider';
+import { useAppSelector } from '@web/store/hooks';
 import { useListBranchesQuery } from '@web/features/organization/organization.api';
 import {
   useGetKioskSettingsQuery,
@@ -39,14 +40,18 @@ const tabs = [
 const today = new Date().toISOString().slice(0, 10);
 
 export function AttendanceManagement() {
+  const user = useAppSelector((state) => state.auth.user);
+  const isTeacher = user?.accountType === 'STAFF';
   const [activeTab, setActiveTab] = useState<(typeof tabs)[number]['id']>('students');
+  const visibleTabs = isTeacher ? tabs.filter((tab) => tab.id === 'students') : tabs;
   return (
     <div className="space-y-6">
       <header className="max-w-2xl">
         <h1 className="font-display text-4xl tracking-[-.04em]">Attendance</h1>
         <p className="mt-3 text-sm leading-6 text-muted-foreground">
-          Mark student attendance directly from the class roster, review staff check-ins by campus,
-          and configure the default kiosk workday.
+          {isTeacher
+            ? 'Mark student attendance directly from the class roster.'
+            : 'Mark student attendance directly from the class roster, review staff check-ins by campus, and configure the default kiosk workday.'}
         </p>
       </header>
       <div
@@ -54,7 +59,7 @@ export function AttendanceManagement() {
         aria-label="Attendance operations"
         className="flex gap-2 overflow-x-auto border-b border-border pb-3"
       >
-        {tabs.map(({ id, label, icon: Icon }) => {
+        {visibleTabs.map(({ id, label, icon: Icon }) => {
           const active = activeTab === id;
           return (
             <button

@@ -26,14 +26,22 @@ const permissions = [
   ['admissions.manage', 'Admissions', 'Manage admissions'],
   ['kiosk.manage', 'Kiosk', 'Manage teacher attendance kiosk'],
   ['notes.read', 'Notes', 'View shared notes'],
-  ['notes.manage', 'Notes', 'Manage shared notes'],
+  ['notes.create', 'Notes', 'Create shared notes'],
+  ['notes.update', 'Notes', 'Edit shared notes'],
+  ['notes.delete', 'Notes', 'Delete shared notes'],
+  ['announcements.read', 'Announcements', 'View announcements'],
+  ['announcements.manage', 'Announcements', 'Manage announcements'],
   ['grades.read', 'Grades', 'View grades'],
   ['grades.manage', 'Grades', 'Manage grades'],
   ['finance.read', 'Finance', 'View finance records'],
   ['finance.manage', 'Finance', 'Manage finance records'],
   ['reports.read', 'Reports', 'View and export reports'],
   ['timetable.read', 'Timetable', 'View class and teacher timetables'],
-  ['timetable.manage', 'Timetable', 'Manage timetable profiles and assignments'],
+  [
+    'timetable.manage',
+    'Timetable',
+    'Manage timetable profiles and assignments',
+  ],
 ] as const;
 
 const systemRoles: Record<string, string[]> = {
@@ -45,9 +53,8 @@ const systemRoles: Record<string, string[]> = {
     'attendance.read',
     'attendance.manage',
     'notes.read',
-    'notes.manage',
-    'grades.read',
-    'grades.manage',
+    'notes.create',
+    'notes.update',
     'timetable.read',
   ],
   Staff: ['branches.read', 'notes.read'],
@@ -55,16 +62,61 @@ const systemRoles: Record<string, string[]> = {
 
 const defaultSchoolTimetableSlots = [
   { slotType: TimetableSlotType.ASSEMBLY, startsAt: '07:30', endsAt: '07:40' },
-  { slotType: TimetableSlotType.TEACHING, periodNumber: 1, startsAt: '07:40', endsAt: '08:20' },
-  { slotType: TimetableSlotType.TEACHING, periodNumber: 2, startsAt: '08:20', endsAt: '09:00' },
-  { slotType: TimetableSlotType.TEACHING, periodNumber: 3, startsAt: '09:00', endsAt: '09:40' },
-  { slotType: TimetableSlotType.TEACHING, periodNumber: 4, startsAt: '09:40', endsAt: '10:20' },
-  { slotType: TimetableSlotType.TEACHING, periodNumber: 5, startsAt: '10:20', endsAt: '11:00' },
+  {
+    slotType: TimetableSlotType.TEACHING,
+    periodNumber: 1,
+    startsAt: '07:40',
+    endsAt: '08:20',
+  },
+  {
+    slotType: TimetableSlotType.TEACHING,
+    periodNumber: 2,
+    startsAt: '08:20',
+    endsAt: '09:00',
+  },
+  {
+    slotType: TimetableSlotType.TEACHING,
+    periodNumber: 3,
+    startsAt: '09:00',
+    endsAt: '09:40',
+  },
+  {
+    slotType: TimetableSlotType.TEACHING,
+    periodNumber: 4,
+    startsAt: '09:40',
+    endsAt: '10:20',
+  },
+  {
+    slotType: TimetableSlotType.TEACHING,
+    periodNumber: 5,
+    startsAt: '10:20',
+    endsAt: '11:00',
+  },
   { slotType: TimetableSlotType.BREAK, startsAt: '11:00', endsAt: '11:20' },
-  { slotType: TimetableSlotType.TEACHING, periodNumber: 6, startsAt: '11:20', endsAt: '12:00' },
-  { slotType: TimetableSlotType.TEACHING, periodNumber: 7, startsAt: '12:00', endsAt: '12:40' },
-  { slotType: TimetableSlotType.TEACHING, periodNumber: 8, startsAt: '12:40', endsAt: '13:20' },
-  { slotType: TimetableSlotType.TEACHING, periodNumber: 9, startsAt: '13:20', endsAt: '14:00' },
+  {
+    slotType: TimetableSlotType.TEACHING,
+    periodNumber: 6,
+    startsAt: '11:20',
+    endsAt: '12:00',
+  },
+  {
+    slotType: TimetableSlotType.TEACHING,
+    periodNumber: 7,
+    startsAt: '12:00',
+    endsAt: '12:40',
+  },
+  {
+    slotType: TimetableSlotType.TEACHING,
+    periodNumber: 8,
+    startsAt: '12:40',
+    endsAt: '13:20',
+  },
+  {
+    slotType: TimetableSlotType.TEACHING,
+    periodNumber: 9,
+    startsAt: '13:20',
+    endsAt: '14:00',
+  },
 ];
 
 async function main() {

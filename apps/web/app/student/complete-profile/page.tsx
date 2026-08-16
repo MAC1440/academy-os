@@ -4,7 +4,8 @@ import { useRouter } from 'next/navigation';
 import { useCompleteProfileMutation } from '@web/features/auth/auth.api';
 import { useAppDispatch } from '@web/store/hooks';
 import { setUser } from '@web/store/slices/auth-slice';
-export default function StudentCompleteProfilePage() {
+import { AuthGuard } from '@web/features/auth';
+function StudentCompleteProfile() {
   const [password, setPassword] = useState('');
   const [confirm, setConfirm] = useState('');
   const [error, setError] = useState('');
@@ -63,5 +64,13 @@ export default function StudentCompleteProfilePage() {
         </button>
       </form>
     </main>
+  );
+}
+
+export default function StudentCompleteProfilePage() {
+  return (
+    <AuthGuard allowed={['LEARNER']}>
+      <StudentCompleteProfile />
+    </AuthGuard>
   );
 }

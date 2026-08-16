@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { BookOpen, CalendarDays, ClipboardCheck, NotebookPen, Timer } from 'lucide-react';
+import { BookOpen, CalendarDays, NotebookPen, Timer } from 'lucide-react';
 import type { ApiRecord } from '@web/store/api/base-api';
 import {
   useGetStaffPortalOverviewQuery,
@@ -36,7 +36,7 @@ export function StaffDashboard() {
             Welcome, {String((staff.user as ApiRecord)?.fullName ?? 'teacher')}
           </h1>
           <p className="mt-2 text-sm text-muted-foreground">
-            Everything needed for todayâ€™s teaching work, in one place.
+            Everything needed for today’s teaching work, in one place.
           </p>
         </div>
         <Link href="/kiosk" className="button-primary">
@@ -69,9 +69,6 @@ export function StaffDashboard() {
             <Link href="/attendance" className="button-secondary">
               Mark attendance
             </Link>
-            <Link href="/grades" className="button-secondary">
-              Enter marks
-            </Link>
           </div>
         </div>
         {assignments.length ? (
@@ -102,7 +99,7 @@ export function StaffDashboard() {
                     >
                       <td className="py-3 font-semibold">{String(title)}</td>
                       <td className="py-3">
-                        {String((offering.branch as ApiRecord | undefined)?.name ?? 'â€”')}
+                        {String((offering.branch as ApiRecord | undefined)?.name ?? '—')}
                       </td>
                       <td className="py-3">
                         {[
@@ -110,7 +107,7 @@ export function StaffDashboard() {
                           (offering.academicGroup as ApiRecord | undefined)?.name,
                         ]
                           .filter(Boolean)
-                          .join(' Â· ') || 'â€”'}
+                          .join(' · ') || '—'}
                       </td>
                       <td className="py-3 text-muted-foreground">
                         {subjects

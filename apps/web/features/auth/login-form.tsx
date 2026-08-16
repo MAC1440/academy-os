@@ -5,7 +5,7 @@ import { useLoginMutation } from './auth.api';
 import { useAppDispatch } from '@web/store/hooks';
 import { setCredentials } from '@web/store/slices/auth-slice';
 
-export function LoginForm({ portalType }: { portalType?: 'LEARNER' | 'STAFF' }) {
+export function LoginForm({ portalType }: { portalType?: 'ADMIN' | 'LEARNER' | 'STAFF' }) {
   const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');

@@ -39,6 +39,8 @@ Started: 14 August 2026
 - [x] Grades lifecycle QA: assessments and marks can be created; assessment edit/delete controls persist correctly, and QA assessments plus their marks were cleaned up.
 - [x] Finance lifecycle QA: duplicate receipt numbers are rejected; a PKR 1 QA payment can be created and edited, and deletion restores the student's original finance summary.
 - [x] Temporary QA staff account removed after staff-portal and kiosk validation.
+- [x] Kiosk attendance-state tabs verified in production: QA Teacher One moved from Pending to Checked in after check-in, then to disabled Checked out after check-out. No console errors were recorded.
+- [ ] Role-boundary QA (pending deployment): Admin routes reject staff/learners; staff can use notes, student attendance, and read-only timetable only; learners cannot read staff-only feeds.
 
 ## Next QA Scenarios
 
@@ -47,7 +49,7 @@ Started: 14 August 2026
 - [ ] Direct student enrollment, edit, search, and delete.
 - [ ] Admissions review and approval.
 - [ ] Staff credentials, kiosk check-in/out, and attendance reports.
-- [ ] Kiosk attendance-state tabs, duplicate-check-in prevention, and admin checkout correction (pending deployment).
+- [ ] Admin checkout correction through the Staff reports interface.
 - [ ] Student attendance marking, monthly view, and CSV export.
 - [ ] Assessments, marks entry, print/PDF report, and performance history.
 - [ ] Fees: edit and delete a recorded payment from the interface.

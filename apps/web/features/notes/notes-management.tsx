@@ -3,6 +3,7 @@
 import { FormEvent, useMemo, useRef, useState } from 'react';
 import { FileText, Pencil, Plus, Search, Trash2 } from 'lucide-react';
 import { useToast } from '@web/components/toast-provider';
+import { useAppSelector } from '@web/store/hooks';
 import type { ApiRecord } from '@web/store/api/base-api';
 import {
   useCreateNoteMutation,
@@ -27,6 +28,8 @@ export function NotesManagement() {
   const [form, setForm] = useState({ title: '', content: '' });
   const contentRef = useRef<HTMLTextAreaElement>(null);
   const [search, setSearch] = useState('');
+  const user = useAppSelector((state) => state.auth.user);
+  const canDelete = user?.accountType === 'ADMIN';
   const filteredNotes = useMemo(
     () =>
       notes.filter((note) =>
@@ -110,7 +113,7 @@ export function NotesManagement() {
       ) : null}
       <div className="divide-y divide-border rounded-2xl border border-border bg-card">
         {filteredNotes.map((item) => (
-          <NoteRow key={item.id} note={item as Note} onChanged={refetch} />
+          <NoteRow key={item.id} note={item as Note} canDelete={canDelete} onChanged={refetch} />
         ))}
         {notes.length && filteredNotes.length === 0 ? (
           <p className="p-5 text-sm text-muted-foreground">No notes match that search.</p>
@@ -120,7 +123,15 @@ export function NotesManagement() {
   );
 }
 
-function NoteRow({ note, onChanged }: { note: Note; onChanged: () => unknown }) {
+function NoteRow({
+  note,
+  canDelete,
+  onChanged,
+}: {
+  note: Note;
+  canDelete: boolean;
+  onChanged: () => unknown;
+}) {
   const [update] = useUpdateNoteMutation();
   const [remove] = useDeleteNoteMutation();
   const toast = useToast();
@@ -171,8 +182,13 @@ function NoteRow({ note, onChanged }: { note: Note; onChanged: () => unknown }) 
             </ReactMarkdown>
           </div>
           <p className="mt-3 text-xs text-muted-foreground">
-            Updated {String(note.updatedAt).slice(0, 10)} by{' '}
-            {String(note.author?.fullName ?? 'Team member')}
+            Created by {String(note.author?.fullName ?? 'Team member')} · Last edited{' '}
+            {String(note.updatedAt).slice(0, 10)} by{' '}
+            {String(
+              (note.lastEditedBy as ApiRecord | undefined)?.fullName ??
+                note.author?.fullName ??
+                'Team member',
+            )}
           </p>
         </div>
         <div className="flex shrink-0 gap-3">
@@ -183,13 +199,15 @@ function NoteRow({ note, onChanged }: { note: Note; onChanged: () => unknown }) 
           >
             <Pencil size={14} /> Edit
           </button>
-          <button
-            type="button"
-            className="inline-flex items-center gap-1 text-sm font-semibold text-destructive hover:underline"
-            onClick={archive}
-          >
-            <Trash2 size={14} /> Remove
-          </button>
+          {canDelete ? (
+            <button
+              type="button"
+              className="inline-flex items-center gap-1 text-sm font-semibold text-destructive hover:underline"
+              onClick={archive}
+            >
+              <Trash2 size={14} /> Remove
+            </button>
+          ) : null}
         </div>
       </div>
     </article>

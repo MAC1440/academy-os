@@ -7,7 +7,9 @@ import {
   Patch,
   Post,
   UseGuards,
+  ForbiddenException,
 } from '@nestjs/common';
+import { AccountType } from '@prisma/client';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { successResponse } from '../../common/api-response';
 import { RequirePermissions } from '../access/decorators/require-permissions.decorator';
@@ -37,6 +39,8 @@ export class StaffController {
 
   @Get('portal/overview')
   async portalOverview(@CurrentUser() user: AuthenticatedUser) {
+    if (user.accountType !== AccountType.STAFF)
+      throw new ForbiddenException('Staff portal access is required');
     return successResponse(
       'Staff portal overview retrieved',
       await this.staffService.portalOverview(user.id),

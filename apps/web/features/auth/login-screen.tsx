@@ -38,7 +38,7 @@ export function LoginScreen() {
               </p>
             </div>
             <div className="mt-9">
-              <LoginForm />
+              <LoginForm portalType="ADMIN" />
             </div>
           </div>
         </section>

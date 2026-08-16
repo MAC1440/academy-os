@@ -5,6 +5,7 @@ import { skipToken } from '@reduxjs/toolkit/query';
 import { BookMarked, Pencil, Plus, Trash2 } from 'lucide-react';
 import { DataTable, DataTableControls, TableEmpty } from '@web/components/data-table';
 import { useToast } from '@web/components/toast-provider';
+import { useConfirmation } from '@web/components/confirmation-dialog';
 import { useListBranchesQuery } from '@web/features/organization/organization.api';
 import {
   useCreateOfferingMutation,
@@ -41,6 +42,7 @@ export function BranchOfferingsPanel() {
   const [update] = useUpdateOfferingMutation();
   const [remove] = useDeleteOfferingMutation();
   const toast = useToast();
+  const { confirm } = useConfirmation();
   const [open, setOpen] = useState(false);
   const [editingOfferingId, setEditingOfferingId] = useState<string | null>(null);
   const [search, setSearch] = useState('');
@@ -97,7 +99,11 @@ export function BranchOfferingsPanel() {
     setOpen(true);
   }
   async function deleteOffering(offering: Offering) {
-    if (!window.confirm(`Delete ${String(offering.schoolClass?.name ?? offering.course?.name)}?`))
+    if (
+      !(await confirm({
+        description: `Delete ${String(offering.schoolClass?.name ?? offering.course?.name)}? Enrolled students must be moved first.`,
+      }))
+    )
       return;
     try {
       await remove({ branchId, offeringId: offering.id }).unwrap();

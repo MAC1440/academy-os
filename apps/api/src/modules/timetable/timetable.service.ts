@@ -779,6 +779,8 @@ export class TimetableService {
 
   private schoolWeek(reference?: string) {
     const date = reference ? this.asDate(reference) : this.pakistanToday();
+    if (!reference && date.getUTCDay() === 0)
+      date.setUTCDate(date.getUTCDate() + 1);
     const offset = (date.getUTCDay() + 6) % 7;
     const monday = new Date(date);
     monday.setUTCDate(date.getUTCDate() - offset);

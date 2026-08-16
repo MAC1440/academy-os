@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { skipToken } from '@reduxjs/toolkit/query';
 import { CheckCircle2, Clock3, LockKeyhole, MapPin, UserRound } from 'lucide-react';
 import { useToast } from '@web/components/toast-provider';
+import { PasswordInput } from '@web/components/password-input';
 import {
   useKioskCheckInMutation,
   useKioskCheckOutMutation,
@@ -270,14 +271,13 @@ export function AttendanceKiosk() {
               </p>
               <label className="grid gap-2 text-sm font-semibold">
                 Four-digit PIN
-                <input
+                <PasswordInput
                   autoFocus
                   className="field text-center text-2xl tracking-[.7em]"
                   inputMode="numeric"
                   maxLength={4}
                   pattern="\d{4}"
                   required
-                  type="password"
                   value={pin}
                   onChange={(event) => setPin(event.target.value.replace(/\D/g, ''))}
                 />

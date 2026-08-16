@@ -1,6 +1,7 @@
 import * as bcrypt from 'bcryptjs';
 import {
   AccountType,
+  AcademicOfferingType,
   PrismaClient,
   TimetableMode,
   TimetableProfileScope,
@@ -343,6 +344,66 @@ async function main() {
       ['General Science', 'Statistics', 'Economics'],
       'Arts / General Science / Statistics / Economics',
     );
+  }
+
+  const defaultBranch = await prisma.branch.upsert({
+    where: {
+      organizationId_addressKey: {
+        organizationId: organization.id,
+        addressKey: 'main campus, pakistan',
+      },
+    },
+    update: { deletedAt: null },
+    create: {
+      organizationId: organization.id,
+      name: 'Main Campus',
+      address: 'Main Campus, Pakistan',
+      addressKey: 'main campus, pakistan',
+    },
+  });
+
+  const activeBranches = await prisma.branch.findMany({
+    where: { organizationId: organization.id, deletedAt: null },
+    select: { id: true },
+  });
+  const curriculumSubjects = await prisma.schoolClassCurriculumSubject.findMany(
+    {
+      where: { schoolClass: { organizationId: organization.id } },
+      select: { schoolClassId: true, subjectId: true },
+    },
+  );
+  const subjectsByClass = new Map<string, string[]>();
+  for (const curriculumSubject of curriculumSubjects) {
+    const subjectIds =
+      subjectsByClass.get(curriculumSubject.schoolClassId) ?? [];
+    subjectsByClass.set(curriculumSubject.schoolClassId, [
+      ...new Set([...subjectIds, curriculumSubject.subjectId]),
+    ]);
+  }
+  for (const branch of [...activeBranches, defaultBranch]) {
+    for (const schoolClass of classes) {
+      const offeringKey = `${AcademicOfferingType.SCHOOL_CLASS}:${schoolClass.id}:-:-`;
+      const offering = await prisma.academicOffering.upsert({
+        where: { branchId_offeringKey: { branchId: branch.id, offeringKey } },
+        update: { status: 'ACTIVE' },
+        create: {
+          branchId: branch.id,
+          offeringType: AcademicOfferingType.SCHOOL_CLASS,
+          schoolClassId: schoolClass.id,
+          offeringKey,
+        },
+      });
+      const subjectIds = subjectsByClass.get(schoolClass.id) ?? [];
+      if (subjectIds.length) {
+        await prisma.academicOfferingSubject.createMany({
+          data: subjectIds.map((subjectId) => ({
+            academicOfferingId: offering.id,
+            subjectId,
+          })),
+          skipDuplicates: true,
+        });
+      }
+    }
   }
 
   const branchesWithoutTimetable = await prisma.branch.findMany({

@@ -3,6 +3,7 @@
 import { FormEvent, useMemo, useState } from 'react';
 import { Pencil, Plus, Search, Trash2 } from 'lucide-react';
 import { useToast } from '@web/components/toast-provider';
+import { useConfirmation } from '@web/components/confirmation-dialog';
 import type { ApiRecord } from '@web/store/api/base-api';
 import {
   useCreateAnnouncementMutation,
@@ -23,6 +24,7 @@ export function AnnouncementsManagement() {
   const { data: announcements = [], isLoading, refetch } = useListAnnouncementsQuery();
   const [create] = useCreateAnnouncementMutation();
   const toast = useToast();
+  const { confirm } = useConfirmation();
   const [creating, setCreating] = useState(false);
   const [form, setForm] = useState<FormState>(blankForm);
   const [search, setSearch] = useState('');
@@ -138,6 +140,7 @@ function AnnouncementRow({ item, onChanged }: { item: ApiRecord; onChanged: () =
   const [update] = useUpdateAnnouncementMutation();
   const [remove] = useDeleteAnnouncementMutation();
   const toast = useToast();
+  const { confirm } = useConfirmation();
   const [form, setForm] = useState<FormState>({
     title: String(item.title),
     content: String(item.content),
@@ -159,7 +162,11 @@ function AnnouncementRow({ item, onChanged }: { item: ApiRecord; onChanged: () =
     }
   }
   async function destroy() {
-    if (!window.confirm('Delete this announcement? It will no longer be visible in any portal.'))
+    if (
+      !(await confirm({
+        description: 'Delete this announcement? It will no longer be visible in any portal.',
+      }))
+    )
       return;
     try {
       await remove(item.id).unwrap();

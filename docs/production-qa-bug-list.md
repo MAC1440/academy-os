@@ -52,6 +52,15 @@ Only reproducible defects belong in this list. Scenarios that have not yet been 
 - **Status:** Fixed and verified in production on 16 August 2026. The QA teacher can see the assigned Computer period, all free periods, assembly, and breaks across the week.
 - **Fix location:** `apps/api/src/modules/timetable/timetable.controller.ts` and `apps/web/features/timetable/timetable.api.ts`.
 
+### QA-006 — Sunday timetable opens the previous school week
+
+- **Severity:** P2
+- **Area:** Staff portal > My schedule
+- **Reproduction:** Open the staff timetable on Sunday. Since Sunday is not a default school day, the first tab is the Monday from the previous week.
+- **Expected:** The timetable opens the next school day, Monday, while Monday–Saturday remain selectable.
+- **Status:** Fixed locally; requires deployment and production verification.
+- **Fix location:** `apps/api/src/modules/timetable/timetable.service.ts`.
+
 ## Verified in this QA pass
 
 - Admin session and all core admin routes load without visible API error states: dashboard, admissions, academics, students, attendance, grades, finance, notes, announcements, staff, settings, and timetable.

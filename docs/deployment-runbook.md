@@ -16,4 +16,5 @@
 
 - `prisma migrate deploy` is safe to run automatically: it only applies migrations already committed to the repository.
 - Do not run `prisma:seed` automatically. The seed changes system-role defaults and should be run intentionally whenever a release explicitly changes seed data or permission definitions.
+- After a release that changes seed data, run `npm run prisma:seed --workspace=api` from the Railway service shell once. It is idempotent: it restores the Main Campus/default class offerings and does not overwrite existing administrator credentials.
 - A failed migration or failed `/health` check stops the Railway release instead of starting a partially-upgraded API.

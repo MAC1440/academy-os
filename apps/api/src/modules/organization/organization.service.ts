@@ -3,7 +3,12 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { AuditAction, EntityStatus, Prisma } from '@prisma/client';
+import {
+  AcademicOfferingType,
+  AuditAction,
+  EntityStatus,
+  Prisma,
+} from '@prisma/client';
 import { AuditService } from '../audit/audit.service';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreateBranchDto } from './dto/create-branch.dto';
@@ -70,6 +75,14 @@ export class OrganizationService {
     const organization = await this.getOrganization();
     const addressKey = this.addressKey(dto.address);
     try {
+      const schoolClasses = await this.prisma.schoolClass.findMany({
+        where: {
+          organizationId: organization.id,
+          deletedAt: null,
+          status: EntityStatus.ACTIVE,
+        },
+        include: { curriculumSubjects: { select: { subjectId: true } } },
+      });
       const branch = await this.prisma.branch.create({
         data: {
           organizationId: organization.id,
@@ -78,6 +91,22 @@ export class OrganizationService {
           addressKey,
           city: dto.city?.trim(),
           phone: dto.phone?.trim(),
+          academicOfferings: {
+            create: schoolClasses.map((schoolClass) => ({
+              offeringType: AcademicOfferingType.SCHOOL_CLASS,
+              schoolClassId: schoolClass.id,
+              offeringKey: `${AcademicOfferingType.SCHOOL_CLASS}:${schoolClass.id}:-:-`,
+              subjects: {
+                create: Array.from(
+                  new Set(
+                    schoolClass.curriculumSubjects.map(
+                      (item) => item.subjectId,
+                    ),
+                  ),
+                ).map((subjectId) => ({ subjectId })),
+              },
+            })),
+          },
         },
       });
       await this.auditService.record({

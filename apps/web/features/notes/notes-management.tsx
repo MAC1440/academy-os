@@ -3,6 +3,7 @@
 import { FormEvent, useMemo, useRef, useState } from 'react';
 import { FileText, Pencil, Plus, Search, Trash2 } from 'lucide-react';
 import { useToast } from '@web/components/toast-provider';
+import { useConfirmation } from '@web/components/confirmation-dialog';
 import { useAppSelector } from '@web/store/hooks';
 import type { ApiRecord } from '@web/store/api/base-api';
 import {
@@ -24,6 +25,7 @@ export function NotesManagement() {
   const { data: notes = [], isLoading, refetch } = useListNotesQuery();
   const [create] = useCreateNoteMutation();
   const toast = useToast();
+  const { confirm } = useConfirmation();
   const [creating, setCreating] = useState(false);
   const [form, setForm] = useState({ title: '', content: '' });
   const contentRef = useRef<HTMLTextAreaElement>(null);
@@ -92,7 +94,7 @@ export function NotesManagement() {
             size={16}
           />
           <input
-            className="field pl-10"
+            className="field pl-11"
             value={search}
             onChange={(event) => setSearch(event.target.value)}
             placeholder="Search shared notes"
@@ -135,6 +137,7 @@ function NoteRow({
   const [update] = useUpdateNoteMutation();
   const [remove] = useDeleteNoteMutation();
   const toast = useToast();
+  const { confirm } = useConfirmation();
   const [editing, setEditing] = useState(false);
   const [form, setForm] = useState({ title: String(note.title), content: String(note.content) });
   const contentRef = useRef<HTMLTextAreaElement>(null);
@@ -150,7 +153,8 @@ function NoteRow({
     }
   }
   async function archive() {
-    if (!window.confirm('Remove this shared note?')) return;
+    if (!(await confirm({ description: 'Remove this shared note? This cannot be undone.' })))
+      return;
     try {
       await remove(note.id).unwrap();
       await onChanged();

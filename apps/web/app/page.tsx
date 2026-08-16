@@ -7,7 +7,7 @@ export default function Page() {
           Vision <span>Preparation</span> Academy
         </span>
         <Link href="/login" className="button-primary">
-          Portal sign in
+          Admin sign in
         </Link>
       </header>
       <section className="academy-hero">
@@ -21,9 +21,11 @@ export default function Page() {
           </p>
           <div className="academy-actions">
             <Link href="/login" className="button-primary">
-              Enter the academy portal
+              Admin portal
             </Link>
-            <Link href="/kiosk">Staff attendance kiosk</Link>
+            <Link href="/staff/login">Staff portal</Link>
+            <Link href="/student/login">Student &amp; guardian portal</Link>
+            <Link href="/kiosk">Attendance kiosk</Link>
             <a href="#our-story">Meet the academy</a>
           </div>
         </div>
@@ -53,6 +55,23 @@ export default function Page() {
         <article>
           <strong>Teacher-led</strong>
           <span>Guidance from educators who stay close to the work.</span>
+        </article>
+      </section>
+      <section className="academy-proof" aria-label="Portal access">
+        <article>
+          <strong>Admin portal</strong>
+          <span>Run academics, attendance, fees, staff, and communication.</span>
+          <Link href="/login">Sign in as admin</Link>
+        </article>
+        <article>
+          <strong>Staff portal</strong>
+          <span>View today’s schedule, shared notes, and student attendance.</span>
+          <Link href="/staff/login">Staff sign in</Link>
+        </article>
+        <article>
+          <strong>Student &amp; guardian</strong>
+          <span>Follow classes, results, attendance, notes, fees, and updates.</span>
+          <Link href="/student/login">Open family portal</Link>
         </article>
       </section>
     </main>

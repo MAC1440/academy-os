@@ -4,6 +4,7 @@ import { FormEvent, useMemo, useState } from 'react';
 import { Pencil, Plus, Search, Trash2, X } from 'lucide-react';
 import { DataTable, DataTableControls, TableEmpty } from '@web/components/data-table';
 import { useToast } from '@web/components/toast-provider';
+import { useConfirmation } from '@web/components/confirmation-dialog';
 import {
   useCreateAcademicGroupMutation,
   useDeleteAcademicGroupMutation,
@@ -25,6 +26,7 @@ export function AcademicGroupsPanel() {
   const [replaceClasses] = useReplaceAcademicGroupClassesMutation();
   const [remove] = useDeleteAcademicGroupMutation();
   const toast = useToast();
+  const { confirm } = useConfirmation();
   const [form, setForm] = useState<GroupForm>(blankForm);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [search, setSearch] = useState('');
@@ -95,7 +97,11 @@ export function AcademicGroupsPanel() {
     });
   }
   async function deleteGroup(group: ApiRecord) {
-    if (!window.confirm(`Delete ${String(group.name)}? It must not be used by an active offering.`))
+    if (
+      !(await confirm({
+        description: `Delete ${String(group.name)}? It must not be used by an active offering.`,
+      }))
+    )
       return;
     try {
       await remove(group.id).unwrap();

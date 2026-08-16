@@ -5,6 +5,7 @@ import { useCompleteProfileMutation } from '@web/features/auth/auth.api';
 import { useAppDispatch } from '@web/store/hooks';
 import { setUser } from '@web/store/slices/auth-slice';
 import { AuthGuard } from '@web/features/auth';
+import { PasswordInput } from '@web/components/password-input';
 function StudentCompleteProfile() {
   const [password, setPassword] = useState('');
   const [confirm, setConfirm] = useState('');
@@ -36,24 +37,22 @@ function StudentCompleteProfile() {
         </p>
         <label className="grid gap-2 text-sm font-medium">
           New password
-          <input
+          <PasswordInput
             className="field"
             required
             minLength={8}
             maxLength={128}
-            type="password"
             value={password}
             onChange={(event) => setPassword(event.target.value)}
           />
         </label>
         <label className="grid gap-2 text-sm font-medium">
           Confirm password
-          <input
+          <PasswordInput
             className="field"
             required
             minLength={8}
             maxLength={128}
-            type="password"
             value={confirm}
             onChange={(event) => setConfirm(event.target.value)}
           />

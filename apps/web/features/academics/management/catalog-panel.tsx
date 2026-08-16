@@ -4,6 +4,7 @@ import { FormEvent, useState } from 'react';
 import { Pencil, Plus } from 'lucide-react';
 import { DataTable, TableEmpty } from '@web/components/data-table';
 import { useToast } from '@web/components/toast-provider';
+import { useConfirmation } from '@web/components/confirmation-dialog';
 import type { ApiRecord } from '@web/store/api/base-api';
 
 type CatalogInput = {
@@ -38,6 +39,7 @@ export function CatalogPanel(props: CatalogPanelProps) {
     update,
   } = props;
   const toast = useToast();
+  const { confirm } = useConfirmation();
   const [creating, setCreating] = useState(false);
   const [form, setForm] = useState<CatalogInput>({
     name: '',
@@ -121,6 +123,7 @@ function CatalogItem({
   update,
 }: CatalogPanelProps & { record: ApiRecord }) {
   const toast = useToast();
+  const { confirm } = useConfirmation();
   const [editing, setEditing] = useState(false);
   const [form, setForm] = useState<CatalogInput>({
     name: String(record.name ?? ''),
@@ -139,7 +142,15 @@ function CatalogItem({
     }
   }
   async function archive() {
-    if (!window.confirm(`Remove ${itemName.toLowerCase()}? Existing history is preserved.`)) return;
+    if (
+      !(await confirm({
+        title: `Remove ${itemName.toLowerCase()}?`,
+        description:
+          'Existing history is preserved, but it will no longer be available for new work.',
+        confirmLabel: 'Remove',
+      }))
+    )
+      return;
     try {
       await update(record.id, { ...form, status: 'ARCHIVED' });
       toast.success(`${itemName} removed.`);

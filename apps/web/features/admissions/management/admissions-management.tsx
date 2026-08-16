@@ -10,6 +10,7 @@ import {
   TableEmpty,
 } from '@web/components/data-table';
 import { useToast } from '@web/components/toast-provider';
+import { useConfirmation } from '@web/components/confirmation-dialog';
 import { useListOfferingsQuery } from '@web/features/academics/academics.api';
 import { useListAcademicTermsQuery } from '@web/features/settings/settings.api';
 import {
@@ -353,9 +354,16 @@ function ReviewedAdmission({
 }) {
   const [remove, { isLoading }] = useDeleteAdmissionMutation();
   const toast = useToast();
+  const { confirm } = useConfirmation();
   const rejected = String(application.status) === 'REJECTED';
   async function deleteApplication() {
-    if (!window.confirm('Permanently delete this rejected application?')) return;
+    if (
+      !(await confirm({
+        title: 'Delete rejected application?',
+        description: 'This permanently removes the application and cannot be undone.',
+      }))
+    )
+      return;
     try {
       await remove(application.id).unwrap();
       toast.success('Rejected application deleted.');

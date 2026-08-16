@@ -45,12 +45,15 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
             <div
               key={toast.id}
               role="status"
-              className={`pointer-events-auto flex items-start gap-3 rounded-xl border p-4 shadow-lg ${isSuccess ? 'border-teal-200 bg-teal-50 text-teal-950' : 'border-rose-200 bg-rose-50 text-rose-950'}`}
+              className={`pointer-events-auto flex items-start gap-3 rounded-xl border p-4 shadow-lg ${isSuccess ? 'border-teal-300 bg-teal-50 text-teal-950 dark:border-teal-700 dark:bg-teal-950 dark:text-teal-50' : 'border-rose-300 bg-rose-50 text-rose-950 dark:border-rose-700 dark:bg-rose-950 dark:text-rose-50'}`}
             >
               {isSuccess ? (
-                <CheckCircle2 className="mt-0.5 shrink-0 text-teal-700" size={19} />
+                <CheckCircle2
+                  className="mt-0.5 shrink-0 text-teal-700 dark:text-teal-300"
+                  size={19}
+                />
               ) : (
-                <XCircle className="mt-0.5 shrink-0 text-rose-700" size={19} />
+                <XCircle className="mt-0.5 shrink-0 text-rose-700 dark:text-rose-300" size={19} />
               )}
               <p className="flex-1 text-sm font-medium leading-5">{toast.message}</p>
               <button

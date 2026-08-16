@@ -4,6 +4,7 @@ import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { skipToken } from '@reduxjs/toolkit/query';
 import { CalendarClock, Plus } from 'lucide-react';
 import { useToast } from '@web/components/toast-provider';
+import { useConfirmation } from '@web/components/confirmation-dialog';
 import { useAppSelector } from '@web/store/hooks';
 import { useListBranchesQuery } from '@web/features/organization/organization.api';
 import { useListOfferingsQuery, useListSubjectsQuery } from '@web/features/academics/academics.api';
@@ -55,6 +56,7 @@ export function TimetableManagement() {
 
 function AdminTimetable() {
   const toast = useToast();
+  const { confirm } = useConfirmation();
   const { data: branches = [] } = useListBranchesQuery();
   const [branchId, setBranchId] = useState('');
   const [creating, setCreating] = useState(false);
@@ -202,7 +204,19 @@ function AdminTimetable() {
                       </button>
                       <button
                         className="text-sm font-semibold text-destructive hover:underline"
-                        onClick={() => remove(profile.id)}
+                        onClick={async () => {
+                          if (
+                            !(await confirm({
+                              title: 'Archive timing profile?',
+                              description:
+                                'This profile will no longer be available for timetable assignments.',
+                              confirmLabel: 'Archive profile',
+                            }))
+                          )
+                            return;
+                          await remove(profile.id).unwrap();
+                          toast.success('Timing profile archived.');
+                        }}
                       >
                         Archive
                       </button>
@@ -498,7 +512,8 @@ function DailyCoverageManager({
   staff: ApiRecord[];
 }) {
   const toast = useToast();
-  const [date, setDate] = useState(todayKey());
+  const { confirm } = useConfirmation();
+  const [date, setDate] = useState(nextSchoolDateKey());
   const [assignmentId, setAssignmentId] = useState('');
   const [teacherId, setTeacherId] = useState('');
   const { data: overrides = [] } = useListDailyTimetableOverridesQuery(
@@ -625,6 +640,15 @@ function DailyCoverageManager({
                         type="button"
                         className="text-sm font-semibold text-destructive hover:underline"
                         onClick={async () => {
+                          if (
+                            !(await confirm({
+                              title: 'Remove daily cover?',
+                              description:
+                                'The regular teacher will return to this period for the selected date.',
+                              confirmLabel: 'Remove cover',
+                            }))
+                          )
+                            return;
                           await remove(String(item.id)).unwrap();
                           toast.success('Daily cover removed.');
                         }}
@@ -656,6 +680,7 @@ function ProfileForm({
   onSubmit: (e: FormEvent) => void;
   onCancel: () => void;
 }) {
+  const { confirm } = useConfirmation();
   const days = form.timetableMode === 'DAY_SPECIFIC' ? weekdays : [undefined];
   const slots = useMemo(() => form.slots as TimetableSlotInput[], [form.slots]);
   const slotsForDay = (day?: string) =>
@@ -849,7 +874,18 @@ function ProfileForm({
                           <button
                             type="button"
                             className="text-sm font-semibold text-destructive hover:underline"
-                            onClick={() => removeBreak(day, index)}
+                            onClick={async () => {
+                              if (
+                                !(await confirm({
+                                  title: 'Remove break?',
+                                  description:
+                                    'The surrounding periods will close the gap automatically.',
+                                  confirmLabel: 'Remove break',
+                                }))
+                              )
+                                return;
+                              removeBreak(day, index);
+                            }}
                           >
                             Remove
                           </button>
@@ -1007,6 +1043,12 @@ function todayKey() {
     formatter.formatToParts().map((part) => [part.type, part.value]),
   );
   return `${parts.year}-${parts.month}-${parts.day}`;
+}
+
+function nextSchoolDateKey() {
+  const date = new Date(`${todayKey()}T12:00:00Z`);
+  if (date.getUTCDay() === 0) date.setUTCDate(date.getUTCDate() + 1);
+  return date.toISOString().slice(0, 10);
 }
 
 function scheduleDayLabel(date: string) {

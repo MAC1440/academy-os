@@ -9,6 +9,7 @@ import { useListOfferingsQuery } from '@web/features/academics/academics.api';
 import { useListBranchesQuery } from '@web/features/organization/organization.api';
 import { useListAcademicTermsQuery } from '@web/features/settings/settings.api';
 import { useToast } from '@web/components/toast-provider';
+import { useConfirmation } from '@web/components/confirmation-dialog';
 import {
   DataTable,
   DataTableControls,
@@ -313,6 +314,7 @@ function StudentRecord({
     temporaryPassword: string;
   } | null>(null);
   const toast = useToast();
+  const { confirm } = useConfirmation();
   if (isLoading) return <p className="text-sm text-muted-foreground">Loading student record...</p>;
   if (!student)
     return (
@@ -335,7 +337,12 @@ function StudentRecord({
   const groupName = currentStudent.academicOffering?.academicGroup?.name;
   const group = groupName ? ` · ${String(groupName)}` : '';
   async function deleteStudent() {
-    if (!window.confirm(`Delete ${String(currentStudent.studentFullName)}? This cannot be undone.`))
+    if (
+      !(await confirm({
+        title: 'Delete student?',
+        description: `Delete ${String(currentStudent.studentFullName)}? This cannot be undone.`,
+      }))
+    )
       return;
     try {
       await remove(currentStudent.id).unwrap();
@@ -347,9 +354,12 @@ function StudentRecord({
   }
   async function resetCredentials() {
     if (
-      !window.confirm(
-        'Reset the shared guardian portal password? Every linked student uses this same guardian account.',
-      )
+      !(await confirm({
+        title: 'Reset guardian password?',
+        description:
+          'Every linked student uses the same guardian account. The current password will stop working.',
+        confirmLabel: 'Reset password',
+      }))
     )
       return;
     try {

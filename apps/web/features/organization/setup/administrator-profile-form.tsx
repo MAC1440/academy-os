@@ -5,6 +5,7 @@ import { useMeQuery, useUpdateProfileMutation } from '@web/features/auth/auth.ap
 import { useToast } from '@web/components/toast-provider';
 import { useAppDispatch } from '@web/store/hooks';
 import { setUser } from '@web/store/slices/auth-slice';
+import { PasswordInput } from '@web/components/password-input';
 
 export function AdministratorProfileForm() {
   const { data: user } = useMeQuery();
@@ -61,7 +62,7 @@ export function AdministratorProfileForm() {
     <form onSubmit={submit} className="grid gap-4 md:grid-cols-2">
       <label className="grid gap-1 text-sm font-medium">
         Username
-        <input
+        <PasswordInput
           className="field"
           required
           value={form.username}
@@ -102,7 +103,6 @@ export function AdministratorProfileForm() {
         New password <span className="font-normal text-muted-foreground">(optional)</span>
         <input
           className="field"
-          type="password"
           minLength={8}
           value={form.newPassword}
           onChange={(event) => setForm({ ...form, newPassword: event.target.value })}
@@ -110,9 +110,8 @@ export function AdministratorProfileForm() {
       </label>
       <label className="grid gap-1 text-sm font-medium">
         Confirm new password
-        <input
+        <PasswordInput
           className="field"
-          type="password"
           minLength={8}
           value={form.confirmPassword}
           onChange={(event) => setForm({ ...form, confirmPassword: event.target.value })}

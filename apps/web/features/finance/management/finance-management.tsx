@@ -4,6 +4,7 @@ import { FormEvent, useState } from 'react';
 import { skipToken } from '@reduxjs/toolkit/query';
 import { CreditCard, Pencil, ReceiptText, Trash2 } from 'lucide-react';
 import { useToast } from '@web/components/toast-provider';
+import { useConfirmation } from '@web/components/confirmation-dialog';
 import {
   DataTable,
   DataTableControls,
@@ -234,8 +235,15 @@ function FinanceSummary({ summary, isLoading }: { summary?: ApiRecord; isLoading
 function PaymentActions({ payment, onEdit }: { payment: ApiRecord; onEdit: () => void }) {
   const [remove, { isLoading }] = useDeletePaymentMutation();
   const toast = useToast();
+  const { confirm } = useConfirmation();
   async function deletePayment() {
-    if (!window.confirm(`Delete receipt ${String(payment.receiptNumber)}?`)) return;
+    if (
+      !(await confirm({
+        title: 'Delete payment receipt?',
+        description: `Delete receipt ${String(payment.receiptNumber)}? This removes the payment record.`,
+      }))
+    )
+      return;
     try {
       await remove({ studentId: String(payment.studentId), paymentId: payment.id }).unwrap();
       toast.success('Payment deleted.');

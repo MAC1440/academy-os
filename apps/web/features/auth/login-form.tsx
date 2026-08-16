@@ -4,6 +4,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useLoginMutation } from './auth.api';
 import { useAppDispatch } from '@web/store/hooks';
 import { setCredentials } from '@web/store/slices/auth-slice';
+import { PasswordInput } from '@web/components/password-input';
 
 export function LoginForm({ portalType }: { portalType?: 'ADMIN' | 'LEARNER' | 'STAFF' }) {
   const [identifier, setIdentifier] = useState('');
@@ -43,7 +44,7 @@ export function LoginForm({ portalType }: { portalType?: 'ADMIN' | 'LEARNER' | '
           : portalType === 'STAFF'
             ? 'Staff contact number'
             : 'Username or contact number'}
-        <input
+        <PasswordInput
           required
           value={identifier}
           onChange={(event) => setIdentifier(event.target.value)}
@@ -61,7 +62,6 @@ export function LoginForm({ portalType }: { portalType?: 'ADMIN' | 'LEARNER' | '
           value={password}
           onChange={(event) => setPassword(event.target.value)}
           className="field"
-          type="password"
           autoComplete="current-password"
         />
       </label>

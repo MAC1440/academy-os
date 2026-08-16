@@ -4,6 +4,7 @@ import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { skipToken } from '@reduxjs/toolkit/query';
 import { Plus, UsersRound } from 'lucide-react';
 import { useToast } from '@web/components/toast-provider';
+import { useConfirmation } from '@web/components/confirmation-dialog';
 import {
   DataTable,
   DataTableControls,
@@ -280,6 +281,7 @@ function CreateStaff({ onCreated }: { onCreated: (staffId: string) => void }) {
   const { data: roles = [] } = useListRolesQuery();
   const [create] = useCreateStaffMutation();
   const toast = useToast();
+  const { confirm } = useConfirmation();
   const [credentials, setCredentials] = useState<{
     contactNumber?: string;
     initialPassword?: string;
@@ -440,6 +442,7 @@ function StaffRecord({
   const [resetPin] = useResetStaffPinMutation();
   const [resetPassword, { isLoading: resettingPassword }] = useResetStaffPasswordMutation();
   const toast = useToast();
+  const { confirm } = useConfirmation();
   const temporaryCredentials = useGetTemporaryStaffCredentialsQuery(staff?.id ?? skipToken);
   const user = staff?.user;
   const [form, setForm] = useState({
@@ -473,6 +476,14 @@ function StaffRecord({
   }
   async function reset() {
     if (!staff) return;
+    if (
+      !(await confirm({
+        title: 'Reset kiosk PIN?',
+        description: 'The current kiosk PIN will stop working immediately.',
+        confirmLabel: 'Reset PIN',
+      }))
+    )
+      return;
     try {
       await resetPin(staff.id).unwrap();
       await temporaryCredentials.refetch();
@@ -485,6 +496,14 @@ function StaffRecord({
   }
   async function resetPortalPassword() {
     if (!staff) return;
+    if (
+      !(await confirm({
+        title: 'Reset portal password?',
+        description: 'The current staff password will stop working immediately.',
+        confirmLabel: 'Reset password',
+      }))
+    )
+      return;
     try {
       await resetPassword(staff.id).unwrap();
       await temporaryCredentials.refetch();
@@ -498,9 +517,11 @@ function StaffRecord({
   async function remove() {
     if (!staff) return;
     if (
-      !window.confirm(
-        `Remove ${String(user?.fullName ?? 'this staff member')}? They will no longer be able to sign in.`,
-      )
+      !(await confirm({
+        title: 'Remove staff member?',
+        description: `Remove ${String(user?.fullName ?? 'this staff member')}? They will no longer be able to sign in.`,
+        confirmLabel: 'Remove staff member',
+      }))
     ) {
       return;
     }

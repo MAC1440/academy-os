@@ -62,6 +62,7 @@ This is the working PRD/status record for the backend-first MVP. It records both
 - [x] Organization setup: profile, branches with unique addresses, editable branch operating hours, organization-wide academic terms, and admission registration-number settings.
 - [x] Academic catalogue: tabbed management for school classes, external courses, subjects, and academic groups.
 - [x] Branch academic offerings: campus-specific school-class/course availability, optional groups and sections, plus offering-subject assignment.
+- [x] Seed defaults: a Main Campus plus every standard school-class offering with its curriculum subjects; newly created branches receive the same default class offerings.
 - [x] Student management: branch-scoped directory, editable student records with class/campus reassignment, and direct enrollment for pre-existing students using the same admission-approval workflow.
 - [x] Administrator self-service profile: editable sign-in username, contact details, and password.
 - [x] Admissions operations: tabbed pending/approved/rejected queues, application review, physical-document verification, and approval allocation into term/offering/fees.
@@ -73,6 +74,7 @@ This is the working PRD/status record for the backend-first MVP. It records both
 - [x] Finance operations: per-student fee summary, payment history, receipt-numbered payment recording in PKR, plus payment edit/delete.
 - [x] Shared notes: organization-wide CRUD, search, Markdown rendering with KaTeX equations, and client-side text extraction from images, text PDFs, and DOCX files.
 - [x] Operations table foundation: responsive, horizontally scrollable data tables for academic catalogues/groups, student and staff directories, and finance payment history.
+- [x] Shared UI hardening: password visibility controls, theme-safe notifications, portal-aware landing links, and confirmation dialogs before destructive actions.
 - [x] All planned admin feature screens have been implemented.
 - [ ] Final admin pass: dashboard utility, cross-module empty/error/loading states, responsive QA, and manual browser verification.
 - [x] Learner/guardian portal core: contact-number sign-in, linked-student dashboard, attendance, performance, finance, announcements, shared notes, and forced temporary-password replacement.

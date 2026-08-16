@@ -13,6 +13,7 @@ import {
 import { useListOfferingsQuery } from '@web/features/academics/academics.api';
 import { useGetStudentAttendanceRosterQuery } from '@web/features/attendance/attendance.api';
 import { useToast } from '@web/components/toast-provider';
+import { useConfirmation } from '@web/components/confirmation-dialog';
 import { DataTable, DataTableControls, TableEmpty } from '@web/components/data-table';
 import { useListBranchesQuery } from '@web/features/organization/organization.api';
 import { useListStudentsQuery } from '@web/features/students/students.api';
@@ -137,6 +138,7 @@ function Assessments() {
   const [update] = useUpdateAssessmentMutation();
   const [remove] = useDeleteAssessmentMutation();
   const toast = useToast();
+  const { confirm } = useConfirmation();
   const [editingAssessmentId, setEditingAssessmentId] = useState<string | null>(null);
   const [form, setForm] = useState({
     title: '',
@@ -168,9 +170,10 @@ function Assessments() {
   }
   async function deleteAssessment(assessment: ApiRecord) {
     if (
-      !window.confirm(
-        `Delete ${String(assessment.title)} and its saved marks? This cannot be undone.`,
-      )
+      !(await confirm({
+        title: 'Delete assessment?',
+        description: `Delete ${String(assessment.title)} and its saved marks? This cannot be undone.`,
+      }))
     )
       return;
     try {

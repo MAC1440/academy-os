@@ -44,7 +44,7 @@ export function LoginForm({ portalType }: { portalType?: 'ADMIN' | 'LEARNER' | '
           : portalType === 'STAFF'
             ? 'Staff contact number'
             : 'Username or contact number'}
-        <PasswordInput
+        <input
           required
           value={identifier}
           onChange={(event) => setIdentifier(event.target.value)}
@@ -57,7 +57,7 @@ export function LoginForm({ portalType }: { portalType?: 'ADMIN' | 'LEARNER' | '
       </label>
       <label className="grid gap-2 text-sm font-medium">
         Password
-        <input
+        <PasswordInput
           required
           value={password}
           onChange={(event) => setPassword(event.target.value)}

@@ -11,6 +11,6 @@ export class UpdateNoteDto {
   @ApiPropertyOptional()
   @IsOptional()
   @IsString()
-  @MaxLength(20_000)
+  @MaxLength(2_000_000)
   content?: string;
 }

@@ -12,7 +12,7 @@ import {
   useListNotesQuery,
   useUpdateNoteMutation,
 } from './notes.api';
-import { NoteComposer } from './note-composer';
+import { NOTE_CONTENT_MAX_LENGTH, NoteComposer } from './note-composer';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import remarkMath from 'remark-math';
@@ -25,7 +25,6 @@ export function NotesManagement() {
   const { data: notes = [], isLoading, refetch } = useListNotesQuery();
   const [create] = useCreateNoteMutation();
   const toast = useToast();
-  const { confirm } = useConfirmation();
   const [creating, setCreating] = useState(false);
   const [form, setForm] = useState({ title: '', content: '' });
   const contentRef = useRef<HTMLTextAreaElement>(null);
@@ -44,6 +43,12 @@ export function NotesManagement() {
 
   async function submit(event: FormEvent) {
     event.preventDefault();
+    if (form.content.length > NOTE_CONTENT_MAX_LENGTH) {
+      toast.error(
+        `This note exceeds the ${NOTE_CONTENT_MAX_LENGTH.toLocaleString()} character limit. Split it before saving.`,
+      );
+      return;
+    }
     try {
       await create(form).unwrap();
       setForm({ title: '', content: '' });
@@ -77,7 +82,12 @@ export function NotesManagement() {
           onSubmit={submit}
           className="grid gap-3 rounded-2xl border border-teal-300 bg-teal-50/60 p-5"
         >
-          <NoteComposer form={form} onChange={setForm} contentRef={contentRef} />
+          <NoteComposer
+            form={form}
+            onChange={setForm}
+            contentRef={contentRef}
+            onValidationError={toast.error}
+          />
           <div className="flex gap-2">
             <button className="button-primary">Share note</button>
             <button type="button" className="button-secondary" onClick={() => setCreating(false)}>
@@ -143,6 +153,12 @@ function NoteRow({
   const contentRef = useRef<HTMLTextAreaElement>(null);
   async function save(event: FormEvent) {
     event.preventDefault();
+    if (form.content.length > NOTE_CONTENT_MAX_LENGTH) {
+      toast.error(
+        `This note exceeds the ${NOTE_CONTENT_MAX_LENGTH.toLocaleString()} character limit. Split it before saving.`,
+      );
+      return;
+    }
     try {
       await update({ id: note.id, body: form }).unwrap();
       await onChanged();
@@ -166,7 +182,12 @@ function NoteRow({
   if (editing)
     return (
       <form onSubmit={save} className="grid gap-3 p-5">
-        <NoteComposer form={form} onChange={setForm} contentRef={contentRef} />
+        <NoteComposer
+          form={form}
+          onChange={setForm}
+          contentRef={contentRef}
+          onValidationError={toast.error}
+        />
         <div className="flex gap-2">
           <button className="button-primary">Save</button>
           <button type="button" className="button-secondary" onClick={() => setEditing(false)}>

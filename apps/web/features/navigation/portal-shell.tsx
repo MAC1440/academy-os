@@ -16,6 +16,7 @@ import {
   Menu,
   NotebookPen,
   Settings,
+  ScrollText,
   X,
   UserRoundCog,
   Users,
@@ -23,29 +24,66 @@ import {
 import { useAppDispatch, useAppSelector } from '@web/store/hooks';
 import { signOut } from '@web/store/slices/auth-slice';
 import { useTheme } from '@web/features/theme/theme-provider';
-const items = [
+const navigationGroups = [
   {
-    href: '/dashboard',
-    label: 'Overview',
-    icon: LayoutDashboard,
-    roles: ['ADMIN'],
+    label: 'Workspace',
+    items: [
+      { href: '/dashboard', label: 'Overview', icon: LayoutDashboard, roles: ['ADMIN'] },
+      {
+        href: '/staff/dashboard',
+        label: 'Overview',
+        icon: LayoutDashboard,
+        roles: ['STAFF'],
+      },
+    ],
   },
-  { href: '/admissions', label: 'Admissions', icon: ClipboardCheck, roles: ['ADMIN'] },
-  { href: '/academics', label: 'Academics', icon: BookOpen, roles: ['ADMIN'] },
-  { href: '/students', label: 'Students', icon: Users, roles: ['ADMIN'] },
   {
-    href: '/attendance',
-    label: 'Attendance',
-    icon: CalendarDays,
-    roles: ['ADMIN', 'STAFF'],
+    label: 'People',
+    items: [
+      { href: '/admissions', label: 'Admissions', icon: ClipboardCheck, roles: ['ADMIN'] },
+      { href: '/students', label: 'Students', icon: Users, roles: ['ADMIN'] },
+      { href: '/staff', label: 'Staff', icon: UserRoundCog, roles: ['ADMIN'] },
+    ],
   },
-  { href: '/timetable', label: 'Timetable', icon: CalendarClock, roles: ['ADMIN', 'STAFF'] },
-  { href: '/grades', label: 'Grades', icon: ChartNoAxesCombined, roles: ['ADMIN'] },
-  { href: '/finance', label: 'Finance', icon: CircleDollarSign, roles: ['ADMIN'] },
-  { href: '/notes', label: 'Notes', icon: NotebookPen, roles: ['ADMIN', 'STAFF'] },
-  { href: '/announcements', label: 'Announcements', icon: Megaphone, roles: ['ADMIN'] },
-  { href: '/staff', label: 'Staff', icon: UserRoundCog, roles: ['ADMIN'] },
-  { href: '/settings/organization', label: 'Settings', icon: Settings, roles: ['ADMIN'] },
+  {
+    label: 'Teaching',
+    items: [
+      { href: '/academics', label: 'Academics', icon: BookOpen, roles: ['ADMIN'] },
+      {
+        href: '/attendance',
+        label: 'Attendance',
+        icon: CalendarDays,
+        roles: ['ADMIN', 'STAFF'],
+      },
+      {
+        href: '/timetable',
+        label: 'Timetable',
+        icon: CalendarClock,
+        roles: ['ADMIN', 'STAFF'],
+      },
+      { href: '/grades', label: 'Grades', icon: ChartNoAxesCombined, roles: ['ADMIN'] },
+      { href: '/syllabus', label: 'Syllabus', icon: ScrollText, roles: ['ADMIN', 'STAFF'] },
+      { href: '/notes', label: 'Notes', icon: NotebookPen, roles: ['ADMIN', 'STAFF'] },
+    ],
+  },
+  {
+    label: 'Operations',
+    items: [
+      { href: '/finance', label: 'Finance', icon: CircleDollarSign, roles: ['ADMIN'] },
+      { href: '/announcements', label: 'Announcements', icon: Megaphone, roles: ['ADMIN'] },
+    ],
+  },
+  {
+    label: 'System',
+    items: [
+      {
+        href: '/settings/organization',
+        label: 'Settings',
+        icon: Settings,
+        roles: ['ADMIN'],
+      },
+    ],
+  },
 ];
 export function PortalShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -53,6 +91,7 @@ export function PortalShell({ children }: { children: React.ReactNode }) {
   const user = useAppSelector((state) => state.auth.user);
   const { theme, setTheme } = useTheme();
   const [mobileNavigationOpen, setMobileNavigationOpen] = useState(false);
+  const homePath = user?.accountType === 'STAFF' ? '/staff/dashboard' : '/dashboard';
   useEffect(() => {
     setMobileNavigationOpen(false);
   }, [pathname]);
@@ -71,10 +110,7 @@ export function PortalShell({ children }: { children: React.ReactNode }) {
         className={`fixed inset-y-0 left-0 z-50 flex h-dvh w-[min(18rem,86vw)] flex-col overflow-hidden bg-ink px-4 py-6 text-slate-300 shadow-2xl transition-transform duration-200 ease-out lg:static lg:z-auto lg:h-screen lg:w-auto lg:translate-x-0 lg:shadow-none ${mobileNavigationOpen ? 'translate-x-0' : '-translate-x-full'}`}
       >
         <div className="flex items-center justify-between lg:block">
-          <Link
-            href="/dashboard"
-            className="px-3 font-display text-2xl tracking-[-.04em] text-white"
-          >
+          <Link href={homePath} className="px-3 font-display text-2xl tracking-[-.04em] text-white">
             academy<span className="text-teal-300">OS</span>
           </Link>
           <button
@@ -86,22 +122,40 @@ export function PortalShell({ children }: { children: React.ReactNode }) {
             <X size={20} />
           </button>
         </div>
-        <nav className="mt-8 grid gap-1" aria-label="Main navigation">
-          {items
-            .filter((item) => user && item.roles.includes(user.accountType))
-            .map(({ href, label, icon: Icon }) => (
-              <Link
-                key={href}
-                href={href}
-                onClick={() => setMobileNavigationOpen(false)}
-                className={`nav-link ${pathname === href ? 'nav-link-active' : ''}`}
-              >
-                <Icon size={18} />
-                {label}
-              </Link>
-            ))}
-        </nav>
-        <div className="mt-auto space-y-3 border-t border-white/10 pt-4">
+        <div className="mt-6 min-h-0 flex-1 overflow-y-auto overscroll-contain pr-1">
+          <nav className="grid gap-5 pb-5" aria-label="Main navigation">
+            {navigationGroups.map((group) => {
+              const visibleItems = group.items.filter(
+                (item) => user && item.roles.includes(user.accountType),
+              );
+              if (!visibleItems.length) return null;
+              return (
+                <section key={group.label} aria-labelledby={`nav-${group.label.toLowerCase()}`}>
+                  <h2
+                    id={`nav-${group.label.toLowerCase()}`}
+                    className="px-3 pb-1.5 text-[0.68rem] font-semibold uppercase tracking-[0.12em] text-slate-500"
+                  >
+                    {group.label}
+                  </h2>
+                  <div className="grid gap-1">
+                    {visibleItems.map(({ href, label, icon: Icon }) => (
+                      <Link
+                        key={href}
+                        href={href}
+                        onClick={() => setMobileNavigationOpen(false)}
+                        className={`nav-link ${pathname === href ? 'nav-link-active' : ''}`}
+                      >
+                        <Icon size={18} />
+                        {label}
+                      </Link>
+                    ))}
+                  </div>
+                </section>
+              );
+            })}
+          </nav>
+        </div>
+        <div className="shrink-0 space-y-3 border-t border-white/10 pt-4">
           <div className="px-3 text-sm">
             <p className="font-medium text-white">{user?.fullName}</p>
             <p className="mt-0.5 text-xs text-slate-400">{user?.accountType.toLowerCase()}</p>
@@ -145,7 +199,7 @@ export function PortalShell({ children }: { children: React.ReactNode }) {
               <Menu size={20} />
             </button>
             <Link
-              href="/dashboard"
+              href={homePath}
               className="font-display text-xl text-ink dark:text-white lg:hidden"
             >
               academy<span className="text-teal-600">OS</span>

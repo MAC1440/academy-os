@@ -4,7 +4,7 @@ import { usePathname } from 'next/navigation';
 import type { AccountType } from '@web/store/slices/auth-slice';
 import { AuthGuard } from './auth-guard';
 
-const staffRoutes = ['/attendance', '/notes', '/timetable'];
+const staffRoutes = ['/attendance', '/notes', '/syllabus', '/timetable'];
 
 export function PortalRouteGuard({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();

@@ -42,7 +42,7 @@ export class TimetableService {
     private readonly audit: AuditService,
   ) {}
 
-  async preview(dto: TimetablePreviewDto) {
+  preview(dto: TimetablePreviewDto) {
     return this.validateSlots(dto.slots, dto.timetableMode);
   }
 
@@ -218,16 +218,20 @@ export class TimetableService {
       throw new BadRequestException(
         "Assignments must use this class's active effective profile",
       );
-    const ids = dto.assignments.map((item) => item.timetableSlotId);
-    if (new Set(ids).size !== ids.length)
+    const assignmentSlotIds = dto.assignments.map(
+      (item) => item.timetableSlotId,
+    );
+    const clearedSlotIds = dto.clearedTimetableSlotIds ?? [];
+    const changedSlotIds = [...assignmentSlotIds, ...clearedSlotIds];
+    if (new Set(changedSlotIds).size !== changedSlotIds.length)
       throw new BadRequestException(
-        'A teaching period can have only one assignment',
+        'A teaching period can be updated or cleared only once per request',
       );
     const slots = await this.prisma.timetableSlot.findMany({
-      where: { id: { in: ids }, timetableProfileId: profileId },
+      where: { id: { in: changedSlotIds }, timetableProfileId: profileId },
     });
     if (
-      slots.length !== ids.length ||
+      slots.length !== changedSlotIds.length ||
       slots.some((slot) => slot.slotType !== TimetableSlotType.TEACHING)
     )
       throw new BadRequestException(
@@ -253,27 +257,41 @@ export class TimetableService {
             id: { in: conflicts.map((conflict) => conflict.assignmentId) },
           },
         });
-      await tx.timetableAssignment.deleteMany({
-        where: {
-          academicOfferingId: offeringId,
-          timetableProfileId: profileId,
-        },
-      });
-      if (dto.assignments.length)
-        await tx.timetableAssignment.createMany({
-          data: dto.assignments.map((item) => ({
+      if (clearedSlotIds.length)
+        await tx.timetableAssignment.deleteMany({
+          where: {
+            academicOfferingId: offeringId,
+            timetableProfileId: profileId,
+            timetableSlotId: { in: clearedSlotIds },
+          },
+        });
+      for (const item of dto.assignments)
+        await tx.timetableAssignment.upsert({
+          where: {
+            academicOfferingId_timetableSlotId: {
+              academicOfferingId: offeringId,
+              timetableSlotId: item.timetableSlotId,
+            },
+          },
+          create: {
             branchId: offering.branchId,
             academicOfferingId: offeringId,
             timetableProfileId: profileId,
             timetableSlotId: item.timetableSlotId,
             subjectId: item.subjectId,
             staffProfileId: item.staffProfileId,
-          })),
+          },
+          update: {
+            timetableProfileId: profileId,
+            subjectId: item.subjectId,
+            staffProfileId: item.staffProfileId,
+          },
         });
     });
     await this.recordAudit(actor, AuditAction.UPDATE, profileId, {
       offeringId,
-      assignments: dto.assignments.length,
+      updatedAssignments: dto.assignments.length,
+      clearedAssignments: clearedSlotIds.length,
     });
     return this.classTimetable(offeringId, actor);
   }
@@ -335,12 +353,7 @@ export class TimetableService {
     await this.ensureBranchAccess(actor, assignment.branchId);
     const overrideDate = this.asDate(dto.overrideDate);
     const weekday = this.weekdayFor(overrideDate);
-    if (
-      !this.daysFor(
-        assignment.timetableSlot,
-        assignment.timetableProfileId,
-      ).includes(weekday)
-    )
+    if (!this.daysFor(assignment.timetableSlot).includes(weekday))
       throw new BadRequestException(
         'This class is not scheduled for the selected date',
       );
@@ -460,12 +473,7 @@ export class TimetableService {
     const assignedRows = assignments.flatMap((assignment) =>
       dates.flatMap((date) => {
         const weekday = this.weekdayFor(date);
-        if (
-          !this.daysFor(
-            assignment.timetableSlot,
-            assignment.timetableProfileId,
-          ).includes(weekday)
-        )
+        if (!this.daysFor(assignment.timetableSlot).includes(weekday))
           return [];
         const dailyOverride = assignment.dailyOverrides[0];
         if (
@@ -501,7 +509,7 @@ export class TimetableService {
       profile.slots.flatMap((slot) =>
         dates.flatMap((date) => {
           const weekday = this.weekdayFor(date);
-          if (!this.daysFor(slot, profile.id).includes(weekday)) return [];
+          if (!this.daysFor(slot).includes(weekday)) return [];
           const overlapsTeaching = assignedRows.some(
             (row) =>
               row.date === this.dateKey(date) &&
@@ -688,21 +696,16 @@ export class TimetableService {
       for (const other of existing.filter(
         (candidate) => candidate.staffProfileId === item.staffProfileId,
       )) {
-        const sameDay = this.daysFor(slot, profileId).some((day) =>
-          this.daysFor(other.timetableSlot, other.timetableProfileId).includes(
-            day,
-          ),
+        const sameDay = this.daysFor(slot).some((day) =>
+          this.daysFor(other.timetableSlot).includes(day),
         );
         if (
           sameDay &&
           minutes(slot.startsAt) < minutes(other.timetableSlot.endsAt) &&
           minutes(other.timetableSlot.startsAt) < minutes(slot.endsAt)
         )
-          for (const weekday of this.daysFor(slot, profileId).filter((day) =>
-            this.daysFor(
-              other.timetableSlot,
-              other.timetableProfileId,
-            ).includes(day),
+          for (const weekday of this.daysFor(slot).filter((day) =>
+            this.daysFor(other.timetableSlot).includes(day),
           ))
             conflicts.push({
               assignmentId: other.id,
@@ -746,12 +749,7 @@ export class TimetableService {
     });
     const conflict = assignments.some((assignment) => {
       if (assignment.id === excludedAssignmentId) return false;
-      if (
-        !this.daysFor(
-          assignment.timetableSlot,
-          assignment.timetableProfileId,
-        ).includes(weekday)
-      )
+      if (!this.daysFor(assignment.timetableSlot).includes(weekday))
         return false;
       const effectiveStaffId =
         assignment.dailyOverrides[0]?.overrideStaffProfileId ??
@@ -820,7 +818,7 @@ export class TimetableService {
     ][date.getUTCDay()]!;
   }
 
-  private daysFor(slot: { weekday: Weekday | null }, _profileId: string) {
+  private daysFor(slot: { weekday: Weekday | null }) {
     return slot.weekday ? [slot.weekday] : SCHOOL_DAYS;
   }
   private slotData(slot: TimetableSlotDto) {

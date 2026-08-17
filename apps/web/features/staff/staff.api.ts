@@ -19,6 +19,7 @@ export const staffApi = baseApi.injectEndpoints({
     getStaff: build.query<ApiRecord, string>({
       query: (id) => `/staff/${id}`,
       transformResponse: unwrap,
+      providesTags: ['Branch'],
     }),
     getTemporaryStaffCredentials: build.query<ApiRecord, string>({
       query: (id) => `/staff/${id}/temporary-credentials`,

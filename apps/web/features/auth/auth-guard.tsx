@@ -23,12 +23,6 @@ export function AuthGuard({
       : pathname.startsWith('/staff/')
         ? '/staff/login'
         : '/login';
-    const dashboardPath =
-      user?.accountType === 'LEARNER'
-        ? '/student/dashboard'
-        : user?.accountType === 'STAFF'
-          ? '/staff/dashboard'
-          : '/dashboard';
     if (!hydrated) return;
     if (!accessToken) {
       router.replace(`${loginPath}?next=${encodeURIComponent(pathname)}`);
@@ -55,16 +49,7 @@ export function AuthGuard({
       dispatch(signOut());
       router.replace(loginPath);
     }
-  }, [
-    accessToken,
-    dispatch,
-    hydrated,
-    pathname,
-    query.data,
-    query.isError,
-    router,
-    user?.accountType,
-  ]);
+  }, [accessToken, dispatch, hydrated, pathname, query.data, query.isError, router]);
   if (!hydrated || query.isLoading || !user)
     return (
       <main className="grid min-h-screen place-items-center bg-background text-sm text-muted-foreground">

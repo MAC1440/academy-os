@@ -125,6 +125,16 @@ export class AuthService {
     authenticatedUser: AuthenticatedUser,
     dto: UpdateProfileDto,
   ) {
+    if (dto.newPin !== undefined) {
+      const currentUser = await this.getActiveUser(authenticatedUser.id);
+      if (
+        !dto.currentPassword ||
+        !(await bcrypt.compare(dto.currentPassword, currentUser.passwordHash))
+      )
+        throw new UnauthorizedException(
+          'Current password is required to change the kiosk PIN',
+        );
+    }
     try {
       const user = await this.prisma.user.update({
         where: { id: authenticatedUser.id },

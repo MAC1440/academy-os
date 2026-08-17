@@ -30,6 +30,8 @@ const permissions = [
   ['notes.create', 'Notes', 'Create shared notes'],
   ['notes.update', 'Notes', 'Edit shared notes'],
   ['notes.delete', 'Notes', 'Delete shared notes'],
+  ['syllabus.read', 'Syllabus', 'View session syllabi'],
+  ['syllabus.manage', 'Syllabus', 'Manage session syllabi'],
   ['announcements.read', 'Announcements', 'View announcements'],
   ['announcements.manage', 'Announcements', 'Manage announcements'],
   ['grades.read', 'Grades', 'View grades'],
@@ -57,8 +59,9 @@ const systemRoles: Record<string, string[]> = {
     'notes.create',
     'notes.update',
     'timetable.read',
+    'syllabus.read',
   ],
-  Staff: ['branches.read', 'notes.read'],
+  Staff: ['branches.read', 'notes.read', 'syllabus.read'],
 };
 
 const defaultSchoolTimetableSlots = [

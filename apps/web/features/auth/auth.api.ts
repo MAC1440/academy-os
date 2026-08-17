@@ -39,6 +39,8 @@ export const authApi = baseApi.injectEndpoints({
         fullName?: string;
         email?: string;
         newPassword?: string;
+        newPin?: string;
+        currentPassword?: string;
       }
     >({
       query: (body) => ({ url: '/auth/profile', method: 'PATCH', body }),

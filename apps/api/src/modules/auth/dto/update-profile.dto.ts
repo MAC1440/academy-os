@@ -1,11 +1,13 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import {
   IsEmail,
+  IsNotEmpty,
   IsOptional,
   IsString,
   Matches,
   MaxLength,
   MinLength,
+  ValidateIf,
 } from 'class-validator';
 
 export class UpdateProfileDto {
@@ -51,4 +53,12 @@ export class UpdateProfileDto {
   @IsString()
   @Matches(/^\d{4}$/)
   newPin?: string;
+
+  @ApiPropertyOptional({
+    description: 'Required when changing the attendance kiosk PIN.',
+  })
+  @ValidateIf((dto: UpdateProfileDto) => dto.newPin !== undefined)
+  @IsString()
+  @IsNotEmpty()
+  currentPassword?: string;
 }

@@ -133,6 +133,7 @@ model Organization {
   admissionRegistrationSettings AdmissionRegistrationSettings?
   calendarDays                  AcademicCalendarDay[]
   announcements                 Announcement[]
+  sessionSyllabi                SessionSyllabus[]
 }
 
 model User {
@@ -646,6 +647,20 @@ model SharedNote {
 
   @@index([organizationId, deletedAt])
   @@index([lastEditedByUserId])
+}
+
+model SessionSyllabus {
+  id             String       @id @default(cuid())
+  organizationId String
+  sessionYear    String
+  classes        Json
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  deletedAt      DateTime?
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, sessionYear])
+  @@index([organizationId, deletedAt, sessionYear])
 }
 
 model Announcement {

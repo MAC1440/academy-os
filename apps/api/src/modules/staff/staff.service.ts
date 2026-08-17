@@ -181,28 +181,73 @@ export class StaffService {
 
   async updateStaff(staffId: string, dto: UpdateStaffDto, actorUserId: string) {
     const staff = await this.getStaffForManagement(staffId);
+    if (dto.branchIds) await this.verifyBranches(dto.branchIds);
+    const existingBranchAssignments = dto.branchIds
+      ? await this.prisma.roleAssignment.findMany({
+          where: { userId: staff.userId, branchId: { not: null } },
+          select: { roleId: true, branchId: true },
+        })
+      : [];
+    let branchRoleIds = [
+      ...new Set(
+        existingBranchAssignments.map((assignment) => assignment.roleId),
+      ),
+    ];
+    if (dto.branchIds && branchRoleIds.length === 0) {
+      const organization = await this.organization();
+      const role = await this.roleFor(
+        undefined,
+        dto.staffType ?? staff.staffType,
+        organization.id,
+      );
+      branchRoleIds = [role.id];
+    }
     try {
-      const updated = await this.prisma.staffProfile.update({
-        where: { id: staff.id },
-        data: {
-          ...(dto.staffType ? { staffType: dto.staffType } : {}),
-          ...(dto.designation !== undefined
-            ? { designation: dto.designation.trim() || null }
-            : {}),
-          user: {
-            update: {
-              ...(dto.fullName ? { fullName: dto.fullName.trim() } : {}),
-              ...(dto.contactNumber
-                ? { contactNumber: dto.contactNumber.trim() }
-                : {}),
-              ...(dto.email !== undefined
-                ? { email: dto.email.trim() || null }
-                : {}),
-              ...(dto.status ? { status: dto.status } : {}),
+      const updated = await this.prisma.$transaction(async (tx) => {
+        await tx.staffProfile.update({
+          where: { id: staff.id },
+          data: {
+            ...(dto.staffType ? { staffType: dto.staffType } : {}),
+            ...(dto.designation !== undefined
+              ? { designation: dto.designation.trim() || null }
+              : {}),
+            user: {
+              update: {
+                ...(dto.fullName ? { fullName: dto.fullName.trim() } : {}),
+                ...(dto.contactNumber
+                  ? { contactNumber: dto.contactNumber.trim() }
+                  : {}),
+                ...(dto.email !== undefined
+                  ? { email: dto.email.trim() || null }
+                  : {}),
+                ...(dto.status ? { status: dto.status } : {}),
+              },
             },
           },
-        },
-        include: this.staffInclude,
+        });
+        if (dto.branchIds) {
+          await tx.roleAssignment.deleteMany({
+            where: {
+              userId: staff.userId,
+              branchId: { not: null },
+              NOT: { branchId: { in: dto.branchIds } },
+            },
+          });
+          await tx.roleAssignment.createMany({
+            data: branchRoleIds.flatMap((roleId) =>
+              dto.branchIds!.map((branchId) => ({
+                userId: staff.userId,
+                roleId,
+                branchId,
+              })),
+            ),
+            skipDuplicates: true,
+          });
+        }
+        return tx.staffProfile.findUniqueOrThrow({
+          where: { id: staff.id },
+          include: this.staffInclude,
+        });
       });
       await this.audit(
         actorUserId,

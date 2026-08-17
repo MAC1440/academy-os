@@ -1,6 +1,7 @@
 'use client';
 
 import { FormEvent, useEffect, useMemo, useState } from 'react';
+import type { Dispatch, SetStateAction } from 'react';
 import { skipToken } from '@reduxjs/toolkit/query';
 import { CalendarClock, Plus } from 'lucide-react';
 import { useToast } from '@web/components/toast-provider';
@@ -26,6 +27,13 @@ import {
 } from './timetable.api';
 
 const weekdays = ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY'] as const;
+type TimetableProfileFormState = {
+  name: string;
+  scope: string;
+  academicOfferingId: string;
+  timetableMode: string;
+  slots: TimetableSlotInput[];
+};
 const defaultSlots = (): TimetableSlotInput[] => {
   const slots: TimetableSlotInput[] = [
     { slotType: 'ASSEMBLY', startsAt: '07:30', endsAt: '07:40' },
@@ -67,7 +75,7 @@ function AdminTimetable() {
   const [update] = useUpdateTimetableProfileMutation();
   const [setActive] = useSetTimetableProfileActiveMutation();
   const [remove] = useDeleteTimetableProfileMutation();
-  const [form, setForm] = useState({
+  const [form, setForm] = useState<TimetableProfileFormState>({
     name: 'Summer schedule',
     scope: 'BRANCH',
     academicOfferingId: '',
@@ -310,7 +318,10 @@ function AssignmentEditor({
 }) {
   const toast = useToast();
   const [save, { isLoading }] = useSaveTimetableAssignmentsMutation();
-  const rows = Array.isArray(timetable?.rows) ? (timetable.rows as ApiRecord[]) : [];
+  const rows = useMemo(
+    () => (Array.isArray(timetable?.rows) ? (timetable.rows as ApiRecord[]) : []),
+    [timetable],
+  );
   const [draft, setDraft] = useState<Record<string, { subjectId: string; staffProfileId: string }>>(
     {},
   );
@@ -329,7 +340,7 @@ function AssignmentEditor({
           ]),
       ),
     );
-  }, [timetable]);
+  }, [rows]);
   if (loading)
     return <p className="text-sm text-muted-foreground">Loading effective timing profile...</p>;
   if (error || !timetable || !offering)
@@ -367,14 +378,56 @@ function AssignmentEditor({
       [slotId]: { ...(draft[slotId] ?? { subjectId: '', staffProfileId: '' }), [key]: value },
     });
   async function submit(replaceTeacherConflicts = false) {
-    const assignments = Object.entries(draft)
-      .filter(([, value]) => value.subjectId && value.staffProfileId)
-      .map(([timetableSlotId, value]) => ({ timetableSlotId, ...value }));
+    const incompletePeriod = Object.entries(draft).find(
+      ([, value]) => Boolean(value.subjectId) !== Boolean(value.staffProfileId),
+    );
+    if (incompletePeriod) {
+      const row = rows.find((candidate) => candidate.id === incompletePeriod[0]);
+      toast.error(
+        `Choose both a subject and teacher for period ${String(row?.periodNumber ?? '')}, or clear both fields.`,
+      );
+      return;
+    }
+    const baseline = new Map(
+      rows
+        .filter((row) => row.slotType === 'TEACHING')
+        .map((row) => {
+          const assignment = row.assignment as ApiRecord | null;
+          return [
+            row.id,
+            {
+              subjectId: String(assignment?.subjectId ?? ''),
+              staffProfileId: String(assignment?.staffProfileId ?? ''),
+            },
+          ];
+        }),
+    );
+    const assignments = Object.entries(draft).flatMap(([timetableSlotId, value]) => {
+      const previous = baseline.get(timetableSlotId);
+      if (!value.subjectId || !value.staffProfileId) return [];
+      if (
+        previous?.subjectId === value.subjectId &&
+        previous.staffProfileId === value.staffProfileId
+      )
+        return [];
+      return [{ timetableSlotId, ...value }];
+    });
+    const clearedTimetableSlotIds = Object.entries(draft).flatMap(([timetableSlotId, value]) => {
+      const previous = baseline.get(timetableSlotId);
+      return !value.subjectId && !value.staffProfileId && previous?.subjectId
+        ? [timetableSlotId]
+        : [];
+    });
+    if (!assignments.length && !clearedTimetableSlotIds.length) {
+      toast.success('No timetable changes to save.');
+      return;
+    }
     try {
       await save({
         offeringId: selectedOffering.id,
         profileId,
         assignments,
+        clearedTimetableSlotIds,
         replaceTeacherConflicts,
       }).unwrap();
       setConflicts([]);
@@ -674,8 +727,8 @@ function ProfileForm({
   onSubmit,
   onCancel,
 }: {
-  form: any;
-  setForm: any;
+  form: TimetableProfileFormState;
+  setForm: Dispatch<SetStateAction<TimetableProfileFormState>>;
   offerings: ApiRecord[];
   onSubmit: (e: FormEvent) => void;
   onCancel: () => void;

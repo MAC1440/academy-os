@@ -62,14 +62,25 @@ export const timetableApi = baseApi.injectEndpoints({
       {
         offeringId: string;
         profileId: string;
-        assignments: Record<string, unknown>[];
+        assignments: Array<{
+          timetableSlotId: string;
+          subjectId: string;
+          staffProfileId: string;
+        }>;
+        clearedTimetableSlotIds: string[];
         replaceTeacherConflicts?: boolean;
       }
     >({
-      query: ({ offeringId, profileId, assignments, replaceTeacherConflicts }) => ({
+      query: ({
+        offeringId,
+        profileId,
+        assignments,
+        clearedTimetableSlotIds,
+        replaceTeacherConflicts,
+      }) => ({
         url: `/academic-offerings/${offeringId}/timetable/${profileId}/assignments`,
         method: 'PUT',
-        body: { assignments, replaceTeacherConflicts },
+        body: { assignments, clearedTimetableSlotIds, replaceTeacherConflicts },
       }),
       transformResponse: unwrap,
       invalidatesTags: ['Academic'],

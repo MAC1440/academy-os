@@ -4,15 +4,18 @@ import { ChangeEvent, RefObject, useRef, useState } from 'react';
 import { FileUp, LoaderCircle, Sigma } from 'lucide-react';
 
 type NoteFields = { title: string; content: string };
+export const NOTE_CONTENT_MAX_LENGTH = 2_000_000;
 
 export function NoteComposer({
   form,
   onChange,
   contentRef,
+  onValidationError,
 }: {
   form: NoteFields;
   onChange: (next: NoteFields) => void;
   contentRef: RefObject<HTMLTextAreaElement | null>;
+  onValidationError: (message: string) => void;
 }) {
   const [extracting, setExtracting] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -63,12 +66,19 @@ export function NoteComposer({
         extracted = pages.join('\n\n');
       } else throw new Error('Unsupported format');
       if (!extracted.trim()) throw new Error('No text found');
-      onChange({
-        ...form,
-        content: form.content ? `${form.content}\n\n${extracted.trim()}` : extracted.trim(),
-      });
+      const normalized = extracted.trim();
+      const combined = form.content ? `${form.content}\n\n${normalized}` : normalized;
+      if (combined.length > NOTE_CONTENT_MAX_LENGTH) {
+        onValidationError(
+          `This import would make the note ${combined.length.toLocaleString()} characters. Notes can contain up to ${NOTE_CONTENT_MAX_LENGTH.toLocaleString()} characters. Split the document and try again.`,
+        );
+        return;
+      }
+      onChange({ ...form, content: combined });
     } catch {
-      window.alert('Text could not be extracted. Use a clear image, text-based PDF, or DOCX file.');
+      onValidationError(
+        'Text could not be extracted. Use a clear image, text-based PDF, or DOCX file.',
+      );
     } finally {
       setExtracting(false);
       event.target.value = '';
@@ -132,7 +142,16 @@ export function NoteComposer({
           value={form.content}
           onChange={(event) => onChange({ ...form, content: event.target.value })}
           placeholder="Write the details your team needs."
+          aria-invalid={form.content.length > NOTE_CONTENT_MAX_LENGTH}
         />
+        <span
+          className={`text-xs ${form.content.length > NOTE_CONTENT_MAX_LENGTH ? 'font-semibold text-destructive' : 'text-muted-foreground'}`}
+        >
+          {form.content.length.toLocaleString()} / {NOTE_CONTENT_MAX_LENGTH.toLocaleString()}
+          {form.content.length > NOTE_CONTENT_MAX_LENGTH
+            ? ' — shorten this note before saving.'
+            : ' characters'}
+        </span>
       </label>
     </>
   );

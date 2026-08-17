@@ -281,7 +281,6 @@ function CreateStaff({ onCreated }: { onCreated: (staffId: string) => void }) {
   const { data: roles = [] } = useListRolesQuery();
   const [create] = useCreateStaffMutation();
   const toast = useToast();
-  const { confirm } = useConfirmation();
   const [credentials, setCredentials] = useState<{
     contactNumber?: string;
     initialPassword?: string;
@@ -437,6 +436,7 @@ function StaffRecord({
   isLoading: boolean;
   onBack: () => void;
 }) {
+  const { data: branches = [] } = useListBranchesQuery();
   const [update] = useUpdateStaffMutation();
   const [removeStaff, { isLoading: removing }] = useDeleteStaffMutation();
   const [resetPin] = useResetStaffPinMutation();
@@ -452,6 +452,7 @@ function StaffRecord({
     staffType: 'TEACHER',
     designation: '',
     status: 'ACTIVE',
+    branchIds: [] as string[],
   });
   useEffect(() => {
     if (staff && user)
@@ -462,8 +463,23 @@ function StaffRecord({
         staffType: String(staff.staffType ?? 'TEACHER'),
         designation: String(staff.designation ?? ''),
         status: String(user.status ?? 'ACTIVE'),
+        branchIds: Array.from(
+          new Set(
+            (user.roleAssignments ?? []).flatMap((assignment) =>
+              assignment.branchId ? [String(assignment.branchId)] : [],
+            ),
+          ),
+        ),
       });
   }, [staff, user]);
+  function toggleBranch(branchId: string) {
+    setForm((current) => ({
+      ...current,
+      branchIds: current.branchIds.includes(branchId)
+        ? current.branchIds.filter((id) => id !== branchId)
+        : [...current.branchIds, branchId],
+    }));
+  }
   async function save(event: FormEvent) {
     event.preventDefault();
     if (!staff) return;
@@ -636,7 +652,27 @@ function StaffRecord({
             <option value="SUSPENDED">Suspended</option>
           </select>
         </label>
-        <button className="button-primary w-fit">Save changes</button>
+        <fieldset className="md:col-span-2">
+          <legend className="text-sm font-medium">Assigned campuses</legend>
+          <div className="mt-2 grid gap-2 sm:grid-cols-2">
+            {branches.map((branch) => (
+              <label
+                key={branch.id}
+                className="flex items-center gap-2 rounded-lg border border-border bg-muted/20 px-3 py-2 text-sm"
+              >
+                <input
+                  type="checkbox"
+                  checked={form.branchIds.includes(branch.id)}
+                  onChange={() => toggleBranch(branch.id)}
+                />
+                {String(branch.name)}
+              </label>
+            ))}
+          </div>
+        </fieldset>
+        <button className="button-primary w-fit" disabled={form.branchIds.length === 0}>
+          Save changes
+        </button>
       </form>
       <div className="rounded-xl border border-border bg-muted/30 p-4">
         <p className="font-semibold">Attendance kiosk PIN</p>

@@ -3,9 +3,15 @@ import { NestFactory } from '@nestjs/core';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { AppModule } from './app.module';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
+import { json, urlencoded } from 'express';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create(AppModule, { bodyParser: false });
+
+  // Two-million-character notes can approach 8 MB when the text contains
+  // four-byte Unicode characters. Keep a small allowance for JSON metadata.
+  app.use(json({ limit: '10mb' }));
+  app.use(urlencoded({ extended: true, limit: '10mb' }));
 
   // CORS configuration (allow all by default for dev, configurable via ALLOWED_ORIGINS env)
   const rawOrigins = process.env.ALLOWED_ORIGINS || process.env.CORS_ORIGIN;

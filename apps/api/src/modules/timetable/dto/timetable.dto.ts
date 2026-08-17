@@ -2,6 +2,7 @@ import { Type } from 'class-transformer';
 import {
   ArrayMaxSize,
   ArrayMinSize,
+  ArrayUnique,
   IsArray,
   IsBoolean,
   IsDateString,
@@ -68,6 +69,14 @@ export class BulkSaveTimetableAssignmentsDto {
   @ValidateNested({ each: true })
   @Type(() => BulkTimetableAssignmentItemDto)
   assignments!: BulkTimetableAssignmentItemDto[];
+
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(100)
+  @ArrayUnique()
+  @IsString({ each: true })
+  clearedTimetableSlotIds?: string[];
+
   @IsOptional() @IsBoolean() replaceTeacherConflicts?: boolean;
 }
 

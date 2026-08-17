@@ -1,6 +1,7 @@
 'use client';
 
-import { useRef } from 'react';
+import { Eye, Pencil } from 'lucide-react';
+import { useRef, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import rehypeKatex from 'rehype-katex';
 import remarkGfm from 'remark-gfm';
@@ -17,6 +18,7 @@ export function SyllabusContentEditor({
   onChange: (value: string) => void;
 }) {
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  const [mode, setMode] = useState<'write' | 'preview'>(value.trim() ? 'preview' : 'write');
   function insert(before: string, after = '') {
     const input = inputRef.current;
     const start = input?.selectionStart ?? value.length;
@@ -30,24 +32,55 @@ export function SyllabusContentEditor({
   }
   return (
     <div className="grid gap-2">
-      <div
-        className="flex flex-wrap gap-2 rounded-lg bg-muted/50 p-2"
-        aria-label="Formatting tools"
-      >
-        <FormatButton label="Bold" onClick={() => insert('**', '**')} />
-        <FormatButton label="Italic" onClick={() => insert('_', '_')} />
-        <FormatButton label="Heading" onClick={() => insert('## ')} />
-        <FormatButton label="Bullets" onClick={() => insert('- ')} />
-        <FormatButton label="Numbers" onClick={() => insert('1. ')} />
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div className="flex gap-2" aria-label="Content mode">
+          <button
+            type="button"
+            className={
+              mode === 'preview'
+                ? 'button-primary px-3 py-2 text-xs'
+                : 'button-secondary px-3 py-2 text-xs'
+            }
+            onClick={() => setMode('preview')}
+          >
+            <Eye size={14} className="mr-1 inline" /> Preview
+          </button>
+          <button
+            type="button"
+            className={
+              mode === 'write'
+                ? 'button-primary px-3 py-2 text-xs'
+                : 'button-secondary px-3 py-2 text-xs'
+            }
+            onClick={() => setMode('write')}
+          >
+            <Pencil size={14} className="mr-1 inline" /> Edit content
+          </button>
+        </div>
+        {mode === 'write' ? (
+          <div className="flex flex-wrap gap-2" aria-label="Formatting tools">
+            <FormatButton label="Bold" onClick={() => insert('**', '**')} />
+            <FormatButton label="Italic" onClick={() => insert('_', '_')} />
+            <FormatButton label="Heading" onClick={() => insert('## ')} />
+            <FormatButton label="Bullets" onClick={() => insert('- ')} />
+            <FormatButton label="Numbers" onClick={() => insert('1. ')} />
+          </div>
+        ) : null}
       </div>
-      <textarea
-        ref={inputRef}
-        className="field min-h-52 resize-y leading-6"
-        value={value}
-        maxLength={SYLLABUS_CONTENT_MAX_LENGTH}
-        onChange={(event) => onChange(event.target.value)}
-        placeholder="Add chapters, topics, grammar, revision work, or assessment coverage…"
-      />
+      {mode === 'write' ? (
+        <textarea
+          ref={inputRef}
+          className="field min-h-52 resize-y leading-6"
+          value={value}
+          maxLength={SYLLABUS_CONTENT_MAX_LENGTH}
+          onChange={(event) => onChange(event.target.value)}
+          placeholder="Add chapters, topics, grammar, revision work, or assessment coverage…"
+        />
+      ) : (
+        <div className="min-h-52 rounded-xl bg-muted/30 p-5">
+          <SyllabusRichText content={value} />
+        </div>
+      )}
       <p className="text-xs text-muted-foreground">
         Markdown and mathematical notation are supported · {value.length.toLocaleString()}{' '}
         characters

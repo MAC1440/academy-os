@@ -2,6 +2,7 @@
 
 import { ChangeEvent, RefObject, useRef, useState } from 'react';
 import { FileUp, LoaderCircle, Sigma } from 'lucide-react';
+import { NoteRichText } from './note-rich-text';
 
 type NoteFields = { title: string; content: string };
 export const NOTE_CONTENT_MAX_LENGTH = 2_000_000;
@@ -11,11 +12,13 @@ export function NoteComposer({
   onChange,
   contentRef,
   onValidationError,
+  showPreview = false,
 }: {
   form: NoteFields;
   onChange: (next: NoteFields) => void;
   contentRef: RefObject<HTMLTextAreaElement | null>;
   onValidationError: (message: string) => void;
+  showPreview?: boolean;
 }) {
   const [extracting, setExtracting] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -86,73 +89,88 @@ export function NoteComposer({
   }
   return (
     <>
-      <label className="grid gap-1 text-sm font-medium">
-        Title
-        <input
-          className="field"
-          required
-          value={form.title}
-          onChange={(event) => onChange({ ...form, title: event.target.value })}
-          placeholder="e.g. Saturday mock test"
-        />
-      </label>
-      <div className="flex flex-wrap gap-2 rounded-lg border border-border bg-muted/30 p-2">
-        <button type="button" className="button-secondary" onClick={() => insert('**', '**')}>
-          Bold
-        </button>
-        <button type="button" className="button-secondary" onClick={() => insert('## ')}>
-          Heading
-        </button>
-        <button type="button" className="button-secondary" onClick={() => insert('- ')}>
-          List
-        </button>
-        <button
-          type="button"
-          className="button-secondary inline-flex items-center gap-1"
-          onClick={() => insert('$', '$')}
-        >
-          <Sigma size={14} /> Math
-        </button>
-        <input
-          ref={inputRef}
-          className="hidden"
-          type="file"
-          accept="image/*,.pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-          onChange={importText}
-        />
-        <button
-          type="button"
-          className="button-secondary inline-flex items-center gap-1"
-          disabled={extracting}
-          onClick={() => inputRef.current?.click()}
-        >
-          {extracting ? <LoaderCircle className="animate-spin" size={14} /> : <FileUp size={14} />}
-          {extracting ? 'Extracting...' : 'Import text'}
-        </button>
+      <div className={showPreview ? 'grid gap-5 xl:grid-cols-2' : ''}>
+        <label className="grid content-start gap-1 text-sm font-medium">
+          Title
+          <input
+            className="field"
+            required
+            value={form.title}
+            onChange={(event) => onChange({ ...form, title: event.target.value })}
+            placeholder="e.g. Saturday mock test"
+          />
+        </label>
+        <div className="flex flex-wrap gap-2 rounded-lg border border-border bg-muted/30 p-2">
+          <button type="button" className="button-secondary" onClick={() => insert('**', '**')}>
+            Bold
+          </button>
+          <button type="button" className="button-secondary" onClick={() => insert('## ')}>
+            Heading
+          </button>
+          <button type="button" className="button-secondary" onClick={() => insert('- ')}>
+            List
+          </button>
+          <button
+            type="button"
+            className="button-secondary inline-flex items-center gap-1"
+            onClick={() => insert('$', '$')}
+          >
+            <Sigma size={14} /> Math
+          </button>
+          <input
+            ref={inputRef}
+            className="hidden"
+            type="file"
+            accept="image/*,.pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+            onChange={importText}
+          />
+          <button
+            type="button"
+            className="button-secondary inline-flex items-center gap-1"
+            disabled={extracting}
+            onClick={() => inputRef.current?.click()}
+          >
+            {extracting ? (
+              <LoaderCircle className="animate-spin" size={14} />
+            ) : (
+              <FileUp size={14} />
+            )}
+            {extracting ? 'Extracting...' : 'Import text'}
+          </button>
+        </div>
+        <label className="grid gap-1 text-sm font-medium">
+          Note{' '}
+          <span className="font-normal text-muted-foreground">
+            Markdown supported. Use $x^2$ for inline math or $$...$$ for a math block.
+          </span>
+          <textarea
+            ref={contentRef}
+            className="field min-h-96 resize-y leading-6"
+            required
+            value={form.content}
+            onChange={(event) => onChange({ ...form, content: event.target.value })}
+            placeholder="Write the details your team needs."
+            aria-invalid={form.content.length > NOTE_CONTENT_MAX_LENGTH}
+          />
+          <span
+            className={`text-xs ${form.content.length > NOTE_CONTENT_MAX_LENGTH ? 'font-semibold text-destructive' : 'text-muted-foreground'}`}
+          >
+            {form.content.length.toLocaleString()} / {NOTE_CONTENT_MAX_LENGTH.toLocaleString()}
+            {form.content.length > NOTE_CONTENT_MAX_LENGTH
+              ? ' — shorten this note before saving.'
+              : ' characters'}
+          </span>
+        </label>
+        {showPreview ? (
+          <section
+            className="min-h-96 rounded-xl border border-border bg-card p-5"
+            aria-label="Note preview"
+          >
+            <p className="mb-5 border-b border-border pb-3 text-sm font-semibold">Preview</p>
+            <NoteRichText content={form.content} />
+          </section>
+        ) : null}
       </div>
-      <label className="grid gap-1 text-sm font-medium">
-        Note{' '}
-        <span className="font-normal text-muted-foreground">
-          Markdown supported. Use $x^2$ for inline math or $$...$$ for a math block.
-        </span>
-        <textarea
-          ref={contentRef}
-          className="field min-h-40 resize-y"
-          required
-          value={form.content}
-          onChange={(event) => onChange({ ...form, content: event.target.value })}
-          placeholder="Write the details your team needs."
-          aria-invalid={form.content.length > NOTE_CONTENT_MAX_LENGTH}
-        />
-        <span
-          className={`text-xs ${form.content.length > NOTE_CONTENT_MAX_LENGTH ? 'font-semibold text-destructive' : 'text-muted-foreground'}`}
-        >
-          {form.content.length.toLocaleString()} / {NOTE_CONTENT_MAX_LENGTH.toLocaleString()}
-          {form.content.length > NOTE_CONTENT_MAX_LENGTH
-            ? ' — shorten this note before saving.'
-            : ' characters'}
-        </span>
-      </label>
     </>
   );
 }

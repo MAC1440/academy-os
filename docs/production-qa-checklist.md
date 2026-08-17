@@ -41,6 +41,7 @@ Started: 14 August 2026
 - [x] Temporary QA staff account removed after staff-portal and kiosk validation.
 - [x] Kiosk attendance-state tabs verified in production: QA Teacher One moved from Pending to Checked in after check-in, then to disabled Checked out after check-out. No console errors were recorded.
 - [ ] Role-boundary QA (pending deployment): Admin routes reject staff/learners; staff can use notes, student attendance, and read-only timetable only; learners cannot read staff-only feeds.
+- [ ] Notes/syllabus routed-flow QA (pending deployment): verify list, create, parsed detail, edit, delete/archive, mobile layouts, and staff access boundaries.
 
 ## Next QA Scenarios
 

@@ -20,6 +20,7 @@ import { StudentAttendanceModule } from './modules/student-attendance/student-at
 import { PrismaModule } from './prisma/prisma.module';
 import { AnnouncementsModule } from './modules/announcements/announcements.module';
 import { TimetableModule } from './modules/timetable/timetable.module';
+import { SyllabusModule } from './modules/syllabus/syllabus.module';
 
 @Module({
   imports: [
@@ -42,6 +43,7 @@ import { TimetableModule } from './modules/timetable/timetable.module';
     FinanceModule,
     AnnouncementsModule,
     TimetableModule,
+    SyllabusModule,
   ],
   controllers: [AppController],
   providers: [AppService],

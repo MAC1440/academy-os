@@ -69,6 +69,9 @@ export function StaffDashboard() {
             <Link href="/attendance" className="button-secondary">
               Mark attendance
             </Link>
+            <Link href="/syllabus" className="button-secondary">
+              View syllabus
+            </Link>
           </div>
         </div>
         {assignments.length ? (

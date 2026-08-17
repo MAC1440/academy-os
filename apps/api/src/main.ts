@@ -8,8 +8,8 @@ import { json, urlencoded } from 'express';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, { bodyParser: false });
 
-  // Two-million-character notes can approach 8 MB when the text contains
-  // four-byte Unicode characters. Keep a small allowance for JSON metadata.
+  // Two-million-character rich-text documents can approach 8 MB when the text
+  // contains four-byte Unicode characters. Keep an allowance for JSON metadata.
   app.use(json({ limit: '10mb' }));
   app.use(urlencoded({ extended: true, limit: '10mb' }));
 

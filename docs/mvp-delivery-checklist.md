@@ -1,6 +1,6 @@
 # AcademyOS MVP — Backend Delivery Status
 
-Last updated: 13 August 2026
+Last updated: 17 August 2026
 
 This is the working PRD/status record for the backend-first MVP. It records both implemented work and intentional product decisions, so deferred behavior is not mistaken for a missing feature.
 
@@ -73,6 +73,7 @@ This is the working PRD/status record for the backend-first MVP. It records both
 - [x] Grades polish: class-tabbed roster table, planned/impromptu test entry, persisted-mark editing, and printable/PDF student performance reports.
 - [x] Finance operations: per-student fee summary, payment history, receipt-numbered payment recording in PKR, plus payment edit/delete.
 - [x] Shared notes: organization-wide CRUD, search, Markdown rendering with KaTeX equations, and client-side text extraction from images, text PDFs, and DOCX files.
+- [x] Notes and syllabus page architecture: searchable list pages, dedicated create/edit routes, dedicated read-only detail routes, parsed Markdown/KaTeX reading views, and staff-safe nested-route guards.
 - [x] Operations table foundation: responsive, horizontally scrollable data tables for academic catalogues/groups, student and staff directories, and finance payment history.
 - [x] Shared UI hardening: password visibility controls, theme-safe notifications, portal-aware landing links, and confirmation dialogs before destructive actions.
 - [x] All planned admin feature screens have been implemented.

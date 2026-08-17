@@ -8,6 +8,9 @@ const staffRoutes = ['/attendance', '/notes', '/syllabus', '/timetable'];
 
 export function PortalRouteGuard({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const allowed: AccountType[] = staffRoutes.includes(pathname) ? ['ADMIN', 'STAFF'] : ['ADMIN'];
+  const staffAccessible = staffRoutes.some(
+    (route) => pathname === route || pathname.startsWith(`${route}/`),
+  );
+  const allowed: AccountType[] = staffAccessible ? ['ADMIN', 'STAFF'] : ['ADMIN'];
   return <AuthGuard allowed={allowed}>{children}</AuthGuard>;
 }

@@ -29,4 +29,37 @@ describe('NotesService large content persistence', () => {
       }),
     );
   });
+
+  it('returns a single active note with its author details', async () => {
+    const persisted = {
+      id: 'note',
+      title: 'Fractions',
+      content: '**Read me**',
+      author: { id: 'author', fullName: 'Teacher One' },
+      lastEditedBy: { id: 'editor', fullName: 'Teacher Two' },
+    };
+    const prisma = {
+      organization: {
+        findFirst: jest.fn().mockResolvedValue({ id: 'organization' }),
+      },
+      sharedNote: {
+        findFirst: jest.fn().mockResolvedValue(persisted),
+      },
+    };
+    const service = new NotesService(
+      prisma as never,
+      { record: jest.fn() } as never,
+    );
+
+    await expect(service.getNote('note')).resolves.toEqual(persisted);
+    expect(prisma.sharedNote.findFirst).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: {
+          id: 'note',
+          organizationId: 'organization',
+          deletedAt: null,
+        },
+      }),
+    );
+  });
 });

@@ -55,6 +55,15 @@ export class NotesController {
     );
   }
 
+  @Get(':noteId')
+  @RequirePermissions('notes.read')
+  async getNote(@Param('noteId') noteId: string) {
+    return successResponse(
+      'Shared note retrieved',
+      await this.notesService.getNote(noteId),
+    );
+  }
+
   @Post()
   @RequirePermissions('notes.create')
   async createNote(

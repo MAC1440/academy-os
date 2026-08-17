@@ -24,6 +24,19 @@ export class NotesService {
     });
   }
 
+  async getNote(noteId: string) {
+    const organization = await this.organization();
+    const note = await this.prisma.sharedNote.findFirst({
+      where: { id: noteId, organizationId: organization.id, deletedAt: null },
+      include: {
+        author: { select: { id: true, fullName: true } },
+        lastEditedBy: { select: { id: true, fullName: true } },
+      },
+    });
+    if (!note) throw new NotFoundException('Shared note not found');
+    return note;
+  }
+
   async createNote(dto: CreateNoteDto, authorUserId: string) {
     const organization = await this.organization();
     const note = await this.prisma.sharedNote.create({

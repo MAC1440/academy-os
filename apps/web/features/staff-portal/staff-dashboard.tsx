@@ -8,6 +8,7 @@ import {
   useListStaffAnnouncementsQuery,
   useListStaffNotesQuery,
 } from './staff-portal.api';
+import { StaffPinForm } from './staff-pin-form';
 
 export function StaffDashboard() {
   const overview = useGetStaffPortalOverviewQuery();
@@ -46,7 +47,7 @@ export function StaffDashboard() {
 
       <section className="grid gap-4 rounded-2xl border border-border bg-card p-5 sm:grid-cols-3">
         <Metric
-          label="Todayâ€™s attendance"
+          label="Today's attendance"
           value={attendance ? String(attendance.status) : 'Not checked in'}
           icon={Timer}
         />
@@ -156,6 +157,7 @@ export function StaffDashboard() {
           }
         />
       </div>
+      <StaffPinForm />
     </div>
   );
 }

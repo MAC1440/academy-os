@@ -6,5 +6,9 @@ import { TimetableProfileEditor } from '@web/features/timetable/timetable-profil
 
 export default function EditTimetableProfilePage() {
   const { profileId } = useParams<{ profileId: string }>();
-  return <AuthGuard allowed={['ADMIN']}><TimetableProfileEditor profileId={profileId} /></AuthGuard>;
+  return (
+    <AuthGuard allowed={['ADMIN']}>
+      <TimetableProfileEditor profileId={profileId} />
+    </AuthGuard>
+  );
 }

@@ -6,5 +6,9 @@ import { ClassTimetableScreen } from '@web/features/timetable/class-timetable-sc
 
 export default function EditClassTimetablePage() {
   const { offeringId } = useParams<{ offeringId: string }>();
-  return <AuthGuard allowed={['ADMIN']}><ClassTimetableScreen offeringId={offeringId} editing /></AuthGuard>;
+  return (
+    <AuthGuard allowed={['ADMIN']}>
+      <ClassTimetableScreen offeringId={offeringId} editing />
+    </AuthGuard>
+  );
 }

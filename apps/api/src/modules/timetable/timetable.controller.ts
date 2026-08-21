@@ -55,6 +55,27 @@ export class TimetableController {
     );
   }
 
+  @Get('timetable-profiles')
+  @RequirePermissions('timetable.read')
+  async listAllProfiles(@CurrentUser() user: AuthenticatedUser) {
+    return successResponse(
+      'Organization timetable profiles retrieved',
+      await this.timetable.listAllProfiles(user.id),
+    );
+  }
+
+  @Post('timetable-profiles')
+  @RequirePermissions('timetable.manage')
+  async createOrganizationProfile(
+    @Body() dto: CreateTimetableProfileDto,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return successResponse(
+      'Organization timetable profile created',
+      await this.timetable.createOrganizationProfile(dto, user.id),
+    );
+  }
+
   @Post('branches/:branchId/timetable-profiles')
   @RequirePermissions('timetable.manage')
   async createProfile(

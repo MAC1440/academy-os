@@ -1,22 +1,69 @@
 import { baseApi, queryString, type ApiRecord, unwrap } from '@web/store/api/base-api';
 
+export type TimetableWeekday =
+  'MONDAY' | 'TUESDAY' | 'WEDNESDAY' | 'THURSDAY' | 'FRIDAY' | 'SATURDAY';
+export type TimetableScope = 'ORGANIZATION' | 'BRANCH' | 'CLASS_OVERRIDE';
+export type TimetableMode = 'SAME_DAILY' | 'DAY_SPECIFIC';
 export type TimetableSlotInput = {
-  weekday?: 'MONDAY' | 'TUESDAY' | 'WEDNESDAY' | 'THURSDAY' | 'FRIDAY' | 'SATURDAY';
+  id?: string;
+  weekday?: TimetableWeekday;
   slotType: 'ASSEMBLY' | 'TEACHING' | 'BREAK';
   periodNumber?: number;
   startsAt: string;
   endsAt: string;
 };
+export type TimetableProfile = {
+  id: string;
+  organizationId: string;
+  branchId?: string | null;
+  academicOfferingId?: string | null;
+  name: string;
+  scope: TimetableScope;
+  timetableMode: TimetableMode;
+  isActive: boolean;
+  slots: TimetableSlotInput[];
+  branch?: ApiRecord | null;
+  academicOffering?: ApiRecord | null;
+  _count?: { assignments: number };
+};
+export type ClassTimetable = {
+  offering: ApiRecord;
+  profile: TimetableProfile;
+  rows: Array<TimetableSlotInput & { id: string; assignment?: ApiRecord | null }>;
+};
+export type TimetableProfilePayload = {
+  name: string;
+  scope: TimetableScope;
+  academicOfferingId?: string;
+  timetableMode: TimetableMode;
+  slots: TimetableSlotInput[];
+};
+
 export const timetableApi = baseApi.injectEndpoints({
   endpoints: (build) => ({
-    listTimetableProfiles: build.query<ApiRecord[], string>({
+    listAllTimetableProfiles: build.query<TimetableProfile[], void>({
+      query: () => '/timetable-profiles',
+      transformResponse: unwrap,
+      providesTags: ['Academic'],
+    }),
+    listTimetableProfiles: build.query<TimetableProfile[], string>({
       query: (branchId) => `/branches/${branchId}/timetable-profiles`,
       transformResponse: unwrap,
       providesTags: ['Academic'],
     }),
+    getTimetableProfile: build.query<TimetableProfile, string>({
+      query: (profileId) => `/timetable-profiles/${profileId}`,
+      transformResponse: unwrap,
+      providesTags: ['Academic'],
+    }),
+    createOrganizationTimetableProfile: build.mutation<TimetableProfile, TimetableProfilePayload>({
+      query: (body) => ({ url: '/timetable-profiles', method: 'POST', body }),
+      transformResponse: unwrap,
+      invalidatesTags: ['Academic'],
+    }),
     createTimetableProfile: build.mutation<
-      ApiRecord,
-      { branchId: string; body: Record<string, unknown> }
+      TimetableProfile,
+      { branchId: string; body: TimetableProfilePayload }
     >({
       query: ({ branchId, body }) => ({
         url: `/branches/${branchId}/timetable-profiles`,
@@ -27,8 +74,8 @@ export const timetableApi = baseApi.injectEndpoints({
       invalidatesTags: ['Academic'],
     }),
     updateTimetableProfile: build.mutation<
-      ApiRecord,
-      { profileId: string; body: Record<string, unknown> }
+      TimetableProfile,
+      { profileId: string; body: Partial<TimetableProfilePayload> }
     >({
       query: ({ profileId, body }) => ({
         url: `/timetable-profiles/${profileId}`,
@@ -38,7 +85,10 @@ export const timetableApi = baseApi.injectEndpoints({
       transformResponse: unwrap,
       invalidatesTags: ['Academic'],
     }),
-    setTimetableProfileActive: build.mutation<ApiRecord, { profileId: string; isActive: boolean }>({
+    setTimetableProfileActive: build.mutation<
+      TimetableProfile,
+      { profileId: string; isActive: boolean }
+    >({
       query: ({ profileId, isActive }) => ({
         url: `/timetable-profiles/${profileId}/active`,
         method: 'PATCH',
@@ -52,13 +102,13 @@ export const timetableApi = baseApi.injectEndpoints({
       transformResponse: unwrap,
       invalidatesTags: ['Academic'],
     }),
-    getClassTimetable: build.query<ApiRecord, string>({
+    getClassTimetable: build.query<ClassTimetable, string>({
       query: (offeringId) => `/academic-offerings/${offeringId}/timetable`,
       transformResponse: unwrap,
       providesTags: ['Academic'],
     }),
     saveTimetableAssignments: build.mutation<
-      ApiRecord,
+      ClassTimetable,
       {
         offeringId: string;
         profileId: string;
@@ -114,7 +164,10 @@ export const timetableApi = baseApi.injectEndpoints({
   }),
 });
 export const {
+  useListAllTimetableProfilesQuery,
   useListTimetableProfilesQuery,
+  useGetTimetableProfileQuery,
+  useCreateOrganizationTimetableProfileMutation,
   useCreateTimetableProfileMutation,
   useUpdateTimetableProfileMutation,
   useSetTimetableProfileActiveMutation,

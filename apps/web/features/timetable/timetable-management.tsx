@@ -13,6 +13,8 @@ import { useListStaffQuery } from '@web/features/staff/staff.api';
 import type { ApiRecord } from '@web/store/api/base-api';
 import {
   TimetableSlotInput,
+  type TimetableMode,
+  type TimetableScope,
   useCreateTimetableProfileMutation,
   useCreateDailyTimetableOverrideMutation,
   useDeleteDailyTimetableOverrideMutation,
@@ -25,13 +27,15 @@ import {
   useSetTimetableProfileActiveMutation,
   useUpdateTimetableProfileMutation,
 } from './timetable.api';
+import { TimetableAdminHome } from './timetable-admin-home';
+import { formatDuration, slotDurationMinutes } from './timetable-utils';
 
 const weekdays = ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY'] as const;
 type TimetableProfileFormState = {
   name: string;
-  scope: string;
+  scope: TimetableScope;
   academicOfferingId: string;
-  timetableMode: string;
+  timetableMode: TimetableMode;
   slots: TimetableSlotInput[];
 };
 const defaultSlots = (): TimetableSlotInput[] => {
@@ -59,9 +63,11 @@ const defaultSlots = (): TimetableSlotInput[] => {
 
 export function TimetableManagement() {
   const user = useAppSelector((state) => state.auth.user);
-  return user?.accountType === 'STAFF' ? <MySchedule /> : <AdminTimetable />;
+  return user?.accountType === 'STAFF' ? <MySchedule /> : <TimetableAdminHome />;
 }
 
+// Kept temporarily as a compatibility reference while class assignment controls are extracted.
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 function AdminTimetable() {
   const toast = useToast();
   const { confirm } = useConfirmation();
@@ -192,9 +198,9 @@ function AdminTimetable() {
                           setEditingProfileId(profile.id);
                           setForm({
                             name: String(profile.name),
-                            scope: String(profile.scope),
+                            scope: String(profile.scope) as TimetableScope,
                             academicOfferingId: String(profile.academicOfferingId ?? ''),
-                            timetableMode: String(profile.timetableMode),
+                            timetableMode: String(profile.timetableMode) as TimetableMode,
                             slots: Array.isArray(profile.slots)
                               ? (profile.slots as TimetableSlotInput[])
                               : defaultSlots(),
@@ -267,7 +273,7 @@ function AdminTimetable() {
             {offeringId ? (
               <>
                 <AssignmentEditor
-                  timetable={timetable.data}
+                  timetable={timetable.data as unknown as ApiRecord}
                   loading={timetable.isLoading}
                   error={timetable.isError}
                   offering={offerings.find((item) => item.id === offeringId)}
@@ -277,7 +283,7 @@ function AdminTimetable() {
                 />
                 <DailyCoverageManager
                   branchId={branchId}
-                  timetable={timetable.data}
+                  timetable={timetable.data as unknown as ApiRecord}
                   staff={staff}
                 />
               </>
@@ -299,7 +305,7 @@ function offeringTitle(offering: ApiRecord) {
   return `${String(title)}${offering.sectionName ? ` · Section ${String(offering.sectionName)}` : ''}`;
 }
 
-function AssignmentEditor({
+export function AssignmentEditor({
   timetable,
   loading,
   error,
@@ -307,6 +313,7 @@ function AssignmentEditor({
   subjects,
   staff,
   branchId,
+  weekday,
 }: {
   timetable?: ApiRecord;
   loading: boolean;
@@ -315,13 +322,14 @@ function AssignmentEditor({
   subjects: ApiRecord[];
   staff: ApiRecord[];
   branchId: string;
+  weekday?: string;
 }) {
   const toast = useToast();
   const [save, { isLoading }] = useSaveTimetableAssignmentsMutation();
-  const rows = useMemo(
-    () => (Array.isArray(timetable?.rows) ? (timetable.rows as ApiRecord[]) : []),
-    [timetable],
-  );
+  const rows = useMemo(() => {
+    const all = Array.isArray(timetable?.rows) ? (timetable.rows as ApiRecord[]) : [];
+    return weekday ? all.filter((row) => String(row.weekday) === weekday) : all;
+  }, [timetable, weekday]);
   const [draft, setDraft] = useState<Record<string, { subjectId: string; staffProfileId: string }>>(
     {},
   );
@@ -455,7 +463,8 @@ function AssignmentEditor({
               <th className="px-4 py-3">Period</th>
               <th>Subject</th>
               <th>Teacher</th>
-              <th className="px-4">Start–end</th>
+              <th>Start–end</th>
+              <th className="px-4">Duration</th>
             </tr>
           </thead>
           <tbody>
@@ -494,6 +503,14 @@ function AssignmentEditor({
                   <td className="px-4">
                     {String(row.startsAt)}–{String(row.endsAt)}
                   </td>
+                  <td className="px-4">
+                    {formatDuration(
+                      slotDurationMinutes({
+                        startsAt: String(row.startsAt),
+                        endsAt: String(row.endsAt),
+                      }),
+                    )}
+                  </td>
                 </tr>
               ) : (
                 <tr key={row.id} className="border-b border-border/70 bg-muted/25">
@@ -502,6 +519,14 @@ function AssignmentEditor({
                   </td>
                   <td className="px-4">
                     {String(row.startsAt)}–{String(row.endsAt)}
+                  </td>
+                  <td className="px-4">
+                    {formatDuration(
+                      slotDurationMinutes({
+                        startsAt: String(row.startsAt),
+                        endsAt: String(row.endsAt),
+                      }),
+                    )}
                   </td>
                 </tr>
               ),
@@ -555,7 +580,7 @@ function AssignmentEditor({
   );
 }
 
-function DailyCoverageManager({
+export function DailyCoverageManager({
   branchId,
   timetable,
   staff,
@@ -810,7 +835,7 @@ function ProfileForm({
           <select
             className="field"
             value={form.scope}
-            onChange={(e) => setForm({ ...form, scope: e.target.value })}
+            onChange={(e) => setForm({ ...form, scope: e.target.value as TimetableScope })}
           >
             <option value="BRANCH">All classes in this campus</option>
             <option value="CLASS_OVERRIDE">One class / section</option>
@@ -822,7 +847,7 @@ function ProfileForm({
             className="field"
             value={form.timetableMode}
             onChange={(e) => {
-              const mode = e.target.value;
+              const mode = e.target.value as TimetableMode;
               const base = slots.filter((slot) => !slot.weekday);
               setForm({
                 ...form,
@@ -970,7 +995,7 @@ function ProfileForm({
   );
 }
 
-function MySchedule() {
+export function MySchedule() {
   const { data = [], isLoading, isError } = useGetMyTimetableQuery();
   const dates = useMemo(
     () => [...new Set(data.map((item) => String(item.date ?? '')))].filter(Boolean).sort(),
@@ -1027,7 +1052,8 @@ function MySchedule() {
               <th>Subject</th>
               <th>Class / section</th>
               <th>Campus</th>
-              <th className="px-5">Time</th>
+              <th>Time</th>
+              <th className="px-5">Duration</th>
             </tr>
           </thead>
           <tbody>
@@ -1065,15 +1091,23 @@ function MySchedule() {
                     )}
                   </td>
                   <td>{String((item.branch as ApiRecord).name)}</td>
-                  <td className="px-5">
+                  <td>
                     {String(item.startsAt)}–{String(item.endsAt)}
+                  </td>
+                  <td className="px-5">
+                    {formatDuration(
+                      slotDurationMinutes({
+                        startsAt: String(item.startsAt),
+                        endsAt: String(item.endsAt),
+                      }),
+                    )}
                   </td>
                 </tr>
               );
             })}
             {!schedule.length ? (
               <tr>
-                <td colSpan={5} className="px-5 py-10 text-center text-muted-foreground">
+                <td colSpan={6} className="px-5 py-10 text-center text-muted-foreground">
                   No schedule is available for this day.
                 </td>
               </tr>

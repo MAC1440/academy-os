@@ -409,16 +409,19 @@ async function main() {
     }
   }
 
-  const branchesWithoutTimetable = await prisma.branch.findMany({
-    where: { deletedAt: null, timetableProfiles: { none: {} } },
-    select: { id: true },
+  const organizationTimetable = await prisma.timetableProfile.findFirst({
+    where: {
+      organizationId: organization.id,
+      scope: TimetableProfileScope.ORGANIZATION,
+      deletedAt: null,
+    },
   });
-  for (const branch of branchesWithoutTimetable) {
+  if (!organizationTimetable) {
     await prisma.timetableProfile.create({
       data: {
-        branchId: branch.id,
+        organizationId: organization.id,
         name: 'Default school schedule',
-        scope: TimetableProfileScope.BRANCH,
+        scope: TimetableProfileScope.ORGANIZATION,
         timetableMode: TimetableMode.SAME_DAILY,
         isActive: true,
         slots: { create: defaultSchoolTimetableSlots },

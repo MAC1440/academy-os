@@ -25,9 +25,10 @@ import {
 const timePattern = /^([01]\d|2[0-3]):[0-5]\d$/;
 
 export class TimetableSlotDto {
+  @IsOptional() @IsString() id?: string;
   @IsOptional() @IsEnum(Weekday) weekday?: Weekday;
   @IsEnum(TimetableSlotType) slotType!: TimetableSlotType;
-  @IsOptional() @IsInt() @Min(1) periodNumber?: number;
+  @IsOptional() @IsInt() @Min(1) periodNumber?: number | null;
   @IsString() @Matches(timePattern) startsAt!: string;
   @IsString() @Matches(timePattern) endsAt!: string;
 }

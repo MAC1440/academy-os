@@ -8,6 +8,7 @@ import {
 import {
   AuditAction,
   EntityStatus,
+  Prisma,
   TimetableMode,
   TimetableProfileScope,
   TimetableSlotType,
@@ -48,9 +49,17 @@ export class TimetableService {
 
   async listProfiles(branchId: string, actor: string) {
     await this.ensureBranchAccess(actor, branchId);
+    const branch = await this.prisma.branch.findUniqueOrThrow({
+      where: { id: branchId },
+    });
     return this.prisma.timetableProfile.findMany({
-      where: { branchId, deletedAt: null },
+      where: {
+        organizationId: branch.organizationId,
+        deletedAt: null,
+        OR: [{ scope: TimetableProfileScope.ORGANIZATION }, { branchId }],
+      },
       include: {
+        branch: true,
         academicOffering: { include: { schoolClass: true, course: true } },
         slots: true,
         _count: { select: { assignments: true } },
@@ -59,10 +68,42 @@ export class TimetableService {
     });
   }
 
+  async listAllProfiles(actor: string) {
+    const organization = await this.organizationFor(actor);
+    return this.prisma.timetableProfile.findMany({
+      where: { organizationId: organization.id, deletedAt: null },
+      include: {
+        branch: true,
+        academicOffering: { include: { schoolClass: true, course: true } },
+        slots: { orderBy: [{ weekday: 'asc' }, { startsAt: 'asc' }] },
+        _count: { select: { assignments: true } },
+      },
+      orderBy: [{ scope: 'asc' }, { name: 'asc' }],
+    });
+  }
+
   async getProfile(profileId: string, actor: string) {
     const profile = await this.profile(profileId);
-    await this.ensureBranchAccess(actor, profile.branchId);
+    await this.ensureProfileAccess(actor, profile);
     return this.profileDetails(profileId);
+  }
+
+  async createOrganizationProfile(
+    dto: CreateTimetableProfileDto,
+    actor: string,
+  ) {
+    const organization = await this.organizationFor(actor);
+    if (dto.scope !== TimetableProfileScope.ORGANIZATION)
+      throw new BadRequestException(
+        'This endpoint creates organization-wide timetable profiles only',
+      );
+    await this.validateProfileTarget(
+      organization.id,
+      undefined,
+      dto.scope,
+      dto.academicOfferingId,
+    );
+    return this.createValidatedProfile(organization.id, undefined, dto, actor);
   }
 
   async createProfile(
@@ -71,14 +112,33 @@ export class TimetableService {
     actor: string,
   ) {
     await this.ensureBranchAccess(actor, branchId);
+    const branch = await this.prisma.branch.findUniqueOrThrow({
+      where: { id: branchId },
+    });
     await this.validateProfileTarget(
+      branch.organizationId,
       branchId,
       dto.scope,
       dto.academicOfferingId,
     );
+    return this.createValidatedProfile(
+      branch.organizationId,
+      branchId,
+      dto,
+      actor,
+    );
+  }
+
+  private async createValidatedProfile(
+    organizationId: string,
+    branchId: string | undefined,
+    dto: CreateTimetableProfileDto,
+    actor: string,
+  ) {
     this.validateSlots(dto.slots, dto.timetableMode);
     const profile = await this.prisma.timetableProfile.create({
       data: {
+        organizationId,
         branchId,
         name: dto.name.trim(),
         scope: dto.scope,
@@ -91,6 +151,7 @@ export class TimetableService {
       },
     });
     await this.recordAudit(actor, AuditAction.CREATE, profile.id, {
+      organizationId,
       branchId,
       name: dto.name,
       scope: dto.scope,
@@ -104,7 +165,7 @@ export class TimetableService {
     actor: string,
   ) {
     const profile = await this.profile(profileId);
-    await this.ensureBranchAccess(actor, profile.branchId);
+    await this.ensureProfileAccess(actor, profile);
     const mode = dto.timetableMode ?? profile.timetableMode;
     if (dto.slots) this.validateSlots(dto.slots, mode);
     await this.prisma.$transaction(async (tx) => {
@@ -115,17 +176,7 @@ export class TimetableService {
           ...(dto.timetableMode ? { timetableMode: dto.timetableMode } : {}),
         },
       });
-      if (dto.slots) {
-        await tx.timetableSlot.deleteMany({
-          where: { timetableProfileId: profile.id },
-        });
-        await tx.timetableSlot.createMany({
-          data: dto.slots.map((slot) => ({
-            timetableProfileId: profile.id,
-            ...this.slotData(slot),
-          })),
-        });
-      }
+      if (dto.slots) await this.syncSlots(tx, profile.id, dto.slots);
     });
     await this.recordAudit(actor, AuditAction.UPDATE, profile.id, dto);
     return this.profileDetails(profile.id);
@@ -133,23 +184,29 @@ export class TimetableService {
 
   async setProfileActive(profileId: string, isActive: boolean, actor: string) {
     const profile = await this.profile(profileId);
-    await this.ensureBranchAccess(actor, profile.branchId);
+    await this.ensureProfileAccess(actor, profile);
     if (isActive) await this.validateProfileAssignments(profile.id);
     await this.prisma.$transaction(async (tx) => {
       if (isActive) {
         await tx.timetableProfile.updateMany({
           where:
-            profile.scope === TimetableProfileScope.BRANCH
+            profile.scope === TimetableProfileScope.ORGANIZATION
               ? {
-                  branchId: profile.branchId,
-                  scope: TimetableProfileScope.BRANCH,
+                  organizationId: profile.organizationId,
+                  scope: TimetableProfileScope.ORGANIZATION,
                   deletedAt: null,
                 }
-              : {
-                  academicOfferingId: profile.academicOfferingId!,
-                  scope: TimetableProfileScope.CLASS_OVERRIDE,
-                  deletedAt: null,
-                },
+              : profile.scope === TimetableProfileScope.BRANCH
+                ? {
+                    branchId: profile.branchId,
+                    scope: TimetableProfileScope.BRANCH,
+                    deletedAt: null,
+                  }
+                : {
+                    academicOfferingId: profile.academicOfferingId!,
+                    scope: TimetableProfileScope.CLASS_OVERRIDE,
+                    deletedAt: null,
+                  },
           data: { isActive: false },
         });
       }
@@ -164,7 +221,7 @@ export class TimetableService {
 
   async archiveProfile(profileId: string, actor: string) {
     const profile = await this.profile(profileId);
-    await this.ensureBranchAccess(actor, profile.branchId);
+    await this.ensureProfileAccess(actor, profile);
     await this.prisma.timetableProfile.update({
       where: { id: profile.id },
       data: {
@@ -194,6 +251,14 @@ export class TimetableService {
         where: {
           branchId: offering.branchId,
           scope: TimetableProfileScope.BRANCH,
+          isActive: true,
+          deletedAt: null,
+        },
+      })) ??
+      (await this.prisma.timetableProfile.findFirst({
+        where: {
+          organizationId: offering.branch.organizationId,
+          scope: TimetableProfileScope.ORGANIZATION,
           isActive: true,
           deletedAt: null,
         },
@@ -496,24 +561,52 @@ export class TimetableService {
         ];
       }),
     );
-    const branchProfiles = await this.prisma.timetableProfile.findMany({
+    const branches = await this.prisma.branch.findMany({
       where: {
-        branchId: { in: branchIds },
-        scope: TimetableProfileScope.BRANCH,
+        id: { in: branchIds },
+        deletedAt: null,
+      },
+      include: {
+        timetableProfiles: {
+          where: {
+            scope: TimetableProfileScope.BRANCH,
+            isActive: true,
+            deletedAt: null,
+          },
+          include: { slots: true },
+          take: 1,
+        },
+      },
+    });
+    const organizationIds = [
+      ...new Set(branches.map((branch) => branch.organizationId)),
+    ];
+    const organizationProfiles = await this.prisma.timetableProfile.findMany({
+      where: {
+        organizationId: { in: organizationIds },
+        scope: TimetableProfileScope.ORGANIZATION,
         isActive: true,
         deletedAt: null,
       },
-      include: { branch: true, slots: true },
+      include: { slots: true },
     });
-    const contextRows = branchProfiles.flatMap((profile) =>
-      profile.slots.flatMap((slot) =>
+    const scheduleContexts = branches.flatMap((branch) => {
+      const profile =
+        branch.timetableProfiles[0] ??
+        organizationProfiles.find(
+          (candidate) => candidate.organizationId === branch.organizationId,
+        );
+      return profile ? [{ branch, slots: profile.slots }] : [];
+    });
+    const contextRows = scheduleContexts.flatMap((context) =>
+      context.slots.flatMap((slot) =>
         dates.flatMap((date) => {
           const weekday = this.weekdayFor(date);
           if (!this.daysFor(slot).includes(weekday)) return [];
           const overlapsTeaching = assignedRows.some(
             (row) =>
               row.date === this.dateKey(date) &&
-              row.branch.id === profile.branchId &&
+              row.branch.id === context.branch.id &&
               minutes(row.startsAt) < minutes(slot.endsAt) &&
               minutes(slot.startsAt) < minutes(row.endsAt),
           );
@@ -527,7 +620,7 @@ export class TimetableService {
                 periodNumber: slot.periodNumber,
                 startsAt: slot.startsAt,
                 endsAt: slot.endsAt,
-                branch: profile.branch,
+                branch: context.branch,
               },
             ];
           }
@@ -539,7 +632,7 @@ export class TimetableService {
               periodNumber: null,
               startsAt: slot.startsAt,
               endsAt: slot.endsAt,
-              branch: profile.branch,
+              branch: context.branch,
             },
           ];
         }),
@@ -592,24 +685,57 @@ export class TimetableService {
               `${day}: teaching periods must be numbered sequentially from 1`,
             );
           expectedPeriod += 1;
-        } else if (slot.periodNumber !== undefined)
+        } else if (slot.periodNumber != null)
           throw new BadRequestException(
             `${day}: only teaching slots may have a period number`,
           );
         previousEnd = slot.endsAt;
       }
+      const assemblies = ordered.filter(
+        (slot) => slot.slotType === TimetableSlotType.ASSEMBLY,
+      );
+      if (assemblies.length > 1)
+        throw new BadRequestException(
+          `${day}: a timetable can contain only one assembly`,
+        );
+      if (
+        assemblies.length === 1 &&
+        ordered[0]?.slotType !== TimetableSlotType.ASSEMBLY
+      )
+        throw new BadRequestException(
+          `${day}: assembly must be the first timetable entry`,
+        );
     }
     return { slots, days: [...groups.keys()] };
   }
 
   private async validateProfileTarget(
-    branchId: string,
+    organizationId: string,
+    branchId: string | undefined,
     scope: TimetableProfileScope,
     offeringId?: string,
   ) {
+    if (scope === TimetableProfileScope.ORGANIZATION) {
+      if (branchId || offeringId)
+        throw new BadRequestException(
+          'An organization timetable cannot be attached to a campus or class',
+        );
+      return;
+    }
+    if (!branchId)
+      throw new BadRequestException(
+        'Campus and class timetable overrides require a campus',
+      );
+    const branch = await this.prisma.branch.findFirst({
+      where: { id: branchId, organizationId, deletedAt: null },
+    });
+    if (!branch)
+      throw new BadRequestException(
+        'The selected campus does not belong to this organization',
+      );
     if (scope === TimetableProfileScope.BRANCH && offeringId)
       throw new BadRequestException(
-        'A branch-wide profile cannot be attached to a class',
+        'A campus-wide profile cannot be attached to a class',
       );
     if (scope === TimetableProfileScope.CLASS_OVERRIDE && !offeringId)
       throw new BadRequestException(
@@ -823,9 +949,10 @@ export class TimetableService {
   }
   private slotData(slot: TimetableSlotDto) {
     return {
-      weekday: slot.weekday,
+      weekday: slot.weekday ?? null,
       slotType: slot.slotType,
-      periodNumber: slot.periodNumber,
+      periodNumber:
+        slot.slotType === TimetableSlotType.TEACHING ? slot.periodNumber : null,
       startsAt: slot.startsAt,
       endsAt: slot.endsAt,
     };
@@ -834,6 +961,8 @@ export class TimetableService {
     return this.prisma.timetableProfile.findUniqueOrThrow({
       where: { id },
       include: {
+        organization: true,
+        branch: true,
         academicOffering: { include: { schoolClass: true, course: true } },
         slots: { orderBy: [{ weekday: 'asc' }, { startsAt: 'asc' }] },
       },
@@ -849,6 +978,7 @@ export class TimetableService {
   private async offering(id: string) {
     const offering = await this.prisma.academicOffering.findFirst({
       where: { id, status: EntityStatus.ACTIVE },
+      include: { branch: true },
     });
     if (!offering)
       throw new NotFoundException('Active class or section not found');
@@ -874,6 +1004,68 @@ export class TimetableService {
     });
     if (!access)
       throw new ForbiddenException('You do not have access to this branch');
+  }
+  private async organizationFor(userId: string) {
+    const access = await this.prisma.roleAssignment.findFirst({
+      where: { userId },
+      include: { role: { select: { organizationId: true } } },
+    });
+    if (!access)
+      throw new ForbiddenException(
+        'You do not have access to organization timetables',
+      );
+    return this.prisma.organization.findUniqueOrThrow({
+      where: { id: access.role.organizationId },
+    });
+  }
+  private async ensureProfileAccess(
+    userId: string,
+    profile: { branchId: string | null },
+  ) {
+    if (profile.branchId)
+      return this.ensureBranchAccess(userId, profile.branchId);
+    await this.organizationFor(userId);
+  }
+  private async syncSlots(
+    tx: Prisma.TransactionClient,
+    profileId: string,
+    slots: TimetableSlotDto[],
+  ) {
+    const existing = await tx.timetableSlot.findMany({
+      where: { timetableProfileId: profileId },
+      select: { id: true },
+    });
+    const existingIds = new Set(existing.map((slot) => slot.id));
+    const suppliedIds = slots.flatMap((slot) => (slot.id ? [slot.id] : []));
+    if (
+      new Set(suppliedIds).size !== suppliedIds.length ||
+      suppliedIds.some((id) => !existingIds.has(id))
+    )
+      throw new BadRequestException(
+        'One or more timetable slots do not belong to this profile',
+      );
+
+    // Release teaching-period uniqueness before renumbering retained rows.
+    await tx.timetableSlot.updateMany({
+      where: { timetableProfileId: profileId },
+      data: { periodNumber: null },
+    });
+    for (const slot of slots) {
+      if (slot.id)
+        await tx.timetableSlot.update({
+          where: { id: slot.id },
+          data: this.slotData(slot),
+        });
+      else
+        await tx.timetableSlot.create({
+          data: { timetableProfileId: profileId, ...this.slotData(slot) },
+        });
+    }
+    const removedIds = existing
+      .map((slot) => slot.id)
+      .filter((id) => !suppliedIds.includes(id));
+    if (removedIds.length)
+      await tx.timetableSlot.deleteMany({ where: { id: { in: removedIds } } });
   }
   private async recordAudit(
     actorUserId: string,

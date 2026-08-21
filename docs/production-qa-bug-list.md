@@ -15,6 +15,19 @@ Only reproducible defects belong in this list. Scenarios that have not yet been 
 - **Status:** Fixed and verified in production on 16 August 2026.
 - **Fix location:** `apps/web/features/timetable/timetable-management.tsx`
 
+### QA-007 — Editing assembly or breaks rejects null period numbers
+
+- **Area:** Admin > Timetable > Timing profile
+- **Cause:** Non-teaching rows correctly persist `periodNumber` as null, but update validation treated null as a supplied teaching-period value.
+- **Expected:** Assembly and break timings remain editable; assembly is optional but first when present, and any number of breaks can appear between periods.
+- **Status:** Fixed with regression coverage on 21 August 2026.
+
+### QA-008 — Generic timetable scope drifted to campus-only
+
+- **Area:** Admin > Timetable
+- **Expected:** The active organization timing profile is shared by every campus, unless a campus override or class override is active.
+- **Status:** Fixed in schema, effective-profile resolution, seed data, and admin UI on 21 August 2026.
+
 ### QA-002 — Assessment records cannot be managed after creation
 
 - **Severity:** P1

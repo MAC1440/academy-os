@@ -93,6 +93,7 @@ enum AnnouncementAudience {
 }
 
 enum TimetableProfileScope {
+  ORGANIZATION
   BRANCH
   CLASS_OVERRIDE
 }
@@ -134,6 +135,7 @@ model Organization {
   calendarDays                  AcademicCalendarDay[]
   announcements                 Announcement[]
   sessionSyllabi                SessionSyllabus[]
+  timetableProfiles             TimetableProfile[]
 }
 
 model User {
@@ -400,7 +402,8 @@ model AcademicOfferingTeacher {
 
 model TimetableProfile {
   id                 String                @id @default(cuid())
-  branchId           String
+  organizationId     String
+  branchId           String?
   academicOfferingId String?
   name               String
   scope              TimetableProfileScope
@@ -410,12 +413,14 @@ model TimetableProfile {
   createdAt          DateTime              @default(now())
   updatedAt          DateTime              @updatedAt
   deletedAt          DateTime?
-  branch             Branch                @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  organization       Organization          @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  branch             Branch?               @relation(fields: [branchId], references: [id], onDelete: Cascade)
   academicOffering   AcademicOffering?     @relation("ClassOverrideOffering", fields: [academicOfferingId], references: [id], onDelete: Cascade)
   slots              TimetableSlot[]
   assignments        TimetableAssignment[]
 
   @@index([branchId, scope, isActive])
+  @@index([organizationId, scope, isActive])
   @@index([academicOfferingId, isActive])
 }
 

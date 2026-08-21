@@ -81,6 +81,10 @@ This is the working PRD/status record for the backend-first MVP. It records both
 - [x] Learner/guardian portal core: contact-number sign-in, linked-student dashboard, attendance, performance, finance, announcements, shared notes, and forced temporary-password replacement.
 - [x] Staff portal core: contact-number sign-in, forced temporary-password replacement, todayâ€™s attendance status, assigned-class reference, announcements, and shared notes.
 - [x] Staff timetable: today-first weekday tabs with read-only assigned, free, assembly, and break periods; administrators can add or remove one-day teacher cover overrides without altering the regular timetable.
+- [x] Timetable architecture: one organization-wide default shared by all campuses, with optional campus and class overrides.
+- [x] Timetable workflow: separate list, read-only detail, create, timing-edit, class-view, and class-assignment pages.
+- [x] Timetable builder: optional first-position assembly, multiple movable breaks, automatic even period generation, editable durations, and a live zero-balance save check.
+- [x] Timetable persistence hardening: nullable assembly/break period numbers are editable and retained slot identities preserve existing class assignments.
 - [x] Admin announcement management: audience targeting, optional event dates, full CRUD, search, and staff/learner portal delivery.
 - [ ] Final cross-portal responsive/manual QA.
 - [ ] Advanced OCR (handwritten/Urdu/scanned-PDF extraction) after MVP validation.

@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-return */
-import { TimetableSlotType } from '@prisma/client';
+import { TimetableMode, TimetableSlotType } from '@prisma/client';
 import { TimetableService } from './timetable.service';
 
 type Assignment = {
@@ -204,5 +204,86 @@ describe('TimetableService assignment patching', () => {
     expect(
       assignments.find((item) => item.timetableSlotId === 'slot-1')?.subjectId,
     ).toBe('subject-1');
+  });
+});
+
+describe('TimetableService timing profile slot updates', () => {
+  const service = new TimetableService({} as never, {} as never);
+
+  it('accepts null period numbers for assembly and break entries', () => {
+    expect(() =>
+      service.preview({
+        timetableMode: TimetableMode.SAME_DAILY,
+        slots: [
+          {
+            slotType: TimetableSlotType.ASSEMBLY,
+            periodNumber: null,
+            startsAt: '07:30',
+            endsAt: '07:40',
+          },
+          {
+            slotType: TimetableSlotType.TEACHING,
+            periodNumber: 1,
+            startsAt: '07:40',
+            endsAt: '08:20',
+          },
+          {
+            slotType: TimetableSlotType.BREAK,
+            periodNumber: null,
+            startsAt: '08:20',
+            endsAt: '08:40',
+          },
+        ],
+      }),
+    ).not.toThrow();
+  });
+
+  it('updates retained slot identities and removes only explicitly omitted slots', async () => {
+    const tx = {
+      timetableSlot: {
+        findMany: jest
+          .fn()
+          .mockResolvedValue([
+            { id: 'assembly' },
+            { id: 'period-1' },
+            { id: 'old-break' },
+          ]),
+        updateMany: jest.fn().mockResolvedValue({ count: 3 }),
+        update: jest.fn().mockResolvedValue({}),
+        create: jest.fn().mockResolvedValue({}),
+        deleteMany: jest.fn().mockResolvedValue({ count: 1 }),
+      },
+    };
+
+    await (
+      service as unknown as {
+        syncSlots: (
+          client: typeof tx,
+          profileId: string,
+          slots: Array<Record<string, unknown>>,
+        ) => Promise<void>;
+      }
+    ).syncSlots(tx, 'profile', [
+      {
+        id: 'assembly',
+        slotType: TimetableSlotType.ASSEMBLY,
+        periodNumber: null,
+        startsAt: '07:30',
+        endsAt: '07:45',
+      },
+      {
+        id: 'period-1',
+        slotType: TimetableSlotType.TEACHING,
+        periodNumber: 1,
+        startsAt: '07:45',
+        endsAt: '08:25',
+      },
+    ]);
+
+    expect(tx.timetableSlot.update).toHaveBeenCalledTimes(2);
+    expect(tx.timetableSlot.create).not.toHaveBeenCalled();
+    expect(tx.timetableSlot.deleteMany).toHaveBeenCalledWith({
+      where: { id: { in: ['old-break'] } },
+    });
   });
 });

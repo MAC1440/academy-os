@@ -17,8 +17,8 @@ export function DirectEnrollment({ onCreated }: { onCreated: (studentId: string)
   const { data: terms = [] } = useListAcademicTermsQuery();
   const [branchId, setBranchId] = useState('');
   const { data: offerings = [] } = useListOfferingsQuery(branchId || skipToken);
-  const [submitAdmission] = useSubmitAdmissionMutation();
-  const [reviewAdmission, { isLoading }] = useReviewAdmissionMutation();
+  const [submitAdmission, submitState] = useSubmitAdmissionMutation();
+  const [reviewAdmission, reviewState] = useReviewAdmissionMutation();
   const toast = useToast();
   const [credentials, setCredentials] = useState<{
     contactNumber?: string;
@@ -47,16 +47,34 @@ export function DirectEnrollment({ onCreated }: { onCreated: (studentId: string)
   }, [branchId]);
   async function submit(event: FormEvent) {
     event.preventDefault();
+    if (!form.studentFullName.trim() || !form.guardianFullName.trim()) {
+      toast.error('Student and guardian names cannot be empty.');
+      return;
+    }
+    if (Number(form.amountReceivedWithForm || 0) > 0 && !form.receiptNumber.trim()) {
+      toast.error('Enter a receipt number for the amount received.');
+      return;
+    }
+    if (Number(form.openingBalanceAmount || 0) > 0 && !form.balanceDueOn) {
+      toast.error('Choose a due date for the remaining opening balance.');
+      return;
+    }
+    let application: ApiRecord;
     try {
-      const application = await submitAdmission({
+      application = await submitAdmission({
         academicOfferingId: form.academicOfferingId,
-        studentFullName: form.studentFullName,
+        studentFullName: form.studentFullName.trim(),
         studentCnic: form.studentCnic,
-        guardianFullName: form.guardianFullName,
+        guardianFullName: form.guardianFullName.trim(),
         guardianContactNumber: form.guardianContactNumber,
-        previousSchool: form.previousSchool || undefined,
-        previousPerformance: form.previousPerformance || undefined,
+        previousSchool: form.previousSchool.trim() || undefined,
+        previousPerformance: form.previousPerformance.trim() || undefined,
       }).unwrap();
+    } catch (error) {
+      toast.error(apiErrorMessage(error, 'The admission application could not be created.'));
+      return;
+    }
+    try {
       const result = (await reviewAdmission({
         id: application.id,
         body: {
@@ -82,10 +100,9 @@ export function DirectEnrollment({ onCreated }: { onCreated: (studentId: string)
       setCredentials(result.credentials ?? null);
       setCreatedStudentId(result.student?.id ?? null);
       toast.success('Student enrolled and admission approved.');
-    } catch {
-      toast.error(
-        'Student could not be enrolled. Verify unique CNIC, offering, term, and required fields.',
-      );
+    } catch (error) {
+      const reason = apiErrorMessage(error, 'Check the approval details and try again.');
+      toast.error(`Application saved as pending. Approval failed: ${reason}`);
     }
   }
   return (
@@ -109,6 +126,7 @@ export function DirectEnrollment({ onCreated }: { onCreated: (studentId: string)
           <input
             className="field"
             required
+            maxLength={160}
             value={form.studentFullName}
             onChange={(event) => setForm({ ...form, studentFullName: event.target.value })}
           />
@@ -120,6 +138,7 @@ export function DirectEnrollment({ onCreated }: { onCreated: (studentId: string)
             required
             inputMode="numeric"
             pattern="\d{13}"
+            minLength={13}
             maxLength={13}
             value={form.studentCnic}
             onChange={(event) =>
@@ -132,6 +151,7 @@ export function DirectEnrollment({ onCreated }: { onCreated: (studentId: string)
           <input
             className="field"
             required
+            maxLength={160}
             value={form.guardianFullName}
             onChange={(event) => setForm({ ...form, guardianFullName: event.target.value })}
           />
@@ -141,7 +161,10 @@ export function DirectEnrollment({ onCreated }: { onCreated: (studentId: string)
           <input
             className="field"
             required
-            inputMode="numeric"
+            inputMode="tel"
+            minLength={7}
+            maxLength={15}
+            pattern="\d{7,15}"
             value={form.guardianContactNumber}
             onChange={(event) =>
               setForm({ ...form, guardianContactNumber: event.target.value.replace(/\D/g, '') })
@@ -207,6 +230,7 @@ export function DirectEnrollment({ onCreated }: { onCreated: (studentId: string)
             className="field"
             type="number"
             min="0"
+            step="0.01"
             value={form.monthlyFeeAmount}
             onChange={(event) => setForm({ ...form, monthlyFeeAmount: event.target.value })}
           />
@@ -217,6 +241,7 @@ export function DirectEnrollment({ onCreated }: { onCreated: (studentId: string)
             className="field"
             type="number"
             min="0"
+            step="0.01"
             value={form.amountReceivedWithForm}
             onChange={(event) => setForm({ ...form, amountReceivedWithForm: event.target.value })}
           />
@@ -227,6 +252,7 @@ export function DirectEnrollment({ onCreated }: { onCreated: (studentId: string)
             className="field"
             type="number"
             min="0"
+            step="0.01"
             value={form.openingBalanceAmount}
             onChange={(event) => setForm({ ...form, openingBalanceAmount: event.target.value })}
           />
@@ -235,6 +261,8 @@ export function DirectEnrollment({ onCreated }: { onCreated: (studentId: string)
           Receipt number
           <input
             className="field"
+            required={Number(form.amountReceivedWithForm || 0) > 0}
+            maxLength={100}
             value={form.receiptNumber}
             onChange={(event) => setForm({ ...form, receiptNumber: event.target.value })}
           />
@@ -244,6 +272,7 @@ export function DirectEnrollment({ onCreated }: { onCreated: (studentId: string)
           <input
             className="field"
             type="date"
+            required={Number(form.openingBalanceAmount || 0) > 0}
             value={form.balanceDueOn}
             onChange={(event) => setForm({ ...form, balanceDueOn: event.target.value })}
           />
@@ -252,14 +281,16 @@ export function DirectEnrollment({ onCreated }: { onCreated: (studentId: string)
           Previous school <span className="font-normal text-muted-foreground">(optional)</span>
           <input
             className="field"
+            maxLength={300}
             value={form.previousSchool}
             onChange={(event) => setForm({ ...form, previousSchool: event.target.value })}
           />
         </label>
         <label className="grid gap-1 text-sm font-medium">
           Previous performance <span className="font-normal text-muted-foreground">(optional)</span>
-          <input
-            className="field"
+          <textarea
+            className="field min-h-24"
+            maxLength={2000}
             value={form.previousPerformance}
             onChange={(event) => setForm({ ...form, previousPerformance: event.target.value })}
           />
@@ -268,6 +299,7 @@ export function DirectEnrollment({ onCreated }: { onCreated: (studentId: string)
           Admission note <span className="font-normal text-muted-foreground">(optional)</span>
           <textarea
             className="field min-h-24"
+            maxLength={500}
             value={form.reviewNote}
             onChange={(event) => setForm({ ...form, reviewNote: event.target.value })}
           />
@@ -282,8 +314,13 @@ export function DirectEnrollment({ onCreated }: { onCreated: (studentId: string)
           />
           Physical admission documents have been verified
         </label>
-        <button className="button-primary w-fit" disabled={isLoading || Boolean(createdStudentId)}>
-          {isLoading ? 'Enrolling...' : 'Enroll and approve student'}
+        <button
+          className="button-primary w-fit"
+          disabled={submitState.isLoading || reviewState.isLoading || Boolean(createdStudentId)}
+        >
+          {submitState.isLoading || reviewState.isLoading
+            ? 'Enrolling...'
+            : 'Enroll and approve student'}
         </button>
       </form>
       {credentials ? (
@@ -305,4 +342,13 @@ export function DirectEnrollment({ onCreated }: { onCreated: (studentId: string)
       ) : null}
     </section>
   );
+}
+
+function apiErrorMessage(error: unknown, fallback: string) {
+  if (typeof error !== 'object' || error === null || !('data' in error)) return fallback;
+  const data = error.data;
+  if (typeof data !== 'object' || data === null) return fallback;
+  if ('errors' in data && Array.isArray(data.errors) && typeof data.errors[0] === 'string')
+    return data.errors[0];
+  return 'message' in data && typeof data.message === 'string' ? data.message : fallback;
 }

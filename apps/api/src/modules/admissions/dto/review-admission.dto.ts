@@ -4,22 +4,31 @@ import { Type } from 'class-transformer';
 import {
   IsBoolean,
   IsDateString,
-  IsEnum,
+  IsIn,
+  IsNotEmpty,
   IsNumber,
   IsOptional,
   IsString,
+  Matches,
   MaxLength,
   Min,
+  ValidateIf,
 } from 'class-validator';
 
 export class ReviewAdmissionDto {
   @ApiProperty({ enum: [AdmissionStatus.APPROVED, AdmissionStatus.REJECTED] })
-  @IsEnum(AdmissionStatus)
+  @IsIn([AdmissionStatus.APPROVED, AdmissionStatus.REJECTED])
   status!: 'APPROVED' | 'REJECTED';
 
   @ApiPropertyOptional()
-  @IsOptional()
+  @ValidateIf(
+    (value: ReviewAdmissionDto) =>
+      value.status === AdmissionStatus.REJECTED ||
+      value.reviewNote !== undefined,
+  )
   @IsString()
+  @IsNotEmpty()
+  @Matches(/\S/, { message: 'reviewNote must not be blank' })
   @MaxLength(500)
   reviewNote?: string;
 
@@ -29,11 +38,19 @@ export class ReviewAdmissionDto {
   })
   @IsOptional()
   @IsString()
+  @IsNotEmpty()
+  @Matches(/\S/, { message: 'academicOfferingId must not be blank' })
   academicOfferingId?: string;
 
   @ApiPropertyOptional({ description: 'Required for approval.' })
-  @IsOptional()
+  @ValidateIf(
+    (value: ReviewAdmissionDto) =>
+      value.status === AdmissionStatus.APPROVED ||
+      value.academicTermId !== undefined,
+  )
   @IsString()
+  @IsNotEmpty()
+  @Matches(/\S/, { message: 'academicTermId must not be blank' })
   academicTermId?: string;
 
   @ApiPropertyOptional()

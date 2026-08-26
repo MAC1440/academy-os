@@ -22,6 +22,7 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { AdmissionListQueryDto } from './dto/admission-list-query.dto';
 import { ReviewAdmissionDto } from './dto/review-admission.dto';
 import { SubmitAdmissionDto } from './dto/submit-admission.dto';
+import { UpdateAdmissionDto } from './dto/update-admission.dto';
 import { UpdateStudentDto } from './dto/update-student.dto';
 import {
   BulkStudentImportDto,
@@ -42,6 +43,33 @@ export class AdmissionsService {
   async submit(dto: SubmitAdmissionDto) {
     const offering = await this.activeOffering(dto.academicOfferingId);
     const organization = await this.organization();
+    const activeTerm = await this.prisma.academicTerm.findFirst({
+      where: { organizationId: organization.id, isActive: true },
+      orderBy: { startsOn: 'desc' },
+    });
+    const existing = await this.prisma.admissionApplication.findFirst({
+      where: {
+        academicOfferingId: offering.id,
+        studentCnic: dto.studentCnic,
+        deletedAt: null,
+        OR: [
+          { status: AdmissionStatus.PENDING },
+          ...(activeTerm
+            ? [
+                {
+                  status: AdmissionStatus.APPROVED,
+                  academicTermId: activeTerm.id,
+                },
+              ]
+            : []),
+        ],
+      },
+      select: { id: true },
+    });
+    if (existing)
+      throw new ConflictException(
+        'An active admission already exists for this student in the selected offering',
+      );
     try {
       const application = await this.prisma.admissionApplication.create({
         data: {
@@ -91,6 +119,62 @@ export class AdmissionsService {
     const application = await this.application(id);
     await this.ensureBranchAccess(requesterUserId, application.branchId);
     return application;
+  }
+
+  async update(id: string, dto: UpdateAdmissionDto, actorUserId: string) {
+    const application = await this.application(id);
+    await this.ensureBranchAccess(actorUserId, application.branchId);
+    if (application.status !== AdmissionStatus.PENDING)
+      throw new BadRequestException('Only pending admissions can be edited');
+    const offering = dto.academicOfferingId
+      ? await this.activeOffering(dto.academicOfferingId)
+      : undefined;
+    if (offering) await this.ensureBranchAccess(actorUserId, offering.branchId);
+    try {
+      const updated = await this.prisma.admissionApplication.update({
+        where: { id },
+        data: {
+          ...(offering
+            ? {
+                academicOfferingId: offering.id,
+                branchId: offering.branchId,
+              }
+            : {}),
+          ...(dto.studentFullName !== undefined
+            ? { studentFullName: dto.studentFullName.trim() }
+            : {}),
+          ...(dto.studentCnic !== undefined
+            ? { studentCnic: dto.studentCnic }
+            : {}),
+          ...(dto.guardianFullName !== undefined
+            ? { guardianFullName: dto.guardianFullName.trim() }
+            : {}),
+          ...(dto.guardianContactNumber !== undefined
+            ? { guardianContactNumber: dto.guardianContactNumber.trim() }
+            : {}),
+          ...(dto.previousSchool !== undefined
+            ? { previousSchool: dto.previousSchool.trim() || null }
+            : {}),
+          ...(dto.previousPerformance !== undefined
+            ? { previousPerformance: dto.previousPerformance.trim() || null }
+            : {}),
+          ...(dto.formData !== undefined
+            ? { formData: dto.formData as Prisma.InputJsonValue }
+            : {}),
+        },
+        include: this.applicationInclude,
+      });
+      await this.audit(
+        actorUserId,
+        AuditAction.UPDATE,
+        'AdmissionApplication',
+        id,
+        dto,
+      );
+      return updated;
+    } catch (error) {
+      this.rethrowUnique(error);
+    }
   }
 
   async listStudents(requesterUserId: string, branchId?: string) {
@@ -442,6 +526,8 @@ export class AdmissionsService {
     if (application.status !== AdmissionStatus.PENDING)
       throw new BadRequestException('This admission has already been reviewed');
     if (dto.status === AdmissionStatus.REJECTED) {
+      if (!dto.reviewNote?.trim())
+        throw new BadRequestException('A rejection reason is required');
       const rejected = await this.prisma.admissionApplication.update({
         where: { id },
         data: {
@@ -478,98 +564,124 @@ export class AdmissionsService {
     });
     if (!academicTerm)
       throw new NotFoundException('Active academic term not found');
+    if ((dto.amountReceivedWithForm ?? 0) > 0 && !dto.receiptNumber?.trim())
+      throw new BadRequestException(
+        'A receipt number is required when an amount is received',
+      );
+    if ((dto.openingBalanceAmount ?? 0) > 0 && !dto.balanceDueOn)
+      throw new BadRequestException(
+        'A balance due date is required when an opening balance remains',
+      );
+    const duplicate = await this.prisma.admissionApplication.findFirst({
+      where: {
+        id: { not: id },
+        academicOfferingId: allocatedOffering.id,
+        academicTermId: academicTerm.id,
+        studentCnic: application.studentCnic,
+        status: AdmissionStatus.APPROVED,
+        deletedAt: null,
+      },
+      select: { id: true },
+    });
+    if (duplicate)
+      throw new ConflictException(
+        'This student is already admitted to the selected offering for this academic term',
+      );
     const initialPassword = this.generatePassword();
-    const outcome = await this.prisma.$transaction(async (tx) => {
-      let portalUser = await tx.user.findFirst({
-        where: {
-          accountType: AccountType.LEARNER,
-          contactNumber: application.guardianContactNumber,
-          deletedAt: null,
-        },
-      });
-      let credentials:
-        { contactNumber: string; initialPassword: string } | undefined;
-      if (!portalUser) {
-        portalUser = await tx.user.create({
-          data: {
+    const outcome = await this.prisma
+      .$transaction(async (tx) => {
+        let portalUser = await tx.user.findFirst({
+          where: {
             accountType: AccountType.LEARNER,
             contactNumber: application.guardianContactNumber,
-            fullName: application.guardianFullName,
-            passwordHash: await bcrypt.hash(initialPassword, 12),
-            mustCompleteProfile: true,
+            deletedAt: null,
           },
         });
-        credentials = {
-          contactNumber: portalUser.contactNumber!,
-          initialPassword,
-        };
-      }
-      if (portalUser.status !== AccountStatus.ACTIVE)
-        throw new BadRequestException(
-          'The guardian portal account is unavailable',
-        );
-      const settings = await tx.admissionRegistrationSettings.upsert({
-        where: { organizationId: application.organizationId },
-        update: {},
-        create: { organizationId: application.organizationId },
-      });
-      await tx.admissionRegistrationSettings.update({
-        where: { id: settings.id },
-        data: { nextSequence: { increment: 1 } },
-      });
-      const modifier =
-        allocatedOffering.schoolClass?.registrationNumberModifier ??
-        allocatedOffering.course?.registrationNumberModifier ??
-        'GEN';
-      const registrationNumber = `${settings.prefix}-${modifier}-${String(settings.nextSequence).padStart(settings.sequencePadding, '0')}`;
-      const approved = await tx.admissionApplication.update({
-        where: { id },
-        data: {
-          branchId: allocatedOffering.branchId,
-          academicOfferingId: allocatedOffering.id,
-          status: AdmissionStatus.APPROVED,
-          reviewNote: dto.reviewNote?.trim(),
-          reviewedAt: new Date(),
-          reviewedByUserId: actorUserId,
-          physicalDocumentsVerifiedAt: dto.physicalDocumentsVerified
-            ? new Date()
-            : null,
-          physicalDocumentsVerificationNote:
-            dto.physicalDocumentsVerificationNote?.trim(),
-        },
-        include: this.applicationInclude,
-      });
-      const officer = await tx.user.findUnique({
-        where: { id: actorUserId },
-        select: { fullName: true },
-      });
-      const student = await tx.student.create({
-        data: {
-          admissionApplicationId: approved.id,
-          guardianPortalUserId: portalUser.id,
-          branchId: approved.branchId,
-          academicOfferingId: approved.academicOfferingId,
-          academicTermId: academicTerm.id,
-          registrationNumber,
-          monthlyFeeAmount: dto.monthlyFeeAmount,
-          amountReceivedWithForm: dto.amountReceivedWithForm,
-          openingBalanceAmount: dto.openingBalanceAmount,
-          receiptNumber: dto.receiptNumber?.trim(),
-          balanceDueOn: dto.balanceDueOn
-            ? new Date(dto.balanceDueOn)
-            : undefined,
-          admissionRemarks: dto.reviewNote?.trim(),
-          admissionOfficerName: officer?.fullName,
-          studentFullName: approved.studentFullName,
-          studentCnic: approved.studentCnic,
-          guardianFullName: approved.guardianFullName,
-          guardianContactNumber: approved.guardianContactNumber,
-          previousSchool: approved.previousSchool,
-          previousPerformance: approved.previousPerformance,
-        },
-      });
-      return { application: approved, student, credentials };
-    });
+        let credentials:
+          { contactNumber: string; initialPassword: string } | undefined;
+        if (!portalUser) {
+          portalUser = await tx.user.create({
+            data: {
+              accountType: AccountType.LEARNER,
+              contactNumber: application.guardianContactNumber,
+              fullName: application.guardianFullName,
+              passwordHash: await bcrypt.hash(initialPassword, 12),
+              mustCompleteProfile: true,
+            },
+          });
+          credentials = {
+            contactNumber: portalUser.contactNumber!,
+            initialPassword,
+          };
+        }
+        if (portalUser.status !== AccountStatus.ACTIVE)
+          throw new BadRequestException(
+            'The guardian portal account is unavailable',
+          );
+        const settings = await tx.admissionRegistrationSettings.upsert({
+          where: { organizationId: application.organizationId },
+          update: {},
+          create: { organizationId: application.organizationId },
+        });
+        await tx.admissionRegistrationSettings.update({
+          where: { id: settings.id },
+          data: { nextSequence: { increment: 1 } },
+        });
+        const modifier =
+          allocatedOffering.schoolClass?.registrationNumberModifier ??
+          allocatedOffering.course?.registrationNumberModifier ??
+          'GEN';
+        const registrationNumber = `${settings.prefix}-${modifier}-${String(settings.nextSequence).padStart(settings.sequencePadding, '0')}`;
+        const approved = await tx.admissionApplication.update({
+          where: { id },
+          data: {
+            branchId: allocatedOffering.branchId,
+            academicOfferingId: allocatedOffering.id,
+            academicTermId: academicTerm.id,
+            status: AdmissionStatus.APPROVED,
+            reviewNote: dto.reviewNote?.trim(),
+            reviewedAt: new Date(),
+            reviewedByUserId: actorUserId,
+            physicalDocumentsVerifiedAt: dto.physicalDocumentsVerified
+              ? new Date()
+              : null,
+            physicalDocumentsVerificationNote:
+              dto.physicalDocumentsVerificationNote?.trim(),
+          },
+          include: this.applicationInclude,
+        });
+        const officer = await tx.user.findUnique({
+          where: { id: actorUserId },
+          select: { fullName: true },
+        });
+        const student = await tx.student.create({
+          data: {
+            admissionApplicationId: approved.id,
+            guardianPortalUserId: portalUser.id,
+            branchId: approved.branchId,
+            academicOfferingId: approved.academicOfferingId,
+            academicTermId: academicTerm.id,
+            registrationNumber,
+            monthlyFeeAmount: dto.monthlyFeeAmount,
+            amountReceivedWithForm: dto.amountReceivedWithForm,
+            openingBalanceAmount: dto.openingBalanceAmount,
+            receiptNumber: dto.receiptNumber?.trim(),
+            balanceDueOn: dto.balanceDueOn
+              ? new Date(dto.balanceDueOn)
+              : undefined,
+            admissionRemarks: dto.reviewNote?.trim(),
+            admissionOfficerName: officer?.fullName,
+            studentFullName: approved.studentFullName,
+            studentCnic: approved.studentCnic,
+            guardianFullName: approved.guardianFullName,
+            guardianContactNumber: approved.guardianContactNumber,
+            previousSchool: approved.previousSchool,
+            previousPerformance: approved.previousPerformance,
+          },
+        });
+        return { application: approved, student, credentials };
+      })
+      .catch((error: unknown) => this.rethrowUnique(error));
     await this.audit(
       actorUserId,
       AuditAction.UPDATE,
@@ -686,6 +798,7 @@ export class AdmissionsService {
 
   private readonly applicationInclude = {
     branch: true,
+    academicTerm: true,
     academicOffering: { include: { schoolClass: true, course: true } },
     student: true,
   } satisfies Prisma.AdmissionApplicationInclude;
@@ -801,7 +914,7 @@ export class AdmissionsService {
       error.code === 'P2002'
     )
       throw new ConflictException(
-        'An admission already exists for this student CNIC in the selected academic offering',
+        'An admission already exists for this student in the selected offering and academic term',
       );
     throw error;
   }

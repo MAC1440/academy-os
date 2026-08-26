@@ -21,6 +21,7 @@ import { AdmissionListQueryDto } from './dto/admission-list-query.dto';
 import { ReviewAdmissionDto } from './dto/review-admission.dto';
 import { SubmitAdmissionDto } from './dto/submit-admission.dto';
 import { UpdateStudentDto } from './dto/update-student.dto';
+import { UpdateAdmissionDto } from './dto/update-admission.dto';
 import {
   BulkStudentImportDto,
   BulkStudentImportPreviewDto,
@@ -64,6 +65,21 @@ export class AdmissionsController {
     return successResponse(
       'Admission application retrieved',
       await this.admissions.get(admissionId, user.id),
+    );
+  }
+
+  @Patch('admissions/:admissionId')
+  @ApiBearerAuth('JWT-auth')
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @RequirePermissions('admissions.manage')
+  async update(
+    @Param('admissionId') admissionId: string,
+    @Body() dto: UpdateAdmissionDto,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return successResponse(
+      'Admission application updated',
+      await this.admissions.update(admissionId, dto, user.id),
     );
   }
 

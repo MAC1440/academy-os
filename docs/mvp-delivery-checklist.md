@@ -29,7 +29,7 @@ This is the working PRD/status record for the backend-first MVP. It records both
 - [x] Shared notes library for staff.
 - [x] School classes, courses, subjects, academic offerings, offering subjects, and offering teachers.
 - [x] Organization-wide academic groups, eligible-school-class mapping, and group selection on school-class offerings.
-- [x] Admissions: public submission, review queue, approved/rejected lifecycle, physical-document verification, mandatory academic term, registration-number settings, and approval into a student record.
+- [x] Admissions: public submission, full-width review queue, separate detail/edit/review routes, pending-application corrections, approved/rejected lifecycle, physical-document verification, mandatory academic term, term-scoped duplicate prevention, registration-number settings, and transactional approval into a student record.
 - [x] Learner/guardian portal account creation, contact-number login, and ownership-protected views for linked students' attendance, performance, fees, and payments.
 - [x] Student attendance roster and one-request bulk attendance saving. Unmarked values remain `null`/unmarked; branch access is enforced without teacher-to-offering assignment restrictions.
 - [x] Assessments, mark entry, and per-student performance history, with marks validated against the assessment offering's students and subjects.
@@ -65,7 +65,7 @@ This is the working PRD/status record for the backend-first MVP. It records both
 - [x] Seed defaults: a Main Campus plus every standard school-class offering with its curriculum subjects; newly created branches receive the same default class offerings.
 - [x] Student management: branch-scoped directory, editable student records with class/campus reassignment, and direct enrollment for pre-existing students using the same admission-approval workflow.
 - [x] Administrator self-service profile: editable sign-in username, contact details, and password.
-- [x] Admissions operations: tabbed pending/approved/rejected queues, application review, physical-document verification, and approval allocation into term/offering/fees.
+- [x] Admissions operations: searchable pending/approved/rejected tables, dedicated application detail/edit/review pages, server-aligned form limits, rejection-reason enforcement, fee dependency validation, physical-document verification, and approval allocation into term/offering/fees.
 - [x] Staff management: tabbed directory, staff-account creation with campus assignment, profile maintenance, and one-time portal/kiosk credentials.
 - [x] Attendance operations: one-click student roster marking, staff attendance reports with CSV download, and editable kiosk default shift/workday settings.
 - [x] Public teacher-attendance kiosk: campus selection, staff-name selection, private four-digit PIN verification, and check-in/check-out recording.

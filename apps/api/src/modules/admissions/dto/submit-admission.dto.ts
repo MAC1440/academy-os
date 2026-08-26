@@ -1,6 +1,7 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
   IsObject,
+  IsNotEmpty,
   IsOptional,
   IsString,
   Matches,
@@ -10,10 +11,14 @@ import {
 export class SubmitAdmissionDto {
   @ApiProperty()
   @IsString()
+  @IsNotEmpty()
+  @Matches(/\S/, { message: 'academicOfferingId must not be blank' })
   academicOfferingId!: string;
 
   @ApiProperty({ example: 'Muhammad Ali' })
   @IsString()
+  @IsNotEmpty()
+  @Matches(/\S/, { message: 'studentFullName must not be blank' })
   @MaxLength(160)
   studentFullName!: string;
 
@@ -27,6 +32,8 @@ export class SubmitAdmissionDto {
 
   @ApiProperty({ example: 'Ahmed Ali' })
   @IsString()
+  @IsNotEmpty()
+  @Matches(/\S/, { message: 'guardianFullName must not be blank' })
   @MaxLength(160)
   guardianFullName!: string;
 

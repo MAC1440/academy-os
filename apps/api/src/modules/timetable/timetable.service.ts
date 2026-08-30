@@ -167,6 +167,21 @@ export class TimetableService {
     const profile = await this.profile(profileId);
     await this.ensureProfileAccess(actor, profile);
     const mode = dto.timetableMode ?? profile.timetableMode;
+    const scope = dto.scope ?? profile.scope;
+    const branchId =
+      scope === TimetableProfileScope.ORGANIZATION
+        ? undefined
+        : (dto.branchId ?? profile.branchId ?? undefined);
+    const academicOfferingId =
+      scope === TimetableProfileScope.CLASS_OVERRIDE
+        ? (dto.academicOfferingId ?? profile.academicOfferingId ?? undefined)
+        : undefined;
+    await this.validateProfileTarget(
+      profile.organizationId,
+      branchId,
+      scope,
+      academicOfferingId,
+    );
     if (dto.slots) this.validateSlots(dto.slots, mode);
     await this.prisma.$transaction(async (tx) => {
       await tx.timetableProfile.update({
@@ -174,6 +189,9 @@ export class TimetableService {
         data: {
           ...(dto.name !== undefined ? { name: dto.name.trim() } : {}),
           ...(dto.timetableMode ? { timetableMode: dto.timetableMode } : {}),
+          scope,
+          branchId: branchId ?? null,
+          academicOfferingId: academicOfferingId ?? null,
         },
       });
       if (dto.slots) await this.syncSlots(tx, profile.id, dto.slots);
@@ -978,7 +996,10 @@ export class TimetableService {
   private async offering(id: string) {
     const offering = await this.prisma.academicOffering.findFirst({
       where: { id, status: EntityStatus.ACTIVE },
-      include: { branch: true },
+      include: {
+        branch: true,
+        subjects: { include: { subject: true } },
+      },
     });
     if (!offering)
       throw new NotFoundException('Active class or section not found');

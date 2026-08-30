@@ -48,6 +48,9 @@ export class CreateTimetableProfileDto {
 
 export class UpdateTimetableProfileDto {
   @IsOptional() @IsString() @IsNotEmpty() name?: string;
+  @IsOptional() @IsEnum(TimetableProfileScope) scope?: TimetableProfileScope;
+  @IsOptional() @IsString() @IsNotEmpty() branchId?: string;
+  @IsOptional() @IsString() @IsNotEmpty() academicOfferingId?: string;
   @IsOptional() @IsEnum(TimetableMode) timetableMode?: TimetableMode;
   @IsOptional()
   @IsArray()

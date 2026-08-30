@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useMemo, useState } from 'react';
 import { skipToken } from '@reduxjs/toolkit/query';
-import { Eye, Pencil, Plus } from 'lucide-react';
+import { ArrowRight, Eye, Pencil, Plus, Search } from 'lucide-react';
 import { DataTable, DataTableControls, TableEmpty } from '@web/components/data-table';
 import { useConfirmation } from '@web/components/confirmation-dialog';
 import { useToast } from '@web/components/toast-provider';
@@ -31,6 +31,7 @@ export function TimetableAdminHome() {
   const { data: branches = [] } = useListBranchesQuery();
   const [branchId, setBranchId] = useState('');
   const { data: offerings = [] } = useListOfferingsQuery(branchId || skipToken);
+  const [offeringSearch, setOfferingSearch] = useState('');
   const [search, setSearch] = useState('');
   const [sort, setSort] = useState('scope');
   const [setActive] = useSetTimetableProfileActiveMutation();
@@ -52,18 +53,27 @@ export function TimetableAdminHome() {
             : a.scope.localeCompare(b.scope),
       );
   }, [profiles, search, sort]);
+  const selectedBranch = branches.find((branch) => branch.id === branchId);
+  const visibleOfferings = useMemo(() => {
+    const query = offeringSearch.trim().toLowerCase();
+    if (!query) return offerings;
+    return offerings.filter((offering) =>
+      [offeringTitle(offering), String(offering.sectionName ?? '')]
+        .join(' ')
+        .toLowerCase()
+        .includes(query),
+    );
+  }, [offeringSearch, offerings]);
+  const activeProfileCount = profiles.filter((profile) => profile.isActive).length;
 
   return (
     <div className="space-y-8">
       <header className="flex flex-wrap items-end justify-between gap-4 border-b border-border pb-6">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-[.18em] text-primary">
-            Teaching day
-          </p>
-          <h1 className="mt-2 font-display text-4xl tracking-[-.04em]">Timetables</h1>
+          <h1 className="font-display text-4xl tracking-[-.04em]">Timetables</h1>
           <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
-            The organization schedule is shared by every campus. Add a campus or class override only
-            where the day genuinely differs.
+            Choose a campus to assign class periods, or manage the timing profiles that define each
+            school day.
           </p>
         </div>
         <Link href="/timetable/new" className="button-primary inline-flex items-center gap-2">
@@ -71,11 +81,119 @@ export function TimetableAdminHome() {
         </Link>
       </header>
 
+      <section className="space-y-5 rounded-2xl border border-border bg-card p-5 shadow-sm">
+        <div className="flex flex-wrap items-end justify-between gap-4">
+          <div>
+            <h2 className="font-display text-2xl">Class timetables</h2>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Assign subjects and teachers to each teaching period.
+            </p>
+          </div>
+          <label className="grid w-full gap-1.5 text-sm font-medium sm:w-72">
+            Campus
+            <select
+              className="field"
+              value={branchId}
+              onChange={(event) => {
+                setBranchId(event.target.value);
+                setOfferingSearch('');
+              }}
+            >
+              <option value="">Choose campus</option>
+              {branches.map((branch) => (
+                <option key={branch.id} value={branch.id}>
+                  {String(branch.name)}
+                </option>
+              ))}
+            </select>
+          </label>
+        </div>
+
+        {branchId ? (
+          <div className="flex flex-wrap items-center justify-between gap-3 border-y border-border/70 py-3">
+            <p className="text-sm">
+              <span className="font-semibold">
+                {String(selectedBranch?.name ?? 'Selected campus')}
+              </span>
+              <span className="text-muted-foreground">
+                {' '}
+                · {offerings.length} {offerings.length === 1 ? 'class' : 'classes'}
+              </span>
+            </p>
+            <label className="relative w-full sm:w-72">
+              <span className="sr-only">Search classes</span>
+              <Search
+                aria-hidden="true"
+                className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+                size={16}
+              />
+              <input
+                className="field field-with-leading-icon"
+                placeholder="Search classes or sections"
+                value={offeringSearch}
+                onChange={(event) => setOfferingSearch(event.target.value)}
+              />
+            </label>
+          </div>
+        ) : null}
+
+        <DataTable minWidth="42rem">
+          <thead className="bg-muted/45 text-muted-foreground">
+            <tr>
+              <th className="px-4 py-3">Class</th>
+              <th>Section</th>
+              <th>Campus</th>
+              <th className="px-4 text-right">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {visibleOfferings.map((offering) => (
+              <tr key={offering.id} className="border-t border-border/70">
+                <td className="px-4 py-3 font-semibold">{offeringTitle(offering)}</td>
+                <td>{String(offering.sectionName ?? 'No section')}</td>
+                <td>{String(selectedBranch?.name ?? '')}</td>
+                <td className="px-4 py-3">
+                  <div className="flex justify-end gap-2">
+                    <Link
+                      className="button-secondary px-3 py-2"
+                      href={`/timetable/classes/${offering.id}`}
+                    >
+                      View
+                    </Link>
+                    <Link
+                      className="button-primary inline-flex items-center gap-1.5 px-3 py-2"
+                      href={`/timetable/classes/${offering.id}/edit`}
+                    >
+                      Assign periods <ArrowRight aria-hidden="true" size={15} />
+                    </Link>
+                  </div>
+                </td>
+              </tr>
+            ))}
+            {!visibleOfferings.length ? (
+              <TableEmpty colSpan={4}>
+                {!branchId
+                  ? 'Choose a campus to see its classes.'
+                  : offerings.length
+                    ? 'No classes match your search.'
+                    : 'No active classes are available at this campus.'}
+              </TableEmpty>
+            ) : null}
+          </tbody>
+        </DataTable>
+      </section>
+
       <section className="space-y-4 rounded-2xl border border-border bg-card p-5 shadow-sm">
-        <div>
-          <h2 className="font-display text-2xl">Timing profiles</h2>
-          <p className="mt-1 text-sm text-muted-foreground">
-            School hours, assembly, teaching periods and breaks.
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <h2 className="font-display text-2xl">Timing profiles</h2>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Define school hours, assembly, teaching periods and breaks.
+            </p>
+          </div>
+          <p className="text-sm text-muted-foreground">
+            <span className="font-semibold text-foreground">{activeProfileCount} active</span> ·{' '}
+            {profiles.length} total
           </p>
         </div>
         <DataTableControls
@@ -166,74 +284,6 @@ export function TimetableAdminHome() {
             {!visibleProfiles.length ? (
               <TableEmpty colSpan={5}>
                 {isLoading ? 'Loading timing profiles…' : 'No timing profiles match this search.'}
-              </TableEmpty>
-            ) : null}
-          </tbody>
-        </DataTable>
-      </section>
-
-      <section className="space-y-4 rounded-2xl border border-border bg-card p-5 shadow-sm">
-        <div className="flex flex-wrap items-end justify-between gap-3">
-          <div>
-            <h2 className="font-display text-2xl">Class timetables</h2>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Open a class to view its effective schedule or assign subjects and teachers.
-            </p>
-          </div>
-          <label className="grid min-w-64 gap-1.5 text-sm font-medium">
-            Campus
-            <select
-              className="field"
-              value={branchId}
-              onChange={(event) => setBranchId(event.target.value)}
-            >
-              <option value="">Choose campus</option>
-              {branches.map((branch) => (
-                <option key={branch.id} value={branch.id}>
-                  {String(branch.name)}
-                </option>
-              ))}
-            </select>
-          </label>
-        </div>
-        <DataTable minWidth="42rem">
-          <thead className="bg-muted/45 text-muted-foreground">
-            <tr>
-              <th className="px-4 py-3">Class / course</th>
-              <th>Section</th>
-              <th>Campus</th>
-              <th className="px-4 text-right">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {offerings.map((offering) => (
-              <tr key={offering.id} className="border-t border-border/70">
-                <td className="px-4 py-3 font-semibold">{offeringTitle(offering)}</td>
-                <td>{String(offering.sectionName ?? 'No section')}</td>
-                <td>{String(branches.find((item) => item.id === branchId)?.name ?? '')}</td>
-                <td className="px-4">
-                  <div className="flex justify-end gap-2">
-                    <Link
-                      className="button-secondary px-3 py-2"
-                      href={`/timetable/classes/${offering.id}`}
-                    >
-                      View
-                    </Link>
-                    <Link
-                      className="button-primary px-3 py-2"
-                      href={`/timetable/classes/${offering.id}/edit`}
-                    >
-                      Assign periods
-                    </Link>
-                  </div>
-                </td>
-              </tr>
-            ))}
-            {!offerings.length ? (
-              <TableEmpty colSpan={4}>
-                {branchId
-                  ? 'No active classes or courses at this campus.'
-                  : 'Choose a campus to see its classes.'}
               </TableEmpty>
             ) : null}
           </tbody>

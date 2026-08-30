@@ -34,6 +34,7 @@ export type ClassTimetable = {
 export type TimetableProfilePayload = {
   name: string;
   scope: TimetableScope;
+  branchId?: string;
   academicOfferingId?: string;
   timetableMode: TimetableMode;
   slots: TimetableSlotInput[];

@@ -225,7 +225,10 @@ export function TimetableProfileEditor({ profileId }: { profileId?: string }) {
       const saved = editing
         ? await update({
             profileId: profileId!,
-            body: { name: body.name, timetableMode: body.timetableMode, slots: body.slots },
+            body: {
+              ...body,
+              branchId: scope === 'ORGANIZATION' ? undefined : branchId,
+            },
           }).unwrap()
         : scope === 'ORGANIZATION'
           ? await createOrganization(body).unwrap()
@@ -277,9 +280,15 @@ export function TimetableProfileEditor({ profileId }: { profileId?: string }) {
           Applies to
           <select
             className="field"
-            disabled={editing}
             value={scope}
-            onChange={(event) => setScope(event.target.value as TimetableScope)}
+            onChange={(event) => {
+              const nextScope = event.target.value as TimetableScope;
+              setScope(nextScope);
+              if (nextScope === 'ORGANIZATION') {
+                setBranchId('');
+                setOfferingId('');
+              } else if (nextScope === 'BRANCH') setOfferingId('');
+            }}
           >
             <option value="ORGANIZATION">Entire organization</option>
             <option value="BRANCH">One campus</option>
@@ -302,7 +311,6 @@ export function TimetableProfileEditor({ profileId }: { profileId?: string }) {
             Campus
             <select
               className="field"
-              disabled={editing}
               value={branchId}
               onChange={(event) => {
                 setBranchId(event.target.value);
@@ -323,7 +331,6 @@ export function TimetableProfileEditor({ profileId }: { profileId?: string }) {
             Class / course
             <select
               className="field"
-              disabled={editing}
               value={offeringId}
               onChange={(event) => setOfferingId(event.target.value)}
             >

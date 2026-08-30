@@ -17,3 +17,4 @@ import '@web/features/reports/reports.api';
 import '@web/features/learner-portal/learner-portal.api';
 import '@web/features/timetable/timetable.api';
 import '@web/features/syllabus/syllabus.api';
+import '@web/features/website/website.api';

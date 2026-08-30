@@ -16,6 +16,7 @@ import {
   Menu,
   NotebookPen,
   Settings,
+  Globe2,
   ScrollText,
   X,
   UserRoundCog,
@@ -76,6 +77,12 @@ const navigationGroups = [
   {
     label: 'System',
     items: [
+      {
+        href: '/dashboard/website',
+        label: 'Website',
+        icon: Globe2,
+        roles: ['ADMIN'],
+      },
       {
         href: '/settings/organization',
         label: 'Settings',

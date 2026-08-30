@@ -71,7 +71,7 @@ const baseQueryWithRefresh: BaseQueryFn<string | FetchArgs, unknown, FetchBaseQu
 export const baseApi = createApi({
   reducerPath: 'api',
   baseQuery: baseQueryWithRefresh,
-  tagTypes: ['Session', 'Organization', 'Branch', 'Academic', 'KioskStaff', 'Syllabus'],
+  tagTypes: ['Session', 'Organization', 'Branch', 'Academic', 'KioskStaff', 'Syllabus', 'Website'],
   refetchOnMountOrArgChange: true,
   endpoints: () => ({}),
 });

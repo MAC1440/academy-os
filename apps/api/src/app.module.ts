@@ -21,6 +21,7 @@ import { PrismaModule } from './prisma/prisma.module';
 import { AnnouncementsModule } from './modules/announcements/announcements.module';
 import { TimetableModule } from './modules/timetable/timetable.module';
 import { SyllabusModule } from './modules/syllabus/syllabus.module';
+import { WebsiteModule } from './modules/website/website.module';
 
 @Module({
   imports: [
@@ -44,6 +45,7 @@ import { SyllabusModule } from './modules/syllabus/syllabus.module';
     AnnouncementsModule,
     TimetableModule,
     SyllabusModule,
+    WebsiteModule,
   ],
   controllers: [AppController],
   providers: [AppService],

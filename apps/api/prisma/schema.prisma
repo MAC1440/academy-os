@@ -109,6 +109,18 @@ enum TimetableSlotType {
   BREAK
 }
 
+enum WebsiteTemplate {
+  CLASSIC
+  MODERN
+  MINIMAL
+}
+
+enum WebsiteRevisionStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
 model Organization {
   id                            String                         @id @default(cuid())
   name                          String
@@ -136,12 +148,13 @@ model Organization {
   announcements                 Announcement[]
   sessionSyllabi                SessionSyllabus[]
   timetableProfiles             TimetableProfile[]
+  websiteConfig                 WebsiteConfig?
 }
 
 model User {
-  id                         String           @id @default(cuid())
+  id                         String            @id @default(cuid())
   accountType                AccountType
-  username                   String?          @unique
+  username                   String?           @unique
   contactNumber              String?
   fullName                   String
   email                      String?
@@ -149,19 +162,48 @@ model User {
   pinHash                    String?
   temporaryPasswordEncrypted String?
   temporaryPinEncrypted      String?
-  mustCompleteProfile        Boolean          @default(true)
-  status                     AccountStatus    @default(ACTIVE)
-  createdAt                  DateTime         @default(now())
-  updatedAt                  DateTime         @updatedAt
+  mustCompleteProfile        Boolean           @default(true)
+  status                     AccountStatus     @default(ACTIVE)
+  createdAt                  DateTime          @default(now())
+  updatedAt                  DateTime          @updatedAt
   deletedAt                  DateTime?
   roleAssignments            RoleAssignment[]
   staffProfile               StaffProfile?
-  audits                     AuditLog[]       @relation("AuditActor")
-  createdNotes               SharedNote[]     @relation("SharedNoteAuthor")
-  lastEditedNotes            SharedNote[]     @relation("SharedNoteLastEditor")
-  guardianStudents           Student[]        @relation("GuardianPortalStudent")
+  audits                     AuditLog[]        @relation("AuditActor")
+  createdNotes               SharedNote[]      @relation("SharedNoteAuthor")
+  lastEditedNotes            SharedNote[]      @relation("SharedNoteLastEditor")
+  guardianStudents           Student[]         @relation("GuardianPortalStudent")
+  createdWebsiteRevisions    WebsiteRevision[] @relation("WebsiteRevisionCreator")
+  publishedWebsiteRevisions  WebsiteRevision[] @relation("WebsiteRevisionPublisher")
 
   @@index([accountType, status])
+}
+
+model WebsiteConfig {
+  id             String            @id @default(cuid())
+  organizationId String            @unique
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+  organization   Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  revisions      WebsiteRevision[]
+}
+
+model WebsiteRevision {
+  id                String                @id @default(cuid())
+  websiteConfigId   String
+  status            WebsiteRevisionStatus @default(DRAFT)
+  data              Json
+  createdByUserId   String
+  publishedByUserId String?
+  createdAt         DateTime              @default(now())
+  updatedAt         DateTime              @updatedAt
+  publishedAt       DateTime?
+  websiteConfig     WebsiteConfig         @relation(fields: [websiteConfigId], references: [id], onDelete: Cascade)
+  createdBy         User                  @relation("WebsiteRevisionCreator", fields: [createdByUserId], references: [id], onDelete: Restrict)
+  publishedBy       User?                 @relation("WebsiteRevisionPublisher", fields: [publishedByUserId], references: [id], onDelete: SetNull)
+
+  @@index([websiteConfigId, status, updatedAt])
+  @@index([websiteConfigId, status, publishedAt])
 }
 
 model Branch {

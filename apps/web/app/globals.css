@@ -384,6 +384,171 @@ a:focus-visible {
   padding: 1.5rem;
 }
 
+/* Public website branding is intentionally independent from portal theme tokens. */
+.website-public {
+  --website-background: #fffaf1;
+  --website-foreground: #2d171a;
+  --website-card: #fffdf8;
+  --website-card-foreground: var(--website-foreground);
+  --website-muted: color-mix(in srgb, var(--website-foreground) 68%, white);
+  --website-muted-foreground: var(--website-muted);
+  --website-border: color-mix(in srgb, var(--website-primary) 16%, white);
+  min-height: 100vh;
+  background: var(--website-background);
+  color: var(--website-foreground);
+  color-scheme: light;
+}
+
+.website-preview-banner {
+  background: var(--website-accent);
+  color: var(--website-accent-foreground);
+  padding: 0.55rem 1rem;
+  text-align: center;
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.website-public-header,
+.website-public-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  max-width: 78rem;
+  margin: auto;
+  padding: 1.4rem 1.5rem;
+}
+
+.website-wordmark {
+  color: var(--website-primary);
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: clamp(1.15rem, 2.5vw, 1.55rem);
+  font-weight: 750;
+  letter-spacing: -0.035em;
+  text-decoration: none;
+}
+
+.website-foundation-hero {
+  display: grid;
+  min-height: min(70vh, 48rem);
+  max-width: 78rem;
+  margin: auto;
+  padding: clamp(4rem, 9vw, 8rem) 1.5rem;
+  align-items: center;
+  gap: 3rem;
+}
+
+.website-foundation-copy {
+  max-width: 48rem;
+}
+
+.website-foundation-copy h1 {
+  margin: 0;
+  color: var(--website-primary);
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: clamp(3.2rem, 8vw, 7rem);
+  line-height: 0.92;
+  letter-spacing: -0.04em;
+  text-wrap: balance;
+}
+
+.website-foundation-copy p {
+  max-width: 38rem;
+  margin: 1.75rem 0 0;
+  color: var(--website-muted-foreground);
+  font-size: clamp(1rem, 2vw, 1.25rem);
+  line-height: 1.7;
+}
+
+.website-foundation-mark {
+  display: grid;
+  width: min(100%, 28rem);
+  aspect-ratio: 1;
+  place-content: center;
+  justify-self: end;
+  border-radius: 50%;
+  background: var(--website-primary);
+  overflow: hidden;
+}
+
+.website-foundation-mark span {
+  display: block;
+  width: 16rem;
+  height: 1.15rem;
+  margin: 0.8rem;
+  background: var(--website-secondary);
+  transform: rotate(-12deg);
+}
+
+.website-foundation-mark span:nth-child(2) {
+  width: 12rem;
+  margin-left: 4rem;
+  background: var(--website-accent);
+}
+
+.website-template-modern .website-foundation-mark {
+  border-radius: 1.25rem;
+  transform: rotate(3deg);
+}
+
+.website-template-minimal .website-foundation-hero {
+  grid-template-columns: minmax(0, 54rem);
+}
+
+.website-template-minimal .website-foundation-mark {
+  display: none;
+}
+
+.website-public-footer {
+  border-top: 1px solid var(--website-border);
+  color: var(--website-muted-foreground);
+  font-size: 0.875rem;
+}
+
+.website-public-footer a,
+.website-public-state a {
+  color: var(--website-primary, #740019);
+  font-weight: 750;
+  text-underline-offset: 0.25rem;
+}
+
+.website-public-state {
+  display: grid;
+  min-height: 100vh;
+  place-content: center;
+  gap: 0.8rem;
+  padding: 2rem;
+  background: #fffaf1;
+  color: #2d171a;
+  text-align: center;
+}
+
+.website-public-state h1,
+.website-public-state p {
+  margin: 0;
+}
+
+@media (min-width: 52rem) {
+  .website-foundation-hero {
+    grid-template-columns: minmax(0, 1.25fr) minmax(18rem, 0.75fr);
+  }
+}
+
+@media (max-width: 51.99rem) {
+  .website-foundation-mark {
+    width: min(72vw, 20rem);
+    justify-self: start;
+  }
+
+  .website-foundation-mark span {
+    width: 11rem;
+  }
+
+  .website-foundation-mark span:nth-child(2) {
+    width: 8rem;
+    margin-left: 3rem;
+  }
+}
+
 .academy-proof article {
   border-left: 2px solid var(--accent);
   padding: 0.2rem 0 0.2rem 1rem;

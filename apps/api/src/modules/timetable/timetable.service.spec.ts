@@ -1,5 +1,10 @@
 /* eslint-disable @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-return */
-import { TimetableMode, TimetableSlotType } from '@prisma/client';
+import {
+  EntityStatus,
+  TimetableMode,
+  TimetableProfileScope,
+  TimetableSlotType,
+} from '@prisma/client';
 import { TimetableService } from './timetable.service';
 
 type Assignment = {
@@ -284,6 +289,77 @@ describe('TimetableService timing profile slot updates', () => {
     expect(tx.timetableSlot.create).not.toHaveBeenCalled();
     expect(tx.timetableSlot.deleteMany).toHaveBeenCalledWith({
       where: { id: { in: ['old-break'] } },
+    });
+  });
+});
+
+describe('TimetableService profile targets', () => {
+  it('returns assigned subjects with a timetable offering', async () => {
+    const prisma = {
+      academicOffering: {
+        findFirst: jest.fn().mockResolvedValue({ id: 'class-a' }),
+      },
+    };
+    const service = new TimetableService(prisma as never, {} as never);
+
+    await (
+      service as unknown as { offering: (id: string) => Promise<unknown> }
+    ).offering('class-a');
+
+    expect(prisma.academicOffering.findFirst).toHaveBeenCalledWith({
+      where: { id: 'class-a', status: EntityStatus.ACTIVE },
+      include: {
+        branch: true,
+        subjects: { include: { subject: true } },
+      },
+    });
+  });
+
+  it('updates the scope, campus and class target together', async () => {
+    const tx = {
+      timetableProfile: { update: jest.fn().mockResolvedValue({}) },
+    };
+    const prisma = {
+      organization: {
+        findFirstOrThrow: jest.fn().mockResolvedValue({ id: 'organization-a' }),
+      },
+      $transaction: jest.fn().mockImplementation((work) => work(tx)),
+    };
+    const audit = { record: jest.fn().mockResolvedValue(undefined) };
+    const service = new TimetableService(prisma as never, audit as never);
+    jest.spyOn(service as never, 'profile').mockResolvedValue({
+      id: 'profile-a',
+      organizationId: 'organization-a',
+      branchId: null,
+      academicOfferingId: null,
+      scope: TimetableProfileScope.ORGANIZATION,
+      timetableMode: TimetableMode.SAME_DAILY,
+    });
+    jest
+      .spyOn(service as never, 'ensureProfileAccess')
+      .mockResolvedValue(undefined);
+    jest
+      .spyOn(service as never, 'validateProfileTarget')
+      .mockResolvedValue(undefined);
+    jest.spyOn(service as never, 'profileDetails').mockResolvedValue({});
+
+    await service.updateProfile(
+      'profile-a',
+      {
+        scope: TimetableProfileScope.CLASS_OVERRIDE,
+        branchId: 'branch-a',
+        academicOfferingId: 'class-a',
+      },
+      'admin',
+    );
+
+    expect(tx.timetableProfile.update).toHaveBeenCalledWith({
+      where: { id: 'profile-a' },
+      data: {
+        scope: TimetableProfileScope.CLASS_OVERRIDE,
+        branchId: 'branch-a',
+        academicOfferingId: 'class-a',
+      },
     });
   });
 });

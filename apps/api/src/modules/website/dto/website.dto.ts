@@ -119,6 +119,18 @@ class WebsiteFacultyDto {
   @IsInt() @Min(0) sortOrder!: number;
 }
 
+class WebsiteAdmissionsDto {
+  @IsBoolean() enabled!: boolean;
+  @IsBoolean() isOpen!: boolean;
+  @IsString() @MaxLength(160) heading!: string;
+  @IsString() @MaxLength(2000) description!: string;
+  @IsArray()
+  @ArrayMaxSize(80)
+  @IsString({ each: true })
+  eligibleOfferingIds!: string[];
+  @IsString() @MaxLength(500) confirmationMessage!: string;
+}
+
 export class WebsiteSettingsDto {
   @IsString()
   @MaxLength(160)
@@ -208,4 +220,8 @@ export class WebsiteSettingsDto {
   @ValidateNested({ each: true })
   @Type(() => WebsiteFacultyDto)
   faculty!: WebsiteFacultyDto[];
+
+  @ValidateNested()
+  @Type(() => WebsiteAdmissionsDto)
+  admissions!: WebsiteAdmissionsDto;
 }

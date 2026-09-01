@@ -7,9 +7,14 @@ import {
   useGetPublicWebsiteContentQuery,
   useGetPublicWebsiteQuery,
 } from './website.api';
+import { FormEvent, useState } from 'react';
+import {
+  useGetPublicAdmissionOptionsQuery,
+  useSubmitWebsiteAdmissionMutation,
+} from '@web/features/admissions/admissions.api';
 import { websiteTheme } from './website-theme';
 
-function Shell({ children }: { children: React.ReactNode }) {
+export function Shell({ children }: { children: React.ReactNode }) {
   const website = useGetPublicWebsiteQuery();
   if (website.isLoading) return <main className="website-public-state">Loading website…</main>;
   const settings = website.data?.data;
@@ -30,6 +35,7 @@ function Shell({ children }: { children: React.ReactNode }) {
           <Link href="/news">News</Link>
           <Link href="/events">Events</Link>
           <Link href="/gallery">Gallery</Link>
+          {settings.admissions?.enabled ? <Link href="/apply">Apply</Link> : null}
         </nav>
       </header>
       {children}
@@ -40,6 +46,196 @@ function Shell({ children }: { children: React.ReactNode }) {
         </Link>
       </footer>
     </div>
+  );
+}
+
+export function PublicAdmissionsPage() {
+  const options = useGetPublicAdmissionOptionsQuery();
+  const [submit, submitState] = useSubmitWebsiteAdmissionMutation();
+  const [confirmation, setConfirmation] = useState('');
+  const [error, setError] = useState('');
+  async function send(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setError('');
+    const values = Object.fromEntries(new FormData(event.currentTarget));
+    const optional = (key: string) => String(values[key] || '').trim() || undefined;
+    try {
+      const result = await submit({
+        academicOfferingId: String(values.academicOfferingId),
+        studentFullName: String(values.studentFullName),
+        studentCnic: String(values.studentCnic).replace(/\D/g, ''),
+        dateOfBirth: String(values.dateOfBirth),
+        gender: values.gender as 'MALE' | 'FEMALE' | 'OTHER',
+        guardianFullName: String(values.guardianFullName),
+        relationship: String(values.relationship),
+        guardianPhone: String(values.guardianPhone),
+        alternatePhone: optional('alternatePhone'),
+        email: optional('email'),
+        previousSchool: optional('previousSchool'),
+        previousClass: optional('previousClass'),
+        address: String(values.address),
+        notes: optional('notes'),
+        website: optional('website'),
+      }).unwrap();
+      setConfirmation(result.message);
+      event.currentTarget.reset();
+    } catch (failure) {
+      const response = failure as { data?: { message?: string } };
+      setError(
+        response.data?.message ||
+          'Your application could not be submitted. Check the form and try again.',
+      );
+    }
+  }
+  return (
+    <Shell>
+      <main className="website-admission-page">
+        <header>
+          <h1>{options.data?.heading || 'Admissions'}</h1>
+          <p>
+            {options.data?.description || 'Submit an application for an eligible class or course.'}
+          </p>
+        </header>
+        {options.isLoading ? (
+          <p>Loading admissions…</p>
+        ) : !options.data?.enabled || !options.data.isOpen ? (
+          <section className="website-admission-closed">
+            <h2>Online applications are currently closed</h2>
+            <p>Please check back later or contact the school for admission information.</p>
+          </section>
+        ) : confirmation ? (
+          <section className="website-admission-success" role="status">
+            <h2>Application received</h2>
+            <p>{confirmation}</p>
+            <button className="website-public-action" onClick={() => setConfirmation('')}>
+              Submit another application
+            </button>
+          </section>
+        ) : (
+          <form className="website-admission-form" onSubmit={send}>
+            <input
+              className="website-honeypot"
+              name="website"
+              tabIndex={-1}
+              autoComplete="off"
+              aria-hidden="true"
+            />
+            <fieldset>
+              <legend>Student details</legend>
+              <div>
+                <label>
+                  Student name
+                  <input name="studentFullName" required maxLength={160} />
+                </label>
+                <label>
+                  B-Form number
+                  <input
+                    name="studentCnic"
+                    inputMode="numeric"
+                    pattern="[0-9]{13}"
+                    maxLength={13}
+                    required
+                  />
+                </label>
+                <label>
+                  Date of birth
+                  <input name="dateOfBirth" type="date" required />
+                </label>
+                <label>
+                  Gender
+                  <select name="gender" required defaultValue="">
+                    <option value="" disabled>
+                      Select gender
+                    </option>
+                    <option value="MALE">Male</option>
+                    <option value="FEMALE">Female</option>
+                    <option value="OTHER">Other</option>
+                  </select>
+                </label>
+                <label className="wide">
+                  Applying for
+                  <select name="academicOfferingId" required defaultValue="">
+                    <option value="" disabled>
+                      Select a class or course
+                    </option>
+                    {options.data.offerings.map((item) => (
+                      <option key={item.id} value={item.id}>
+                        {item.name}
+                        {item.sectionName ? ` · ${item.sectionName}` : ''} — {item.branchName}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              </div>
+            </fieldset>
+            <fieldset>
+              <legend>Parent or guardian</legend>
+              <div>
+                <label>
+                  Guardian name
+                  <input name="guardianFullName" required maxLength={160} />
+                </label>
+                <label>
+                  Relationship
+                  <input name="relationship" required maxLength={80} />
+                </label>
+                <label>
+                  Mobile number
+                  <input
+                    name="guardianPhone"
+                    type="tel"
+                    placeholder="03451234567"
+                    pattern="(\+92|0)3[0-9]{9}"
+                    required
+                  />
+                </label>
+                <label>
+                  Alternate number <small>Optional</small>
+                  <input name="alternatePhone" type="tel" pattern="(\+92|0)3[0-9]{9}" />
+                </label>
+                <label className="wide">
+                  Email <small>Optional</small>
+                  <input name="email" type="email" maxLength={160} />
+                </label>
+              </div>
+            </fieldset>
+            <fieldset>
+              <legend>Education and contact</legend>
+              <div>
+                <label>
+                  Previous school <small>Optional</small>
+                  <input name="previousSchool" maxLength={300} />
+                </label>
+                <label>
+                  Previous class <small>Optional</small>
+                  <input name="previousClass" maxLength={120} />
+                </label>
+                <label className="wide">
+                  Home address
+                  <textarea name="address" required maxLength={1000} />
+                </label>
+                <label className="wide">
+                  Additional notes <small>Optional</small>
+                  <textarea name="notes" maxLength={2000} />
+                </label>
+              </div>
+            </fieldset>
+            {error ? (
+              <p className="website-admission-error" role="alert">
+                {error}
+              </p>
+            ) : null}
+            <button className="website-public-action" disabled={submitState.isLoading}>
+              {submitState.isLoading ? 'Submitting…' : 'Submit application'}
+            </button>
+            <p className="website-form-assurance">
+              Your application enters the school’s admissions review. Submission does not guarantee
+              admission.
+            </p>
+          </form>
+        )}
+      </main>
+    </Shell>
   );
 }
 function Heading({ eyebrow, title, copy }: { eyebrow: string; title: string; copy: string }) {

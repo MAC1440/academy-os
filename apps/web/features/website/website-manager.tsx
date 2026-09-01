@@ -6,6 +6,7 @@ import { ExternalLink, Globe2, ImageIcon, Palette, Save, Send, Type } from 'luci
 import { useToast } from '@web/components/toast-provider';
 import { WebsiteContentManager } from './website-content-manager';
 import { WebsitePublishingStudio } from './website-publishing-studio';
+import { WebsiteAdmissionsManager } from './website-admissions-manager';
 import {
   type WebsiteFont,
   type WebsiteSettings,
@@ -44,6 +45,14 @@ const fallback: WebsiteSettings = {
   programs: [],
   facilities: [],
   faculty: [],
+  admissions: {
+    enabled: false,
+    isOpen: false,
+    heading: 'Admissions',
+    description: '',
+    eligibleOfferingIds: [],
+    confirmationMessage: 'Thank you. Your application has been received.',
+  },
 };
 const templates: Array<{ value: WebsiteTemplate; name: string; description: string }> = [
   { value: 'CLASSIC', name: 'Classic', description: 'Formal, balanced and welcoming.' },
@@ -92,6 +101,7 @@ export function WebsiteManager() {
       programs: draft.programs ?? [],
       facilities: draft.facilities ?? [],
       faculty: draft.faculty ?? [],
+      admissions: { ...fallback.admissions, ...draft.admissions },
     });
   }, [overview.data?.draft]);
   const update = <K extends keyof WebsiteSettings>(key: K, value: WebsiteSettings[K]) =>
@@ -400,6 +410,7 @@ export function WebsiteManager() {
         </SettingSection>
 
         <WebsiteContentManager settings={settings} onChange={setSettings} />
+        <WebsiteAdmissionsManager settings={settings} onChange={setSettings} />
 
         <div className="website-manager-savebar">
           <p>Your edits stay private until you publish them.</p>

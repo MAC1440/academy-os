@@ -22,6 +22,21 @@ export type WebsiteSettings = {
   programs: WebsiteProgram[];
   facilities: WebsiteFacility[];
   faculty: WebsiteFaculty[];
+  admissions: WebsiteAdmissionsSettings;
+};
+export type WebsiteAdmissionsSettings = {
+  enabled: boolean;
+  isOpen: boolean;
+  heading: string;
+  description: string;
+  eligibleOfferingIds: string[];
+  confirmationMessage: string;
+};
+export type WebsiteAdmissionOffering = {
+  id: string;
+  name: string;
+  sectionName?: string | null;
+  branchName: string;
 };
 
 export type HomepageConfig = {
@@ -268,6 +283,10 @@ export const websiteApi = baseApi.injectEndpoints({
       query: () => '/website/imports/faculty',
       transformResponse: unwrap,
     }),
+    getWebsiteAdmissionOfferings: build.query<WebsiteAdmissionOffering[], void>({
+      query: () => '/website/imports/admission-offerings',
+      transformResponse: unwrap,
+    }),
     saveWebsiteDraft: build.mutation<WebsiteRevision, WebsiteSettings>({
       query: (body) => ({ url: '/website/draft', method: 'PUT', body }),
       transformResponse: unwrap,
@@ -287,6 +306,7 @@ export const {
   useGetWebsitePreviewQuery,
   useGetWebsiteProgramImportsQuery,
   useGetWebsiteFacultyImportsQuery,
+  useGetWebsiteAdmissionOfferingsQuery,
   useSaveWebsiteDraftMutation,
   usePublishWebsiteMutation,
   useGetWebsiteContentQuery,

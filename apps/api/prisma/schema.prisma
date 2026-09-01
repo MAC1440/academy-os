@@ -86,6 +86,13 @@ enum AdmissionStatus {
   REJECTED
 }
 
+enum AdmissionSource {
+  WEBSITE
+  ADMIN_ENTRY
+  WALK_IN
+  IMPORT
+}
+
 enum AcademicTermType {
   YEARLY
   SEMESTER
@@ -666,6 +673,7 @@ model AdmissionApplication {
   physicalDocumentsVerifiedAt       DateTime?
   physicalDocumentsVerificationNote String?
   status                            AdmissionStatus  @default(PENDING)
+  source                            AdmissionSource  @default(ADMIN_ENTRY)
   reviewNote                        String?
   reviewedAt                        DateTime?
   reviewedByUserId                  String?

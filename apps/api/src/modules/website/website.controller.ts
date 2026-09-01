@@ -113,6 +113,15 @@ export class WebsiteController {
     );
   }
 
+  @Get('imports/admission-offerings')
+  @RequirePermissions('website.manage')
+  async importAdmissionOfferings(@CurrentUser() user: AuthenticatedUser) {
+    return successResponse(
+      'Admission offerings retrieved',
+      await this.website.importAdmissionOfferings(user.id),
+    );
+  }
+
   @Put('draft')
   @RequirePermissions('website.manage')
   async saveDraft(

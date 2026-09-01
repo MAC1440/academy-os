@@ -1820,3 +1820,161 @@ a:focus-visible {
     max-width: 60%;
   }
 }
+
+.website-offering-picker {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.55rem;
+  padding: 1rem;
+  border: 1px solid var(--border);
+  border-radius: 0.9rem;
+}
+.website-offering-picker legend {
+  padding: 0 0.35rem;
+  font-size: 0.84rem;
+  font-weight: 800;
+}
+.website-offering-picker > label {
+  display: flex;
+  gap: 0.65rem;
+  align-items: flex-start;
+  padding: 0.7rem;
+  border-radius: 0.65rem;
+  background: var(--muted);
+  cursor: pointer;
+}
+.website-offering-picker > label span {
+  display: grid;
+}
+.website-offering-picker small {
+  color: var(--muted-foreground);
+}
+.website-field-note,
+.website-field-warning {
+  padding: 0.8rem 1rem;
+  border-radius: 0.7rem;
+  font-size: 0.84rem;
+}
+.website-field-note {
+  background: var(--muted);
+}
+.website-field-warning {
+  color: #7a4a00;
+  background: #fff2d5;
+}
+.website-admission-page {
+  width: min(880px, calc(100% - 2rem));
+  margin: 0 auto;
+  padding: clamp(3rem, 8vw, 7rem) 0;
+}
+.website-admission-page > header {
+  max-width: 46rem;
+  margin-bottom: 3rem;
+}
+.website-admission-page > header h1 {
+  font: 700 clamp(2.6rem, 7vw, 5.4rem)/0.98 var(--site-heading);
+  letter-spacing: -0.04em;
+}
+.website-admission-page > header p {
+  margin-top: 1rem;
+  color: color-mix(in srgb, var(--site-ink) 68%, transparent);
+  font-size: 1.1rem;
+  line-height: 1.7;
+}
+.website-admission-form {
+  display: grid;
+  gap: 2rem;
+}
+.website-admission-form fieldset {
+  border-top: 1px solid color-mix(in srgb, var(--site-ink) 18%, transparent);
+  padding-top: 1.2rem;
+}
+.website-admission-form legend {
+  padding-right: 1rem;
+  font: 700 1.3rem var(--site-heading);
+}
+.website-admission-form fieldset > div {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+.website-admission-form label {
+  display: grid;
+  gap: 0.4rem;
+  font-size: 0.82rem;
+  font-weight: 750;
+}
+.website-admission-form label.wide {
+  grid-column: 1/-1;
+}
+.website-admission-form label small {
+  color: color-mix(in srgb, var(--site-ink) 58%, transparent);
+  font-weight: 500;
+}
+.website-admission-form input,
+.website-admission-form select,
+.website-admission-form textarea {
+  min-height: 3rem;
+  width: 100%;
+  border: 1px solid color-mix(in srgb, var(--site-ink) 24%, transparent);
+  border-radius: 0.45rem;
+  background: var(--site-surface);
+  padding: 0.7rem 0.8rem;
+  color: var(--site-ink);
+}
+.website-admission-form textarea {
+  min-height: 6rem;
+  resize: vertical;
+}
+.website-admission-form input:focus,
+.website-admission-form select:focus,
+.website-admission-form textarea:focus {
+  outline: 3px solid color-mix(in srgb, var(--site-primary) 25%, transparent);
+  border-color: var(--site-primary);
+}
+.website-honeypot {
+  position: absolute !important;
+  left: -10000px !important;
+  width: 1px !important;
+  height: 1px !important;
+  overflow: hidden !important;
+}
+.website-admission-form > .website-public-action {
+  justify-self: start;
+  border: 0;
+}
+.website-admission-error {
+  padding: 1rem;
+  border: 1px solid #c52b3b;
+  background: #fff0f1;
+  color: #8f1423;
+}
+.website-form-assurance {
+  max-width: 60ch;
+  color: color-mix(in srgb, var(--site-ink) 62%, transparent);
+  font-size: 0.8rem;
+}
+.website-admission-closed,
+.website-admission-success {
+  padding: clamp(1.5rem, 5vw, 3rem);
+  background: color-mix(in srgb, var(--site-secondary) 14%, var(--site-surface));
+  border: 1px solid color-mix(in srgb, var(--site-secondary) 38%, transparent);
+}
+.website-admission-closed h2,
+.website-admission-success h2 {
+  font: 700 1.7rem var(--site-heading);
+}
+.website-admission-closed p,
+.website-admission-success p {
+  margin: 0.7rem 0 1.3rem;
+  line-height: 1.7;
+}
+@media (max-width: 700px) {
+  .website-offering-picker,
+  .website-admission-form fieldset > div {
+    grid-template-columns: 1fr;
+  }
+  .website-admission-form label.wide {
+    grid-column: auto;
+  }
+}

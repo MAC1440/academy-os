@@ -127,6 +127,7 @@ export function WebsiteSurface({
           <Link href="/news">News</Link>
           <Link href="/events">Events</Link>
           <Link href="/gallery">Gallery</Link>
+          {settings.admissions?.enabled ? <Link href="/apply">Apply</Link> : null}
         </nav>
       </header>
       <main>

@@ -84,6 +84,14 @@ export type WebsiteSettings = {
     visible: boolean;
     sortOrder: number;
   }>;
+  admissions: {
+    enabled: boolean;
+    isOpen: boolean;
+    heading: string;
+    description: string;
+    eligibleOfferingIds: string[];
+    confirmationMessage: string;
+  };
 };
 
 @Injectable()
@@ -299,6 +307,30 @@ export class WebsiteService {
     }));
   }
 
+  async importAdmissionOfferings(actorUserId: string) {
+    const organization = await this.organizationFor(actorUserId);
+    const offerings = await this.prisma.academicOffering.findMany({
+      where: {
+        status: 'ACTIVE',
+        branch: { organizationId: organization.id, deletedAt: null },
+      },
+      select: {
+        id: true,
+        sectionName: true,
+        branch: { select: { name: true } },
+        schoolClass: { select: { name: true } },
+        course: { select: { name: true } },
+      },
+      orderBy: [{ branch: { name: 'asc' } }, { createdAt: 'asc' }],
+    });
+    return offerings.map((item) => ({
+      id: item.id,
+      name: item.schoolClass?.name ?? item.course?.name ?? 'Offering',
+      sectionName: item.sectionName,
+      branchName: item.branch.name,
+    }));
+  }
+
   private async organizationFor(actorUserId: string) {
     const assignment = await this.prisma.roleAssignment.findFirst({
       where: { userId: actorUserId },
@@ -399,6 +431,13 @@ export class WebsiteService {
           .filter(Boolean),
         sortOrder: item.sortOrder ?? index,
       })),
+      admissions: {
+        ...dto.admissions,
+        heading: dto.admissions.heading.trim(),
+        description: dto.admissions.description.trim(),
+        confirmationMessage: dto.admissions.confirmationMessage.trim(),
+        eligibleOfferingIds: [...new Set(dto.admissions.eligibleOfferingIds)],
+      },
     };
   }
 
@@ -427,6 +466,14 @@ export class WebsiteService {
       programs: [],
       facilities: [],
       faculty: [],
+      admissions: {
+        enabled: false,
+        isOpen: false,
+        heading: 'Admissions',
+        description: '',
+        eligibleOfferingIds: [],
+        confirmationMessage: 'Thank you. Your application has been received.',
+      },
     };
   }
 

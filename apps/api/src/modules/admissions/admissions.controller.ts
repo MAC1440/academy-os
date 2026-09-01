@@ -7,6 +7,7 @@ import {
   Patch,
   Post,
   Query,
+  Req,
   UseGuards,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
@@ -20,6 +21,8 @@ import { AdmissionsService } from './admissions.service';
 import { AdmissionListQueryDto } from './dto/admission-list-query.dto';
 import { ReviewAdmissionDto } from './dto/review-admission.dto';
 import { SubmitAdmissionDto } from './dto/submit-admission.dto';
+import { SubmitWebsiteAdmissionDto } from './dto/submit-website-admission.dto';
+import type { Request } from 'express';
 import { UpdateStudentDto } from './dto/update-student.dto';
 import { UpdateAdmissionDto } from './dto/update-admission.dto';
 import {
@@ -37,6 +40,25 @@ export class AdmissionsController {
     return successResponse(
       'Admission application submitted',
       await this.admissions.submit(dto),
+    );
+  }
+
+  @Get('public/website/admissions')
+  async websiteOptions() {
+    return successResponse(
+      'Website admission settings retrieved',
+      await this.admissions.websiteOptions(),
+    );
+  }
+
+  @Post('public/website/admissions')
+  async submitWebsite(
+    @Body() dto: SubmitWebsiteAdmissionDto,
+    @Req() request: Request,
+  ) {
+    return successResponse(
+      'Admission application submitted',
+      await this.admissions.submitWebsite(dto, request.ip ?? 'unknown'),
     );
   }
 

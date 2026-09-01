@@ -1,6 +1,6 @@
 import { Body, Controller, Get, Put, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
-import { CalendarDayType } from '@prisma/client';
+import { CalendarDayType, CalendarVisibility } from '@prisma/client';
 import { IsDateString, IsEnum, IsOptional, IsString } from 'class-validator';
 import { PrismaService } from '../../prisma/prisma.service';
 import { RequirePermissions } from '../access/decorators/require-permissions.decorator';
@@ -10,6 +10,8 @@ class CalendarDayDto {
   @IsDateString() date!: string;
   @IsEnum(CalendarDayType) dayType!: CalendarDayType;
   @IsOptional() @IsString() label?: string;
+  @IsOptional() @IsString() description?: string;
+  @IsOptional() @IsEnum(CalendarVisibility) visibility?: CalendarVisibility;
 }
 @ApiTags('Academic Calendar')
 @ApiBearerAuth('JWT-auth')
@@ -38,12 +40,19 @@ export class CalendarController {
       where: {
         organizationId_calendarDate: { organizationId: o.id, calendarDate },
       },
-      update: { dayType: d.dayType, label: d.label },
+      update: {
+        dayType: d.dayType,
+        label: d.label,
+        description: d.description,
+        visibility: d.visibility ?? CalendarVisibility.INTERNAL,
+      },
       create: {
         organizationId: o.id,
         calendarDate,
         dayType: d.dayType,
         label: d.label,
+        description: d.description,
+        visibility: d.visibility ?? CalendarVisibility.INTERNAL,
       },
     });
   }

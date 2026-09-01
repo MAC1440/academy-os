@@ -17,10 +17,90 @@ import type { WebsiteSettingsDto } from './dto/website.dto';
 export type WebsiteSettings = {
   schoolName: string;
   tagline?: string;
+  logoUrl?: string;
+  faviconUrl?: string;
   template: WebsiteTemplate;
   primaryColor: string;
   secondaryColor: string;
   accentColor: string;
+  headingFont: string;
+  bodyFont: string;
+  contactEmail?: string;
+  phone?: string;
+  address?: string;
+  facebookUrl?: string;
+  instagramUrl?: string;
+  youtubeUrl?: string;
+  homepage: {
+    hero: {
+      enabled: boolean;
+      title: string;
+      subtitle?: string;
+      imageUrl?: string;
+      ctaText?: string;
+      ctaLink?: string;
+    };
+    introduction: {
+      enabled: boolean;
+      heading: string;
+      content: string;
+      imageUrl?: string;
+    };
+    principalMessage: {
+      enabled: boolean;
+      name?: string;
+      designation?: string;
+      message?: string;
+      imageUrl?: string;
+    };
+    programs: { enabled: boolean };
+    facilities: { enabled: boolean };
+    faculty: { enabled: boolean };
+    announcements: { enabled: boolean };
+    results: { enabled: boolean };
+    events: { enabled: boolean };
+    gallery: { enabled: boolean };
+    contact: { enabled: boolean };
+  };
+  programs: Array<{
+    sourceId?: string;
+    name: string;
+    description?: string;
+    imageUrl?: string;
+    visible: boolean;
+    sortOrder: number;
+  }>;
+  facilities: Array<{
+    title: string;
+    description?: string;
+    imageUrl?: string;
+    visible: boolean;
+    sortOrder: number;
+  }>;
+  faculty: Array<{
+    sourceTeacherId?: string;
+    name: string;
+    designation: string;
+    qualification?: string;
+    subjects: string[];
+    bio?: string;
+    imageUrl?: string;
+    visible: boolean;
+    sortOrder: number;
+  }>;
+  admissions: {
+    enabled: boolean;
+    isOpen: boolean;
+    heading: string;
+    description: string;
+    eligibleOfferingIds: string[];
+    confirmationMessage: string;
+  };
+  seo: {
+    defaultTitle: string;
+    defaultDescription: string;
+    defaultSocialImage?: string;
+  };
 };
 
 @Injectable()
@@ -61,6 +141,9 @@ export class WebsiteService {
       draft: draft ? this.managerRevision(draft) : null,
       published: published ? this.managerRevision(published) : null,
       organization: { id: organization.id, name: organization.name },
+      health: this.contentHealth(
+        (draft?.data ?? {}) as Partial<WebsiteSettings>,
+      ),
     };
   }
 
@@ -155,14 +238,123 @@ export class WebsiteService {
     };
   }
 
-  private async ensureConfig(actorUserId: string) {
+  async importPrograms(actorUserId: string) {
+    const organization = await this.organizationFor(actorUserId);
+    const [classes, courses] = await Promise.all([
+      this.prisma.schoolClass.findMany({
+        where: {
+          organizationId: organization.id,
+          deletedAt: null,
+          status: 'ACTIVE',
+        },
+        select: { id: true, name: true },
+        orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
+      }),
+      this.prisma.course.findMany({
+        where: {
+          organizationId: organization.id,
+          deletedAt: null,
+          status: 'ACTIVE',
+        },
+        select: { id: true, name: true, description: true },
+        orderBy: { name: 'asc' },
+      }),
+    ]);
+    return [
+      ...classes.map((item) => ({
+        sourceId: `class:${item.id}`,
+        name: item.name,
+        sourceType: 'CLASS' as const,
+      })),
+      ...courses.map((item) => ({
+        sourceId: `course:${item.id}`,
+        name: item.name,
+        description: item.description ?? undefined,
+        sourceType: 'COURSE' as const,
+      })),
+    ];
+  }
+
+  async importFaculty(actorUserId: string) {
+    const organization = await this.organizationFor(actorUserId);
+    const staff = await this.prisma.staffProfile.findMany({
+      where: {
+        user: {
+          deletedAt: null,
+          status: 'ACTIVE',
+          roleAssignments: {
+            some: { role: { organizationId: organization.id } },
+          },
+        },
+      },
+      select: {
+        id: true,
+        designation: true,
+        user: { select: { fullName: true } },
+        academicOfferingAssignments: {
+          select: {
+            academicOffering: {
+              select: {
+                subjects: { select: { subject: { select: { name: true } } } },
+              },
+            },
+          },
+        },
+      },
+      orderBy: { user: { fullName: 'asc' } },
+    });
+    return staff.map((item) => ({
+      sourceTeacherId: item.id,
+      name: item.user.fullName,
+      designation: item.designation || 'Teacher',
+      subjects: [
+        ...new Set(
+          item.academicOfferingAssignments.flatMap((assignment) =>
+            assignment.academicOffering.subjects.map(
+              (subject) => subject.subject.name,
+            ),
+          ),
+        ),
+      ].sort(),
+    }));
+  }
+
+  async importAdmissionOfferings(actorUserId: string) {
+    const organization = await this.organizationFor(actorUserId);
+    const offerings = await this.prisma.academicOffering.findMany({
+      where: {
+        status: 'ACTIVE',
+        branch: { organizationId: organization.id, deletedAt: null },
+      },
+      select: {
+        id: true,
+        sectionName: true,
+        branch: { select: { name: true } },
+        schoolClass: { select: { name: true } },
+        course: { select: { name: true } },
+      },
+      orderBy: [{ branch: { name: 'asc' } }, { createdAt: 'asc' }],
+    });
+    return offerings.map((item) => ({
+      id: item.id,
+      name: item.schoolClass?.name ?? item.course?.name ?? 'Offering',
+      sectionName: item.sectionName,
+      branchName: item.branch.name,
+    }));
+  }
+
+  private async organizationFor(actorUserId: string) {
     const assignment = await this.prisma.roleAssignment.findFirst({
       where: { userId: actorUserId },
       select: { role: { select: { organization: true } } },
     });
-    const organization = assignment?.role.organization;
-    if (!organization)
+    if (!assignment?.role.organization)
       throw new NotFoundException('Organization access not found');
+    return assignment.role.organization;
+  }
+
+  private async ensureConfig(actorUserId: string) {
+    const organization = await this.organizationFor(actorUserId);
     const config = await this.prisma.websiteConfig.upsert({
       where: { organizationId: organization.id },
       update: {},
@@ -196,13 +388,75 @@ export class WebsiteService {
   private normalize(dto: WebsiteSettingsDto): WebsiteSettings {
     const schoolName = dto.schoolName.trim();
     if (!schoolName) throw new BadRequestException('School name is required');
+    const optional = (value?: string) => value?.trim() || undefined;
     return {
       schoolName,
-      ...(dto.tagline?.trim() ? { tagline: dto.tagline.trim() } : {}),
+      ...(optional(dto.tagline) ? { tagline: optional(dto.tagline) } : {}),
+      ...(optional(dto.logoUrl) ? { logoUrl: optional(dto.logoUrl) } : {}),
+      ...(optional(dto.faviconUrl)
+        ? { faviconUrl: optional(dto.faviconUrl) }
+        : {}),
       template: dto.template,
       primaryColor: dto.primaryColor.toUpperCase(),
       secondaryColor: dto.secondaryColor.toUpperCase(),
       accentColor: dto.accentColor.toUpperCase(),
+      headingFont: dto.headingFont,
+      bodyFont: dto.bodyFont,
+      ...(optional(dto.contactEmail)
+        ? { contactEmail: optional(dto.contactEmail) }
+        : {}),
+      ...(optional(dto.phone) ? { phone: optional(dto.phone) } : {}),
+      ...(optional(dto.address) ? { address: optional(dto.address) } : {}),
+      ...(optional(dto.facebookUrl)
+        ? { facebookUrl: optional(dto.facebookUrl) }
+        : {}),
+      ...(optional(dto.instagramUrl)
+        ? { instagramUrl: optional(dto.instagramUrl) }
+        : {}),
+      ...(optional(dto.youtubeUrl)
+        ? { youtubeUrl: optional(dto.youtubeUrl) }
+        : {}),
+      homepage: dto.homepage,
+      programs: dto.programs.map((item, index) => ({
+        ...item,
+        name: item.name.trim(),
+        description: optional(item.description),
+        imageUrl: optional(item.imageUrl),
+        sortOrder: item.sortOrder ?? index,
+      })),
+      facilities: dto.facilities.map((item, index) => ({
+        ...item,
+        title: item.title.trim(),
+        description: optional(item.description),
+        imageUrl: optional(item.imageUrl),
+        sortOrder: item.sortOrder ?? index,
+      })),
+      faculty: dto.faculty.map((item, index) => ({
+        ...item,
+        name: item.name.trim(),
+        designation: item.designation.trim(),
+        qualification: optional(item.qualification),
+        bio: optional(item.bio),
+        imageUrl: optional(item.imageUrl),
+        subjects: item.subjects
+          .map((subject) => subject.trim())
+          .filter(Boolean),
+        sortOrder: item.sortOrder ?? index,
+      })),
+      admissions: {
+        ...dto.admissions,
+        heading: dto.admissions.heading.trim(),
+        description: dto.admissions.description.trim(),
+        confirmationMessage: dto.admissions.confirmationMessage.trim(),
+        eligibleOfferingIds: [...new Set(dto.admissions.eligibleOfferingIds)],
+      },
+      seo: {
+        defaultTitle: dto.seo.defaultTitle.trim() || schoolName,
+        defaultDescription: dto.seo.defaultDescription.trim(),
+        ...(optional(dto.seo.defaultSocialImage)
+          ? { defaultSocialImage: optional(dto.seo.defaultSocialImage) }
+          : {}),
+      },
     };
   }
 
@@ -213,6 +467,37 @@ export class WebsiteService {
       primaryColor: '#740019',
       secondaryColor: '#F4C95D',
       accentColor: '#0F766E',
+      headingFont: 'Merriweather',
+      bodyFont: 'Inter',
+      homepage: {
+        hero: { enabled: true, title: schoolName },
+        introduction: {
+          enabled: false,
+          heading: 'Welcome to our school',
+          content: '',
+        },
+        principalMessage: { enabled: false },
+        programs: { enabled: false },
+        facilities: { enabled: false },
+        faculty: { enabled: false },
+        announcements: { enabled: false },
+        results: { enabled: false },
+        events: { enabled: false },
+        gallery: { enabled: false },
+        contact: { enabled: true },
+      },
+      programs: [],
+      facilities: [],
+      faculty: [],
+      admissions: {
+        enabled: false,
+        isOpen: false,
+        heading: 'Admissions',
+        description: '',
+        eligibleOfferingIds: [],
+        confirmationMessage: 'Thank you. Your application has been received.',
+      },
+      seo: { defaultTitle: schoolName, defaultDescription: '' },
     };
   }
 
@@ -231,6 +516,94 @@ export class WebsiteService {
       updatedAt: revision.updatedAt,
       publishedAt: revision.publishedAt,
       publishedBy: revision.publishedBy ?? null,
+    };
+  }
+
+  private contentHealth(settings: Partial<WebsiteSettings>) {
+    const issues: Array<{
+      id: string;
+      label: string;
+      area: string;
+      severity: 'REQUIRED' | 'RECOMMENDED';
+    }> = [];
+    if (!settings.schoolName?.trim())
+      issues.push({
+        id: 'school-name',
+        label: 'Add the public school name.',
+        area: 'Identity',
+        severity: 'REQUIRED',
+      });
+    if (!settings.homepage?.hero?.title?.trim())
+      issues.push({
+        id: 'hero',
+        label: 'Add a homepage headline.',
+        area: 'Homepage',
+        severity: 'REQUIRED',
+      });
+    if (
+      settings.homepage?.introduction?.enabled &&
+      (!settings.homepage.introduction.heading?.trim() ||
+        !settings.homepage.introduction.content?.trim())
+    )
+      issues.push({
+        id: 'introduction',
+        label: 'Complete the enabled school introduction.',
+        area: 'Homepage',
+        severity: 'REQUIRED',
+      });
+    if (
+      settings.homepage?.principalMessage?.enabled &&
+      (!settings.homepage.principalMessage.name?.trim() ||
+        !settings.homepage.principalMessage.message?.trim())
+    )
+      issues.push({
+        id: 'principal',
+        label: 'Complete the enabled principal message.',
+        area: 'Homepage',
+        severity: 'REQUIRED',
+      });
+    if (
+      settings.homepage?.contact?.enabled &&
+      !settings.contactEmail &&
+      !settings.phone &&
+      !settings.address
+    )
+      issues.push({
+        id: 'contact',
+        label: 'Add at least one public contact method.',
+        area: 'Contact',
+        severity: 'REQUIRED',
+      });
+    if (!settings.seo?.defaultDescription?.trim())
+      issues.push({
+        id: 'seo-description',
+        label: 'Add a default search description.',
+        area: 'Search visibility',
+        severity: 'RECOMMENDED',
+      });
+    if (!settings.logoUrl)
+      issues.push({
+        id: 'logo',
+        label: 'Add a school logo for stronger recognition.',
+        area: 'Branding',
+        severity: 'RECOMMENDED',
+      });
+    if (
+      settings.admissions?.enabled &&
+      settings.admissions.isOpen &&
+      !settings.admissions.eligibleOfferingIds?.length
+    )
+      issues.push({
+        id: 'admissions-offerings',
+        label: 'Select classes accepting online applications.',
+        area: 'Admissions',
+        severity: 'REQUIRED',
+      });
+    const total = 8;
+    return {
+      score: Math.max(0, Math.round(((total - issues.length) / total) * 100)),
+      issues,
+      readyToPublish: !issues.some((issue) => issue.severity === 'REQUIRED'),
     };
   }
 

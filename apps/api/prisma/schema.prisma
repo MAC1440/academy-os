@@ -53,6 +53,11 @@ enum CalendarDayType {
   OFF_DAY
 }
 
+enum CalendarVisibility {
+  INTERNAL
+  PUBLIC
+}
+
 enum StaffAttendanceStatus {
   PRESENT
   LATE
@@ -79,6 +84,13 @@ enum AdmissionStatus {
   PENDING
   APPROVED
   REJECTED
+}
+
+enum AdmissionSource {
+  WEBSITE
+  ADMIN_ENTRY
+  WALK_IN
+  IMPORT
 }
 
 enum AcademicTermType {
@@ -121,6 +133,16 @@ enum WebsiteRevisionStatus {
   ARCHIVED
 }
 
+enum WebsiteMediaCategory {
+  BRANDING
+  HERO
+  FACULTY
+  FACILITIES
+  RESULTS
+  NEWS
+  GALLERY
+}
+
 model Organization {
   id                            String                         @id @default(cuid())
   name                          String
@@ -149,6 +171,11 @@ model Organization {
   sessionSyllabi                SessionSyllabus[]
   timetableProfiles             TimetableProfile[]
   websiteConfig                 WebsiteConfig?
+  websiteAnnouncements          WebsiteAnnouncement[]
+  websiteNews                   WebsiteNews[]
+  websiteResults                WebsiteResult[]
+  websiteMedia                  WebsiteMedia[]
+  websiteGalleryAlbums          WebsiteGalleryAlbum[]
 }
 
 model User {
@@ -204,6 +231,110 @@ model WebsiteRevision {
 
   @@index([websiteConfigId, status, updatedAt])
   @@index([websiteConfigId, status, publishedAt])
+}
+
+model WebsiteAnnouncement {
+  id             String       @id @default(cuid())
+  organizationId String
+  title          String
+  description    String
+  published      Boolean      @default(false)
+  pinned         Boolean      @default(false)
+  publishAt      DateTime?
+  expireAt       DateTime?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId, published, publishAt])
+}
+
+model WebsiteNews {
+  id             String       @id @default(cuid())
+  organizationId String
+  title          String
+  slug           String
+  coverImageUrl  String?
+  excerpt        String
+  body           String
+  published      Boolean      @default(false)
+  publishAt      DateTime?
+  seoTitle       String?
+  seoDescription String?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, slug])
+  @@index([organizationId, published, publishAt])
+}
+
+model WebsiteResult {
+  id             String       @id @default(cuid())
+  organizationId String
+  title          String
+  description    String
+  academicYear   String
+  highlights     Json
+  imageUrl       String?
+  published      Boolean      @default(false)
+  publishAt      DateTime?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId, published, publishAt])
+}
+
+model WebsiteMedia {
+  id             String                @id @default(cuid())
+  organizationId String
+  providerFileId String                @unique
+  name           String
+  url            String
+  width          Int?
+  height         Int?
+  mimeType       String
+  size           Int
+  category       WebsiteMediaCategory
+  createdAt      DateTime              @default(now())
+  organization   Organization          @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  galleryImages  WebsiteGalleryImage[]
+
+  @@index([organizationId, category, createdAt])
+}
+
+model WebsiteGalleryAlbum {
+  id                    String                @id @default(cuid())
+  organizationId        String
+  academicCalendarDayId String?
+  title                 String
+  slug                  String
+  description           String?
+  coverImageUrl         String?
+  published             Boolean               @default(false)
+  sortOrder             Int                   @default(0)
+  createdAt             DateTime              @default(now())
+  updatedAt             DateTime              @updatedAt
+  organization          Organization          @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  academicCalendarDay   AcademicCalendarDay?  @relation(fields: [academicCalendarDayId], references: [id], onDelete: SetNull)
+  images                WebsiteGalleryImage[]
+
+  @@unique([organizationId, slug])
+  @@index([organizationId, published, sortOrder])
+}
+
+model WebsiteGalleryImage {
+  id        String              @id @default(cuid())
+  albumId   String
+  mediaId   String
+  caption   String?
+  sortOrder Int                 @default(0)
+  album     WebsiteGalleryAlbum @relation(fields: [albumId], references: [id], onDelete: Cascade)
+  media     WebsiteMedia        @relation(fields: [mediaId], references: [id], onDelete: Cascade)
+
+  @@unique([albumId, mediaId])
+  @@index([albumId, sortOrder])
 }
 
 model Branch {
@@ -355,12 +486,15 @@ model AdmissionRegistrationSettings {
 }
 
 model AcademicCalendarDay {
-  id             String          @id @default(cuid())
+  id             String                @id @default(cuid())
   organizationId String
-  calendarDate   DateTime        @db.Date
+  calendarDate   DateTime              @db.Date
   dayType        CalendarDayType
   label          String?
-  organization   Organization    @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  description    String?
+  visibility     CalendarVisibility    @default(INTERNAL)
+  organization   Organization          @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  galleryAlbums  WebsiteGalleryAlbum[]
 
   @@unique([organizationId, calendarDate])
 }
@@ -539,6 +673,7 @@ model AdmissionApplication {
   physicalDocumentsVerifiedAt       DateTime?
   physicalDocumentsVerificationNote String?
   status                            AdmissionStatus  @default(PENDING)
+  source                            AdmissionSource  @default(ADMIN_ENTRY)
   reviewNote                        String?
   reviewedAt                        DateTime?
   reviewedByUserId                  String?

@@ -9,6 +9,7 @@ import {
   AccountStatus,
   AccountType,
   AcademicOfferingType,
+  AdmissionSource,
   AdmissionStatus,
   AuditAction,
   Prisma,
@@ -22,6 +23,7 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { AdmissionListQueryDto } from './dto/admission-list-query.dto';
 import { ReviewAdmissionDto } from './dto/review-admission.dto';
 import { SubmitAdmissionDto } from './dto/submit-admission.dto';
+import { SubmitWebsiteAdmissionDto } from './dto/submit-website-admission.dto';
 import { UpdateAdmissionDto } from './dto/update-admission.dto';
 import { UpdateStudentDto } from './dto/update-student.dto';
 import {
@@ -35,12 +37,16 @@ const PASSWORD_ALPHABET =
 
 @Injectable()
 export class AdmissionsService {
+  private readonly websiteAttempts = new Map<string, number[]>();
   constructor(
     private readonly prisma: PrismaService,
     private readonly auditService: AuditService,
   ) {}
 
-  async submit(dto: SubmitAdmissionDto) {
+  async submit(
+    dto: SubmitAdmissionDto,
+    source: AdmissionSource = AdmissionSource.ADMIN_ENTRY,
+  ) {
     const offering = await this.activeOffering(dto.academicOfferingId);
     const organization = await this.organization();
     const activeTerm = await this.prisma.academicTerm.findFirst({
@@ -83,6 +89,7 @@ export class AdmissionsService {
           previousSchool: dto.previousSchool?.trim(),
           previousPerformance: dto.previousPerformance?.trim(),
           formData: dto.formData as Prisma.InputJsonValue | undefined,
+          source,
         },
         include: this.applicationInclude,
       });
@@ -91,12 +98,154 @@ export class AdmissionsService {
         AuditAction.CREATE,
         'AdmissionApplication',
         application.id,
-        { source: 'PUBLIC_SUBMISSION' },
+        { source },
       );
       return application;
     } catch (error) {
       this.rethrowUnique(error);
     }
+  }
+
+  async websiteOptions() {
+    const config = await this.publishedAdmissionConfig();
+    if (!config?.enabled)
+      return {
+        enabled: false,
+        isOpen: false,
+        heading: 'Admissions',
+        description: '',
+        confirmationMessage: '',
+        offerings: [],
+      };
+    const offerings = await this.prisma.academicOffering.findMany({
+      where: {
+        id: { in: config.eligibleOfferingIds },
+        status: 'ACTIVE',
+        branch: { deletedAt: null },
+      },
+      select: {
+        id: true,
+        sectionName: true,
+        branch: { select: { name: true } },
+        schoolClass: { select: { name: true } },
+        course: { select: { name: true } },
+      },
+      orderBy: [{ branch: { name: 'asc' } }, { createdAt: 'asc' }],
+    });
+    return {
+      ...config,
+      offerings: offerings.map((item) => ({
+        id: item.id,
+        name: item.schoolClass?.name ?? item.course?.name ?? 'Offering',
+        sectionName: item.sectionName,
+        branchName: item.branch.name,
+      })),
+    };
+  }
+
+  async submitWebsite(dto: SubmitWebsiteAdmissionDto, ip: string) {
+    this.checkWebsiteRate(ip);
+    if (dto.website)
+      throw new BadRequestException('Unable to submit this application');
+    const config = await this.publishedAdmissionConfig();
+    if (!config?.enabled || !config.isOpen)
+      throw new BadRequestException('Online admissions are currently closed');
+    if (!config.eligibleOfferingIds.includes(dto.academicOfferingId))
+      throw new BadRequestException(
+        'The selected class is not accepting website applications',
+      );
+    const phone = this.normalizePakistanPhone(dto.guardianPhone);
+    const recent = await this.prisma.admissionApplication.findFirst({
+      where: {
+        academicOfferingId: dto.academicOfferingId,
+        guardianContactNumber: phone,
+        studentFullName: {
+          equals: dto.studentFullName.trim(),
+          mode: 'insensitive',
+        },
+        createdAt: { gte: new Date(Date.now() - 60 * 60 * 1000) },
+        deletedAt: null,
+      },
+      select: { id: true },
+    });
+    if (recent)
+      throw new ConflictException(
+        'This application appears to have already been submitted. Please wait before trying again.',
+      );
+    const formData = {
+      dateOfBirth: dto.dateOfBirth,
+      gender: dto.gender,
+      relationship: dto.relationship.trim(),
+      alternatePhone: dto.alternatePhone
+        ? this.normalizePakistanPhone(dto.alternatePhone)
+        : undefined,
+      email: dto.email?.trim().toLowerCase(),
+      previousClass: dto.previousClass?.trim(),
+      address: dto.address.trim(),
+      notes: dto.notes?.trim(),
+      source: 'WEBSITE',
+    };
+    const application = await this.submit(
+      {
+        academicOfferingId: dto.academicOfferingId,
+        studentFullName: dto.studentFullName,
+        studentCnic: dto.studentCnic,
+        guardianFullName: dto.guardianFullName,
+        guardianContactNumber: phone,
+        previousSchool: dto.previousSchool,
+        previousPerformance: dto.notes,
+        formData,
+      },
+      AdmissionSource.WEBSITE,
+    );
+    return { id: application.id, message: config.confirmationMessage };
+  }
+
+  private checkWebsiteRate(ip: string) {
+    const now = Date.now(),
+      since = now - 60 * 60 * 1000;
+    const attempts = (this.websiteAttempts.get(ip) ?? []).filter(
+      (time) => time > since,
+    );
+    if (attempts.length >= 10)
+      throw new BadRequestException(
+        'Too many applications were submitted from this connection. Please try again later.',
+      );
+    attempts.push(now);
+    this.websiteAttempts.set(ip, attempts);
+  }
+
+  private normalizePakistanPhone(value: string) {
+    const digits = value.replace(/\D/g, '');
+    return digits.startsWith('92') ? `0${digits.slice(2)}` : digits;
+  }
+
+  private async publishedAdmissionConfig() {
+    const organization = await this.prisma.organization.findFirst({
+      select: { websiteConfig: { select: { id: true } } },
+    });
+    if (!organization?.websiteConfig) return null;
+    const revision = await this.prisma.websiteRevision.findFirst({
+      where: {
+        websiteConfigId: organization.websiteConfig.id,
+        status: 'PUBLISHED',
+      },
+      orderBy: { publishedAt: 'desc' },
+      select: { data: true },
+    });
+    const data = revision?.data as
+      | {
+          admissions?: {
+            enabled: boolean;
+            isOpen: boolean;
+            heading: string;
+            description: string;
+            eligibleOfferingIds: string[];
+            confirmationMessage: string;
+          };
+        }
+      | undefined;
+    return data?.admissions ?? null;
   }
 
   async list(query: AdmissionListQueryDto, requesterUserId: string) {

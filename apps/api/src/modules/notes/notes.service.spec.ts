@@ -69,7 +69,10 @@ describe('NotesService personal note privacy', () => {
     const prisma = {
       teacherPersonalNote: { findMany: jest.fn().mockResolvedValue([]) },
     };
-    const service = new NotesService(prisma as never, { record: jest.fn() } as never);
+    const service = new NotesService(
+      prisma as never,
+      { record: jest.fn() } as never,
+    );
 
     await service.listPersonalNotes('teacher-user');
 
@@ -87,10 +90,17 @@ describe('NotesService personal note privacy', () => {
         update: jest.fn(),
       },
     };
-    const service = new NotesService(prisma as never, { record: jest.fn() } as never);
+    const service = new NotesService(
+      prisma as never,
+      { record: jest.fn() } as never,
+    );
 
     await expect(
-      service.updatePersonalNote('someone-elses-note', { title: 'Changed' }, 'teacher-user'),
+      service.updatePersonalNote(
+        'someone-elses-note',
+        { title: 'Changed' },
+        'teacher-user',
+      ),
     ).rejects.toThrow('Personal note not found');
     expect(prisma.teacherPersonalNote.findFirst).toHaveBeenCalledWith({
       where: {

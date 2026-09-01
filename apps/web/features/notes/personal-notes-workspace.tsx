@@ -73,11 +73,14 @@ export function PersonalNotesWorkspace() {
   }
 
   async function deleteSelected(note: PersonalNote) {
-    if (!(await confirm({
-      title: `Delete “${note.title}”?`,
-      description: 'This removes the note from your private notebook and cannot be undone.',
-      confirmLabel: 'Delete note',
-    }))) return;
+    if (
+      !(await confirm({
+        title: `Delete “${note.title}”?`,
+        description: 'This removes the note from your private notebook and cannot be undone.',
+        confirmLabel: 'Delete note',
+      }))
+    )
+      return;
     try {
       await remove(note.id).unwrap();
       startNew();
@@ -93,10 +96,15 @@ export function PersonalNotesWorkspace() {
         <div className="max-w-2xl">
           <h1 className="font-display text-4xl tracking-[-.04em]">My notebook</h1>
           <p className="mt-3 text-sm leading-6 text-muted-foreground">
-            A private place for your daily tasks, lesson reminders, lists and working notes. Only you can see it.
+            A private place for your daily tasks, lesson reminders, lists and working notes. Only
+            you can see it.
           </p>
         </div>
-        <button type="button" className="button-primary inline-flex items-center gap-2" onClick={startNew}>
+        <button
+          type="button"
+          className="button-primary inline-flex items-center gap-2"
+          onClick={startNew}
+        >
           <Plus size={16} /> New note
         </button>
       </header>
@@ -105,8 +113,16 @@ export function PersonalNotesWorkspace() {
         <aside className="space-y-3 border-b border-border pb-5 lg:border-b-0 lg:border-r lg:pb-0 lg:pr-5">
           <label className="relative block">
             <span className="sr-only">Search personal notes</span>
-            <Search className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={16} />
-            <input className="field field-with-leading-icon" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search notebook" />
+            <Search
+              className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+              size={16}
+            />
+            <input
+              className="field field-with-leading-icon"
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+              placeholder="Search notebook"
+            />
           </label>
           <div className="grid max-h-[33rem] gap-1 overflow-y-auto" aria-label="Personal notes">
             {visibleNotes.map((note) => (
@@ -120,14 +136,22 @@ export function PersonalNotesWorkspace() {
                   {note.isPinned ? <Pin aria-label="Pinned" size={14} /> : null}
                   <span className="truncate">{note.title}</span>
                 </span>
-                <span className="mt-1 block text-xs text-muted-foreground">{relativeDate(note.updatedAt)}</span>
-                {note.reminderAt ? <span className="mt-1 flex items-center gap-1 text-xs text-muted-foreground"><Bell size={12} /> {formatReminder(note.reminderAt)}</span> : null}
+                <span className="mt-1 block text-xs text-muted-foreground">
+                  {relativeDate(note.updatedAt)}
+                </span>
+                {note.reminderAt ? (
+                  <span className="mt-1 flex items-center gap-1 text-xs text-muted-foreground">
+                    <Bell size={12} /> {formatReminder(note.reminderAt)}
+                  </span>
+                ) : null}
               </button>
             ))}
             {!isLoading && !visibleNotes.length ? (
               <div className="px-3 py-8 text-center text-sm text-muted-foreground">
                 <FileText className="mx-auto mb-2" size={22} />
-                {notes.length ? 'No notes match your search.' : 'Your notebook is ready for its first note.'}
+                {notes.length
+                  ? 'No notes match your search.'
+                  : 'Your notebook is ready for its first note.'}
               </div>
             ) : null}
           </div>
@@ -136,23 +160,50 @@ export function PersonalNotesWorkspace() {
         <form onSubmit={submit} className="space-y-4">
           <div className="flex flex-wrap items-end gap-4 rounded-xl bg-muted/40 p-4">
             <label className="flex items-center gap-2 text-sm font-medium">
-              <input type="checkbox" checked={form.isPinned} onChange={(event) => setForm({ ...form, isPinned: event.target.checked })} />
+              <input
+                type="checkbox"
+                checked={form.isPinned}
+                onChange={(event) => setForm({ ...form, isPinned: event.target.checked })}
+              />
               <Pin size={15} /> Pin this note
             </label>
             <label className="grid flex-1 gap-1 text-sm font-medium sm:min-w-64">
               Reminder
-              <input type="datetime-local" className="field" value={form.reminderAt} onChange={(event) => setForm({ ...form, reminderAt: event.target.value })} />
+              <input
+                type="datetime-local"
+                className="field"
+                value={form.reminderAt}
+                onChange={(event) => setForm({ ...form, reminderAt: event.target.value })}
+              />
             </label>
           </div>
-          <NoteComposer form={form} onChange={(next) => setForm({ ...form, ...next })} contentRef={contentRef} onValidationError={toast.error} showPreview />
+          <NoteComposer
+            form={form}
+            onChange={(next) => setForm({ ...form, ...next })}
+            contentRef={contentRef}
+            onValidationError={toast.error}
+            showPreview
+          />
           <div className="sticky bottom-4 flex flex-wrap justify-end gap-2 rounded-xl border border-border bg-card/95 p-3 shadow-lg backdrop-blur">
             {selected ? (
-              <button type="button" className="button-secondary inline-flex items-center gap-2 text-destructive" onClick={() => void deleteSelected(selected)}>
+              <button
+                type="button"
+                className="button-secondary inline-flex items-center gap-2 text-destructive"
+                onClick={() => void deleteSelected(selected)}
+              >
                 <Trash2 size={16} /> Delete
               </button>
             ) : null}
-            <button className="button-primary inline-flex items-center gap-2" disabled={createState.isLoading || updateState.isLoading}>
-              <Save size={16} /> {createState.isLoading || updateState.isLoading ? 'Saving…' : selected ? 'Save changes' : 'Save note'}
+            <button
+              className="button-primary inline-flex items-center gap-2"
+              disabled={createState.isLoading || updateState.isLoading}
+            >
+              <Save size={16} />{' '}
+              {createState.isLoading || updateState.isLoading
+                ? 'Saving…'
+                : selected
+                  ? 'Save changes'
+                  : 'Save note'}
             </button>
           </div>
         </form>
@@ -169,9 +220,16 @@ function toLocalInput(value?: string | null) {
 }
 
 function relativeDate(value: string) {
-  return new Intl.DateTimeFormat('en-PK', { day: 'numeric', month: 'short' }).format(new Date(value));
+  return new Intl.DateTimeFormat('en-PK', { day: 'numeric', month: 'short' }).format(
+    new Date(value),
+  );
 }
 
 function formatReminder(value: string) {
-  return new Intl.DateTimeFormat('en-PK', { day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' }).format(new Date(value));
+  return new Intl.DateTimeFormat('en-PK', {
+    day: 'numeric',
+    month: 'short',
+    hour: 'numeric',
+    minute: '2-digit',
+  }).format(new Date(value));
 }

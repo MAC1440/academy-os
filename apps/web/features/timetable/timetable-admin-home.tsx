@@ -75,7 +75,9 @@ export function TimetableAdminHome() {
   }, [offeringSearch, offerings]);
   const activeProfileCount = profiles.filter((profile) => profile.isActive).length;
   const selectedTeacher = staff.find((item) => item.id === teacherId);
-  const teacherName = String((selectedTeacher?.user as ApiRecord | undefined)?.fullName ?? 'Teacher');
+  const teacherName = String(
+    (selectedTeacher?.user as ApiRecord | undefined)?.fullName ?? 'Teacher',
+  );
 
   function setSelection(key: 'campus' | 'teacher', value: string) {
     const next = new URLSearchParams(searchParams.toString());

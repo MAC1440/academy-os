@@ -104,7 +104,11 @@ export class NotesService {
     });
   }
 
-  async updatePersonalNote(noteId: string, dto: UpdatePersonalNoteDto, ownerUserId: string) {
+  async updatePersonalNote(
+    noteId: string,
+    dto: UpdatePersonalNoteDto,
+    ownerUserId: string,
+  ) {
     const note = await this.personalNote(noteId, ownerUserId);
     return this.prisma.teacherPersonalNote.update({
       where: { id: note.id },

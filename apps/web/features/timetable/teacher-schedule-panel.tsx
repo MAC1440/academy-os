@@ -14,9 +14,11 @@ export function TeacherSchedulePanel({
   staffProfileId: string;
   teacherName: string;
 }) {
-  const { data = [], isLoading, isError } = useGetTeacherTimetableQuery(
-    staffProfileId || skipToken,
-  );
+  const {
+    data = [],
+    isLoading,
+    isError,
+  } = useGetTeacherTimetableQuery(staffProfileId || skipToken);
   const dates = useMemo(
     () => [...new Set(data.map((item) => String(item.date ?? '')))].filter(Boolean).sort(),
     [data],
@@ -51,18 +53,26 @@ export function TeacherSchedulePanel({
           </span>
           <div>
             <h3 className="font-semibold">{teacherName}&apos;s week</h3>
-            <p className="text-sm text-muted-foreground">Teaching, free periods and school-day breaks.</p>
+            <p className="text-sm text-muted-foreground">
+              Teaching, free periods and school-day breaks.
+            </p>
           </div>
         </div>
         {dates.length ? (
-          <div className="flex max-w-full gap-2 overflow-x-auto pb-1" role="tablist" aria-label="Schedule days">
+          <div
+            className="flex max-w-full gap-2 overflow-x-auto pb-1"
+            role="tablist"
+            aria-label="Schedule days"
+          >
             {dates.map((date) => (
               <button
                 key={date}
                 type="button"
                 role="tab"
                 aria-selected={date === activeDate}
-                className={date === activeDate ? 'button-primary shrink-0' : 'button-secondary shrink-0'}
+                className={
+                  date === activeDate ? 'button-primary shrink-0' : 'button-secondary shrink-0'
+                }
                 onClick={() => setActiveDate(date)}
               >
                 {scheduleDayLabel(date)}
@@ -90,18 +100,42 @@ export function TeacherSchedulePanel({
               const entryType = String(item.entryType ?? 'TEACHING');
               const isTeaching = entryType === 'TEACHING';
               return (
-                <tr key={`${item.date}-${item.startsAt}-${entryType}-${index}`} className="border-b border-border/70 last:border-0">
-                  <td className="px-4 py-3">{item.periodNumber ? String(item.periodNumber) : '—'}</td>
-                  <td>{isTeaching ? String((item.subject as ApiRecord)?.name ?? '—') : entryType === 'FREE' ? 'Free period' : titleCase(entryType)}</td>
+                <tr
+                  key={`${item.date}-${item.startsAt}-${entryType}-${index}`}
+                  className="border-b border-border/70 last:border-0"
+                >
+                  <td className="px-4 py-3">
+                    {item.periodNumber ? String(item.periodNumber) : '—'}
+                  </td>
+                  <td>
+                    {isTeaching
+                      ? String((item.subject as ApiRecord)?.name ?? '—')
+                      : entryType === 'FREE'
+                        ? 'Free period'
+                        : titleCase(entryType)}
+                  </td>
                   <td>{isTeaching && offering ? offeringTitle(offering) : '—'}</td>
                   <td>{String((item.branch as ApiRecord | undefined)?.name ?? '—')}</td>
-                  <td>{String(item.startsAt)}–{String(item.endsAt)}</td>
-                  <td className="px-4">{formatDuration(slotDurationMinutes({ startsAt: String(item.startsAt), endsAt: String(item.endsAt) }))}</td>
+                  <td>
+                    {String(item.startsAt)}–{String(item.endsAt)}
+                  </td>
+                  <td className="px-4">
+                    {formatDuration(
+                      slotDurationMinutes({
+                        startsAt: String(item.startsAt),
+                        endsAt: String(item.endsAt),
+                      }),
+                    )}
+                  </td>
                 </tr>
               );
             })}
             {!schedule.length ? (
-              <tr><td colSpan={6} className="px-4 py-10 text-center text-muted-foreground">No schedule is available for this day.</td></tr>
+              <tr>
+                <td colSpan={6} className="px-4 py-10 text-center text-muted-foreground">
+                  No schedule is available for this day.
+                </td>
+              </tr>
             ) : null}
           </tbody>
         </table>
@@ -112,7 +146,12 @@ export function TeacherSchedulePanel({
 
 function todayKey() {
   const parts = Object.fromEntries(
-    new Intl.DateTimeFormat('en-US', { timeZone: 'Asia/Karachi', year: 'numeric', month: '2-digit', day: '2-digit' })
+    new Intl.DateTimeFormat('en-US', {
+      timeZone: 'Asia/Karachi',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+    })
       .formatToParts()
       .map((part) => [part.type, part.value]),
   );
@@ -120,8 +159,12 @@ function todayKey() {
 }
 
 function scheduleDayLabel(date: string) {
-  return new Intl.DateTimeFormat('en-PK', { timeZone: 'Asia/Karachi', weekday: 'short', day: 'numeric', month: 'short' })
-    .format(new Date(`${date}T12:00:00Z`));
+  return new Intl.DateTimeFormat('en-PK', {
+    timeZone: 'Asia/Karachi',
+    weekday: 'short',
+    day: 'numeric',
+    month: 'short',
+  }).format(new Date(`${date}T12:00:00Z`));
 }
 
 function titleCase(value: string) {

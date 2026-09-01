@@ -13,6 +13,11 @@ function foregroundFor(hex: string) {
   return luminance > 150 ? '#241316' : '#FFF9ED';
 }
 
+const fontStack = (font: string) =>
+  font === 'Merriweather'
+    ? `'Merriweather', Georgia, serif`
+    : `'${font}', ui-sans-serif, system-ui, sans-serif`;
+
 export function websiteTheme(settings: WebsiteSettings): CSSProperties {
   return {
     '--website-primary': settings.primaryColor,
@@ -21,5 +26,7 @@ export function websiteTheme(settings: WebsiteSettings): CSSProperties {
     '--website-secondary-foreground': foregroundFor(settings.secondaryColor),
     '--website-accent': settings.accentColor,
     '--website-accent-foreground': foregroundFor(settings.accentColor),
+    '--website-heading-font': fontStack(settings.headingFont || 'Merriweather'),
+    '--website-body-font': fontStack(settings.bodyFont || 'Inter'),
   } as CSSProperties;
 }

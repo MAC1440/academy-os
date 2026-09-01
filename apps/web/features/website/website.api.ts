@@ -4,11 +4,23 @@ export type WebsiteTemplate = 'CLASSIC' | 'MODERN' | 'MINIMAL';
 export type WebsiteSettings = {
   schoolName: string;
   tagline?: string;
+  logoUrl?: string;
+  faviconUrl?: string;
   template: WebsiteTemplate;
   primaryColor: string;
   secondaryColor: string;
   accentColor: string;
+  headingFont: WebsiteFont;
+  bodyFont: WebsiteFont;
+  contactEmail?: string;
+  phone?: string;
+  address?: string;
+  facebookUrl?: string;
+  instagramUrl?: string;
+  youtubeUrl?: string;
 };
+export type WebsiteFont =
+  'Inter' | 'Poppins' | 'Montserrat' | 'Roboto' | 'Open Sans' | 'Lato' | 'Merriweather';
 export type WebsiteRevision = {
   id: string;
   status: 'DRAFT' | 'PUBLISHED' | 'ARCHIVED';

@@ -17,10 +17,20 @@ import type { WebsiteSettingsDto } from './dto/website.dto';
 export type WebsiteSettings = {
   schoolName: string;
   tagline?: string;
+  logoUrl?: string;
+  faviconUrl?: string;
   template: WebsiteTemplate;
   primaryColor: string;
   secondaryColor: string;
   accentColor: string;
+  headingFont: string;
+  bodyFont: string;
+  contactEmail?: string;
+  phone?: string;
+  address?: string;
+  facebookUrl?: string;
+  instagramUrl?: string;
+  youtubeUrl?: string;
 };
 
 @Injectable()
@@ -196,13 +206,34 @@ export class WebsiteService {
   private normalize(dto: WebsiteSettingsDto): WebsiteSettings {
     const schoolName = dto.schoolName.trim();
     if (!schoolName) throw new BadRequestException('School name is required');
+    const optional = (value?: string) => value?.trim() || undefined;
     return {
       schoolName,
-      ...(dto.tagline?.trim() ? { tagline: dto.tagline.trim() } : {}),
+      ...(optional(dto.tagline) ? { tagline: optional(dto.tagline) } : {}),
+      ...(optional(dto.logoUrl) ? { logoUrl: optional(dto.logoUrl) } : {}),
+      ...(optional(dto.faviconUrl)
+        ? { faviconUrl: optional(dto.faviconUrl) }
+        : {}),
       template: dto.template,
       primaryColor: dto.primaryColor.toUpperCase(),
       secondaryColor: dto.secondaryColor.toUpperCase(),
       accentColor: dto.accentColor.toUpperCase(),
+      headingFont: dto.headingFont,
+      bodyFont: dto.bodyFont,
+      ...(optional(dto.contactEmail)
+        ? { contactEmail: optional(dto.contactEmail) }
+        : {}),
+      ...(optional(dto.phone) ? { phone: optional(dto.phone) } : {}),
+      ...(optional(dto.address) ? { address: optional(dto.address) } : {}),
+      ...(optional(dto.facebookUrl)
+        ? { facebookUrl: optional(dto.facebookUrl) }
+        : {}),
+      ...(optional(dto.instagramUrl)
+        ? { instagramUrl: optional(dto.instagramUrl) }
+        : {}),
+      ...(optional(dto.youtubeUrl)
+        ? { youtubeUrl: optional(dto.youtubeUrl) }
+        : {}),
     };
   }
 
@@ -213,6 +244,8 @@ export class WebsiteService {
       primaryColor: '#740019',
       secondaryColor: '#F4C95D',
       accentColor: '#0F766E',
+      headingFont: 'Merriweather',
+      bodyFont: 'Inter',
     };
   }
 

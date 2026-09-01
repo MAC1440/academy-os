@@ -6,10 +6,18 @@ describe('WebsiteService publishing', () => {
   const config = { id: 'website-a', organizationId: organization.id };
   const draftData = {
     schoolName: 'Academy A',
-    template: WebsiteTemplate.CLASSIC,
+    template: WebsiteTemplate.MODERN,
     primaryColor: '#740019',
     secondaryColor: '#F4C95D',
     accentColor: '#0F766E',
+    headingFont: 'Merriweather',
+    bodyFont: 'Inter',
+    logoUrl: 'https://school.example/logo.png',
+    faviconUrl: 'https://school.example/favicon.png',
+    contactEmail: 'hello@school.example',
+    phone: '+92 300 1234567',
+    address: 'Main Campus, Lahore',
+    facebookUrl: 'https://facebook.com/school',
   };
 
   it('returns only the latest published revision to public users', async () => {

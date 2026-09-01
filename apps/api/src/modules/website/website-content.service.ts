@@ -267,52 +267,106 @@ export class WebsiteContentService {
       );
     if (file.size > 5 * 1024 * 1024)
       throw new BadRequestException('Images must be 5 MB or smaller');
+    if (!file.buffer)
+      throw new BadRequestException('The uploaded image could not be read');
     const privateKey = process.env.IMAGEKIT_PRIVATE_KEY;
     if (!privateKey)
       throw new ServiceUnavailableException('Image uploads are not configured');
-    const form = new FormData();
-    form.append(
-      'file',
-      new Blob([Uint8Array.from(file.buffer)], { type: file.mimetype }),
-      file.originalname,
-    );
-    form.append('fileName', file.originalname);
-    form.append('folder', `/academy-os/${category.toLowerCase()}`);
+    let providerFileId: string | undefined;
+    try {
+      const form = new FormData();
+      form.append(
+        'file',
+        new Blob([Uint8Array.from(file.buffer)], { type: file.mimetype }),
+        file.originalname,
+      );
+      form.append('fileName', file.originalname);
+      form.append('folder', `/academy-os/${category.toLowerCase()}`);
+      const response = await fetch(
+        'https://upload.imagekit.io/api/v1/files/upload',
+        {
+          method: 'POST',
+          headers: {
+            Authorization: `Basic ${Buffer.from(`${privateKey}:`).toString('base64')}`,
+          },
+          body: form,
+        },
+      );
+      if (!response.ok)
+        throw new ServiceUnavailableException(
+          'ImageKit could not upload this image',
+        );
+      const uploaded = (await response.json()) as {
+        fileId: string;
+        name: string;
+        url: string;
+        width?: number;
+        height?: number;
+        size: number;
+        fileType?: string;
+      };
+      providerFileId = uploaded.fileId;
+      return await this.prisma.websiteMedia.create({
+        data: {
+          organizationId: await this.organizationId(),
+          providerFileId: uploaded.fileId,
+          name: uploaded.name,
+          url: uploaded.url,
+          width: uploaded.width,
+          height: uploaded.height,
+          mimeType: file.mimetype,
+          size: uploaded.size,
+          category,
+        },
+      });
+    } catch (error) {
+      if (providerFileId)
+        await fetch(
+          `https://api.imagekit.io/v1/files/${encodeURIComponent(providerFileId)}`,
+          {
+            method: 'DELETE',
+            headers: {
+              Authorization: `Basic ${Buffer.from(`${privateKey}:`).toString('base64')}`,
+            },
+          },
+        ).catch(() => undefined);
+      if (
+        error instanceof BadRequestException ||
+        error instanceof ServiceUnavailableException
+      )
+        throw error;
+      throw new ServiceUnavailableException(
+        'ImageKit could not upload this image. Check the account keys and try again.',
+      );
+    }
+  }
+
+  async deleteMedia(id: string) {
+    const media = await this.prisma.websiteMedia.findUnique({
+      where: { id },
+      include: { galleryImages: { select: { id: true } } },
+    });
+    if (!media) throw new NotFoundException('Media item not found');
+    if (media.galleryImages.length)
+      throw new BadRequestException(
+        'Remove this image from its gallery albums first',
+      );
+    const privateKey = process.env.IMAGEKIT_PRIVATE_KEY;
+    if (!privateKey)
+      throw new ServiceUnavailableException('Image uploads are not configured');
     const response = await fetch(
-      'https://upload.imagekit.io/api/v1/files/upload',
+      `https://api.imagekit.io/v1/files/${encodeURIComponent(media.providerFileId)}`,
       {
-        method: 'POST',
+        method: 'DELETE',
         headers: {
           Authorization: `Basic ${Buffer.from(`${privateKey}:`).toString('base64')}`,
         },
-        body: form,
       },
     );
-    if (!response.ok)
+    if (!response.ok && response.status !== 404)
       throw new ServiceUnavailableException(
-        'ImageKit could not upload this image',
+        'ImageKit could not remove this image',
       );
-    const uploaded = (await response.json()) as {
-      fileId: string;
-      name: string;
-      url: string;
-      width?: number;
-      height?: number;
-      size: number;
-      fileType?: string;
-    };
-    return this.prisma.websiteMedia.create({
-      data: {
-        organizationId: await this.organizationId(),
-        providerFileId: uploaded.fileId,
-        name: uploaded.name,
-        url: uploaded.url,
-        width: uploaded.width,
-        height: uploaded.height,
-        mimeType: file.mimetype,
-        size: uploaded.size,
-        category,
-      },
-    });
+    return this.prisma.websiteMedia.delete({ where: { id } });
   }
 }

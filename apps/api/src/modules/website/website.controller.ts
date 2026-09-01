@@ -280,4 +280,9 @@ export class WebsiteController {
       await this.content.upload(file, dto.category),
     );
   }
+  @Delete('media/:id')
+  @RequirePermissions('website.manage')
+  async deleteMedia(@Param('id') id: string) {
+    return successResponse('Image removed', await this.content.deleteMedia(id));
+  }
 }

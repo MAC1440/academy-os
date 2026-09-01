@@ -7,6 +7,7 @@ import { useToast } from '@web/components/toast-provider';
 import { WebsiteContentManager } from './website-content-manager';
 import { WebsitePublishingStudio } from './website-publishing-studio';
 import { WebsiteAdmissionsManager } from './website-admissions-manager';
+import { WebsiteSeoManager } from './website-seo-manager';
 import {
   type WebsiteFont,
   type WebsiteSettings,
@@ -40,11 +41,16 @@ const fallback: WebsiteSettings = {
     programs: { enabled: false },
     facilities: { enabled: false },
     faculty: { enabled: false },
+    announcements: { enabled: false },
+    results: { enabled: false },
+    events: { enabled: false },
+    gallery: { enabled: false },
     contact: { enabled: true },
   },
   programs: [],
   facilities: [],
   faculty: [],
+  seo: { defaultTitle: '', defaultDescription: '' },
   admissions: {
     enabled: false,
     isOpen: false,
@@ -89,6 +95,7 @@ export function WebsiteManager() {
   const toast = useToast();
   const overview = useGetWebsiteOverviewQuery();
   const [settings, setSettings] = useState(fallback);
+  const [isDirty, setIsDirty] = useState(false);
   const [saveDraft, saveState] = useSaveWebsiteDraftMutation();
   const [publish, publishState] = usePublishWebsiteMutation();
   useEffect(() => {
@@ -102,10 +109,22 @@ export function WebsiteManager() {
       facilities: draft.facilities ?? [],
       faculty: draft.faculty ?? [],
       admissions: { ...fallback.admissions, ...draft.admissions },
+      seo: {
+        ...fallback.seo,
+        ...draft.seo,
+        defaultTitle: draft.seo?.defaultTitle || draft.schoolName,
+      },
     });
+    setIsDirty(false);
   }, [overview.data?.draft]);
-  const update = <K extends keyof WebsiteSettings>(key: K, value: WebsiteSettings[K]) =>
+  const changeSettings = (value: WebsiteSettings) => {
+    setSettings(value);
+    setIsDirty(true);
+  };
+  const update = <K extends keyof WebsiteSettings>(key: K, value: WebsiteSettings[K]) => {
     setSettings((current) => ({ ...current, [key]: value }));
+    setIsDirty(true);
+  };
 
   async function submit(event: FormEvent) {
     event.preventDefault();
@@ -137,6 +156,7 @@ export function WebsiteManager() {
     });
     try {
       await saveDraft(payload).unwrap();
+      setIsDirty(false);
       toast.success('Branding draft saved. Preview it before publishing.');
     } catch {
       toast.error('The branding draft could not be saved. Check URLs and contact details.');
@@ -177,7 +197,12 @@ export function WebsiteManager() {
             </Link>
             <button
               className="button-primary inline-flex items-center gap-2"
-              disabled={publishState.isLoading || !overview.data.hasUnpublishedChanges}
+              disabled={
+                publishState.isLoading ||
+                isDirty ||
+                !overview.data.hasUnpublishedChanges ||
+                !overview.data.health.readyToPublish
+              }
               onClick={publishDraft}
               type="button"
             >
@@ -187,6 +212,13 @@ export function WebsiteManager() {
         </header>
 
         <section className="website-manager-status" aria-label="Website status">
+          <div>
+            <span>Content health</span>
+            <strong>{overview.data.health.score}%</strong>
+            <small>
+              {overview.data.health.readyToPublish ? 'Core content ready' : 'Action required'}
+            </small>
+          </div>
           <div>
             <span>Website</span>
             <strong>{overview.data.status === 'PUBLISHED' ? 'Published' : 'Not published'}</strong>
@@ -409,11 +441,42 @@ export function WebsiteManager() {
           ))}
         </SettingSection>
 
-        <WebsiteContentManager settings={settings} onChange={setSettings} />
-        <WebsiteAdmissionsManager settings={settings} onChange={setSettings} />
+        <WebsiteContentManager settings={settings} onChange={changeSettings} />
+        <WebsiteAdmissionsManager settings={settings} onChange={changeSettings} />
+        <WebsiteSeoManager settings={settings} onChange={changeSettings} />
+
+        {overview.data.health.issues.length ? (
+          <section className="website-health-panel">
+            <div>
+              <h2>Before you publish</h2>
+              <p>
+                Required items prevent broken public sections. Recommendations improve trust and
+                discovery.
+              </p>
+            </div>
+            <ul>
+              {overview.data.health.issues.map((issue) => (
+                <li key={issue.id}>
+                  <span>{issue.area}</span>
+                  <strong>{issue.label}</strong>
+                  <small>{issue.severity === 'REQUIRED' ? 'Required' : 'Recommended'}</small>
+                </li>
+              ))}
+            </ul>
+          </section>
+        ) : (
+          <section className="website-health-ready">
+            <h2>Website content is ready</h2>
+            <p>All core checks pass. Preview the draft, then publish when you are satisfied.</p>
+          </section>
+        )}
 
         <div className="website-manager-savebar">
-          <p>Your edits stay private until you publish them.</p>
+          <p>
+            {isDirty
+              ? 'Unsaved edits are still private. Save before previewing or publishing.'
+              : 'Saved edits stay private until you publish them.'}
+          </p>
           <button
             className="button-primary inline-flex items-center gap-2"
             disabled={saveState.isLoading}

@@ -2,7 +2,12 @@
 
 import Link from 'next/link';
 import { useEffect } from 'react';
-import { useGetPublicWebsiteQuery, type WebsiteSettings } from './website.api';
+import {
+  useGetPublicWebsiteContentQuery,
+  useGetPublicWebsiteQuery,
+  useGetWebsiteContentQuery,
+  type WebsiteSettings,
+} from './website.api';
 import { websiteTheme } from './website-theme';
 
 function Brand({ settings, preview }: { settings: WebsiteSettings; preview: boolean }) {
@@ -78,6 +83,9 @@ export function WebsiteSurface({
   settings: WebsiteSettings;
   preview?: boolean;
 }) {
+  const publicContent = useGetPublicWebsiteContentQuery(undefined, { skip: preview });
+  const draftContent = useGetWebsiteContentQuery(undefined, { skip: !preview });
+  const content = preview ? draftContent.data : publicContent.data;
   const homepage = settings.homepage ?? {
     hero: { enabled: true, title: settings.schoolName },
     introduction: { enabled: false, heading: '', content: '' },
@@ -85,6 +93,10 @@ export function WebsiteSurface({
     programs: { enabled: false },
     facilities: { enabled: false },
     faculty: { enabled: false },
+    announcements: { enabled: false },
+    results: { enabled: false },
+    events: { enabled: false },
+    gallery: { enabled: false },
     contact: { enabled: true },
   };
   const programs = (settings.programs ?? [])
@@ -106,6 +118,20 @@ export function WebsiteSurface({
     }
     icon.href = settings.faviconUrl;
   }, [settings.faviconUrl]);
+  useEffect(() => {
+    if (preview) return;
+    document.title = settings.seo?.defaultTitle || settings.schoolName;
+    const description = settings.seo?.defaultDescription || settings.tagline;
+    if (description) {
+      let meta = document.querySelector<HTMLMetaElement>('meta[name="description"]');
+      if (!meta) {
+        meta = document.createElement('meta');
+        meta.name = 'description';
+        document.head.appendChild(meta);
+      }
+      meta.content = description;
+    }
+  }, [preview, settings]);
 
   return (
     <div
@@ -163,6 +189,24 @@ export function WebsiteSurface({
             {homepage.introduction.imageUrl ? (
               <img src={homepage.introduction.imageUrl} alt="" />
             ) : null}
+          </section>
+        ) : null}
+
+        {homepage.announcements?.enabled && content?.announcements.length ? (
+          <section className="website-home-announcements">
+            <header>
+              <h2>Notices from the school</h2>
+              <Link href="/news">All news</Link>
+            </header>
+            <div>
+              {content.announcements.slice(0, 3).map((item) => (
+                <article key={item.id}>
+                  <small>{item.pinned ? 'Pinned announcement' : 'Announcement'}</small>
+                  <h3>{item.title}</h3>
+                  <p>{item.description}</p>
+                </article>
+              ))}
+            </div>
           </section>
         ) : null}
 
@@ -233,6 +277,72 @@ export function WebsiteSurface({
                   {person.bio ? <p>{person.bio}</p> : null}
                 </article>
               ))}
+            </div>
+          </section>
+        ) : null}
+        {homepage.results?.enabled && content?.results.length ? (
+          <section className="website-home-results">
+            <header>
+              <h2>Recent achievements</h2>
+              <p>Approved highlights from our academic community.</p>
+            </header>
+            <div>
+              {content.results.slice(0, 3).map((item) => (
+                <article key={item.id}>
+                  <small>{item.academicYear}</small>
+                  <h3>{item.title}</h3>
+                  <ul>
+                    {item.highlights.slice(0, 3).map((value) => (
+                      <li key={value}>{value}</li>
+                    ))}
+                  </ul>
+                </article>
+              ))}
+            </div>
+          </section>
+        ) : null}
+        {homepage.events?.enabled && content?.events.length ? (
+          <section className="website-home-events">
+            <header>
+              <h2>Dates to remember</h2>
+              <Link href="/events">View calendar</Link>
+            </header>
+            <div>
+              {content.events.slice(0, 4).map((item) => (
+                <article key={item.id}>
+                  <time dateTime={item.calendarDate}>
+                    <strong>
+                      {new Date(item.calendarDate).toLocaleDateString('en-PK', { day: '2-digit' })}
+                    </strong>
+                    <span>
+                      {new Date(item.calendarDate).toLocaleDateString('en-PK', { month: 'short' })}
+                    </span>
+                  </time>
+                  <div>
+                    <h3>{item.label}</h3>
+                    {item.description ? <p>{item.description}</p> : null}
+                  </div>
+                </article>
+              ))}
+            </div>
+          </section>
+        ) : null}
+        {homepage.gallery?.enabled && content?.albums.some((album) => album.images.length) ? (
+          <section className="website-home-gallery">
+            <header>
+              <h2>Life at our school</h2>
+              <Link href="/gallery">Explore gallery</Link>
+            </header>
+            <div>
+              {content.albums
+                .filter((album) => album.images.length)
+                .slice(0, 4)
+                .map((album) => (
+                  <Link href={`/gallery/${album.slug}`} key={album.id}>
+                    <img src={album.coverImageUrl || album.images[0]!.media.url} alt="" />
+                    <strong>{album.title}</strong>
+                  </Link>
+                ))}
             </div>
           </section>
         ) : null}

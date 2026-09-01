@@ -20,6 +20,35 @@ describe('WebsiteService publishing', () => {
     facebookUrl: 'https://facebook.com/school',
   };
 
+  it('reports required and recommended website content health separately', () => {
+    const service = new WebsiteService({} as never, {} as never);
+    const health = (
+      service as unknown as {
+        contentHealth: (settings: object) => {
+          readyToPublish: boolean;
+          issues: Array<{ id: string; severity: string }>;
+        };
+      }
+    ).contentHealth({
+      schoolName: 'Academy A',
+      homepage: {
+        hero: { title: 'Learn with purpose' },
+        contact: { enabled: true },
+      },
+      seo: { defaultDescription: '' },
+    });
+    expect(health.readyToPublish).toBe(false);
+    expect(health.issues).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ id: 'contact', severity: 'REQUIRED' }),
+        expect.objectContaining({
+          id: 'seo-description',
+          severity: 'RECOMMENDED',
+        }),
+      ]),
+    );
+  });
+
   it('returns only the latest published revision to public users', async () => {
     const published = {
       id: 'published-a',
@@ -127,15 +156,13 @@ describe('WebsiteService publishing', () => {
           .mockResolvedValue([{ id: 'class-a', name: 'Grade 6' }]),
       },
       course: {
-        findMany: jest
-          .fn()
-          .mockResolvedValue([
-            {
-              id: 'course-a',
-              name: 'Robotics',
-              description: 'Practical robotics.',
-            },
-          ]),
+        findMany: jest.fn().mockResolvedValue([
+          {
+            id: 'course-a',
+            name: 'Robotics',
+            description: 'Practical robotics.',
+          },
+        ]),
       },
       staffProfile: {
         findMany: jest.fn().mockResolvedValue([

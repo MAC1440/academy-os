@@ -4,6 +4,7 @@ import { Plus, Trash2 } from 'lucide-react';
 import {
   type WebsiteSettings,
   useGetWebsiteFacultyImportsQuery,
+  useGetWebsiteContentQuery,
   useGetWebsiteProgramImportsQuery,
 } from './website.api';
 
@@ -13,6 +14,7 @@ const text = (value: string | undefined) => value ?? '';
 export function WebsiteContentManager({ settings, onChange }: Props) {
   const programImports = useGetWebsiteProgramImportsQuery();
   const facultyImports = useGetWebsiteFacultyImportsQuery();
+  const publishingContent = useGetWebsiteContentQuery();
   const setHomepage = (key: keyof WebsiteSettings['homepage'], value: object) =>
     onChange({ ...settings, homepage: { ...settings.homepage, [key]: value } });
   const warnings = [
@@ -47,6 +49,22 @@ export function WebsiteContentManager({ settings, onChange }: Props) {
     !settings.address
       ? 'Contact is enabled but no contact details are configured.'
       : null,
+    settings.homepage.announcements.enabled &&
+    !publishingContent.data?.announcements.some((item) => item.published)
+      ? 'Announcements is enabled but has no published notices.'
+      : null,
+    settings.homepage.results.enabled &&
+    !publishingContent.data?.results.some((item) => item.published)
+      ? 'Results is enabled but has no published highlights.'
+      : null,
+    settings.homepage.events.enabled &&
+    !publishingContent.data?.events.some((item) => item.visibility === 'PUBLIC')
+      ? 'Events is enabled but the calendar has no public events.'
+      : null,
+    settings.homepage.gallery.enabled &&
+    !publishingContent.data?.albums.some((item) => item.published && item.images.length)
+      ? 'Gallery is enabled but has no published album with images.'
+      : null,
   ].filter(Boolean) as string[];
 
   return (
@@ -67,6 +85,28 @@ export function WebsiteContentManager({ settings, onChange }: Props) {
           </ul>
         </aside>
       ) : null}
+
+      <section className="website-homepage-feeds">
+        <div>
+          <h3>Live homepage sections</h3>
+          <p>
+            These sections use published items from the Publishing Studio and hide automatically
+            when empty.
+          </p>
+        </div>
+        <div>
+          {(['announcements', 'results', 'events', 'gallery'] as const).map((key) => (
+            <label key={key}>
+              <input
+                type="checkbox"
+                checked={settings.homepage[key].enabled}
+                onChange={(event) => setHomepage(key, { enabled: event.target.checked })}
+              />
+              <span>{key.charAt(0).toUpperCase() + key.slice(1)}</span>
+            </label>
+          ))}
+        </div>
+      </section>
 
       <ContentBlock
         title="Hero"

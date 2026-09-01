@@ -56,6 +56,10 @@ export type WebsiteSettings = {
     programs: { enabled: boolean };
     facilities: { enabled: boolean };
     faculty: { enabled: boolean };
+    announcements: { enabled: boolean };
+    results: { enabled: boolean };
+    events: { enabled: boolean };
+    gallery: { enabled: boolean };
     contact: { enabled: boolean };
   };
   programs: Array<{
@@ -91,6 +95,11 @@ export type WebsiteSettings = {
     description: string;
     eligibleOfferingIds: string[];
     confirmationMessage: string;
+  };
+  seo: {
+    defaultTitle: string;
+    defaultDescription: string;
+    defaultSocialImage?: string;
   };
 };
 
@@ -132,6 +141,9 @@ export class WebsiteService {
       draft: draft ? this.managerRevision(draft) : null,
       published: published ? this.managerRevision(published) : null,
       organization: { id: organization.id, name: organization.name },
+      health: this.contentHealth(
+        (draft?.data ?? {}) as Partial<WebsiteSettings>,
+      ),
     };
   }
 
@@ -438,6 +450,13 @@ export class WebsiteService {
         confirmationMessage: dto.admissions.confirmationMessage.trim(),
         eligibleOfferingIds: [...new Set(dto.admissions.eligibleOfferingIds)],
       },
+      seo: {
+        defaultTitle: dto.seo.defaultTitle.trim() || schoolName,
+        defaultDescription: dto.seo.defaultDescription.trim(),
+        ...(optional(dto.seo.defaultSocialImage)
+          ? { defaultSocialImage: optional(dto.seo.defaultSocialImage) }
+          : {}),
+      },
     };
   }
 
@@ -461,6 +480,10 @@ export class WebsiteService {
         programs: { enabled: false },
         facilities: { enabled: false },
         faculty: { enabled: false },
+        announcements: { enabled: false },
+        results: { enabled: false },
+        events: { enabled: false },
+        gallery: { enabled: false },
         contact: { enabled: true },
       },
       programs: [],
@@ -474,6 +497,7 @@ export class WebsiteService {
         eligibleOfferingIds: [],
         confirmationMessage: 'Thank you. Your application has been received.',
       },
+      seo: { defaultTitle: schoolName, defaultDescription: '' },
     };
   }
 
@@ -492,6 +516,94 @@ export class WebsiteService {
       updatedAt: revision.updatedAt,
       publishedAt: revision.publishedAt,
       publishedBy: revision.publishedBy ?? null,
+    };
+  }
+
+  private contentHealth(settings: Partial<WebsiteSettings>) {
+    const issues: Array<{
+      id: string;
+      label: string;
+      area: string;
+      severity: 'REQUIRED' | 'RECOMMENDED';
+    }> = [];
+    if (!settings.schoolName?.trim())
+      issues.push({
+        id: 'school-name',
+        label: 'Add the public school name.',
+        area: 'Identity',
+        severity: 'REQUIRED',
+      });
+    if (!settings.homepage?.hero?.title?.trim())
+      issues.push({
+        id: 'hero',
+        label: 'Add a homepage headline.',
+        area: 'Homepage',
+        severity: 'REQUIRED',
+      });
+    if (
+      settings.homepage?.introduction?.enabled &&
+      (!settings.homepage.introduction.heading?.trim() ||
+        !settings.homepage.introduction.content?.trim())
+    )
+      issues.push({
+        id: 'introduction',
+        label: 'Complete the enabled school introduction.',
+        area: 'Homepage',
+        severity: 'REQUIRED',
+      });
+    if (
+      settings.homepage?.principalMessage?.enabled &&
+      (!settings.homepage.principalMessage.name?.trim() ||
+        !settings.homepage.principalMessage.message?.trim())
+    )
+      issues.push({
+        id: 'principal',
+        label: 'Complete the enabled principal message.',
+        area: 'Homepage',
+        severity: 'REQUIRED',
+      });
+    if (
+      settings.homepage?.contact?.enabled &&
+      !settings.contactEmail &&
+      !settings.phone &&
+      !settings.address
+    )
+      issues.push({
+        id: 'contact',
+        label: 'Add at least one public contact method.',
+        area: 'Contact',
+        severity: 'REQUIRED',
+      });
+    if (!settings.seo?.defaultDescription?.trim())
+      issues.push({
+        id: 'seo-description',
+        label: 'Add a default search description.',
+        area: 'Search visibility',
+        severity: 'RECOMMENDED',
+      });
+    if (!settings.logoUrl)
+      issues.push({
+        id: 'logo',
+        label: 'Add a school logo for stronger recognition.',
+        area: 'Branding',
+        severity: 'RECOMMENDED',
+      });
+    if (
+      settings.admissions?.enabled &&
+      settings.admissions.isOpen &&
+      !settings.admissions.eligibleOfferingIds?.length
+    )
+      issues.push({
+        id: 'admissions-offerings',
+        label: 'Select classes accepting online applications.',
+        area: 'Admissions',
+        severity: 'REQUIRED',
+      });
+    const total = 8;
+    return {
+      score: Math.max(0, Math.round(((total - issues.length) / total) * 100)),
+      issues,
+      readyToPublish: !issues.some((issue) => issue.severity === 'REQUIRED'),
     };
   }
 

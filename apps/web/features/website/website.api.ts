@@ -18,6 +18,7 @@ export type WebsiteSettings = {
   facebookUrl?: string;
   instagramUrl?: string;
   youtubeUrl?: string;
+  seo: { defaultTitle: string; defaultDescription: string; defaultSocialImage?: string };
   homepage: HomepageConfig;
   programs: WebsiteProgram[];
   facilities: WebsiteFacility[];
@@ -60,6 +61,10 @@ export type HomepageConfig = {
   facilities: { enabled: boolean };
   faculty: { enabled: boolean };
   contact: { enabled: boolean };
+  announcements: { enabled: boolean };
+  results: { enabled: boolean };
+  events: { enabled: boolean };
+  gallery: { enabled: boolean };
 };
 export type WebsiteProgram = {
   sourceId?: string;
@@ -115,6 +120,16 @@ export type WebsiteOverview = {
   draft: WebsiteRevision;
   published?: WebsiteRevision | null;
   organization: { id: string; name: string };
+  health: {
+    score: number;
+    readyToPublish: boolean;
+    issues: Array<{
+      id: string;
+      label: string;
+      area: string;
+      severity: 'REQUIRED' | 'RECOMMENDED';
+    }>;
+  };
 };
 export type PublicWebsite = {
   revisionId: string;
@@ -250,6 +265,11 @@ export const websiteApi = baseApi.injectEndpoints({
       transformResponse: unwrap,
       invalidatesTags: ['Website'],
     }),
+    deleteWebsiteMedia: build.mutation<unknown, string>({
+      query: (id) => ({ url: `/website/media/${id}`, method: 'DELETE' }),
+      transformResponse: unwrap,
+      invalidatesTags: ['Website'],
+    }),
     addWebsiteAlbumImage: build.mutation<
       unknown,
       { albumId: string; mediaId: string; caption?: string; sortOrder: number }
@@ -316,6 +336,7 @@ export const {
   useSaveWebsiteContentMutation,
   useDeleteWebsiteContentMutation,
   useUploadWebsiteMediaMutation,
+  useDeleteWebsiteMediaMutation,
   useAddWebsiteAlbumImageMutation,
   useRemoveWebsiteAlbumImageMutation,
 } = websiteApi;

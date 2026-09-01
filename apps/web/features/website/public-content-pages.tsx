@@ -7,7 +7,7 @@ import {
   useGetPublicWebsiteContentQuery,
   useGetPublicWebsiteQuery,
 } from './website.api';
-import { FormEvent, useState } from 'react';
+import { FormEvent, useEffect, useState } from 'react';
 import {
   useGetPublicAdmissionOptionsQuery,
   useSubmitWebsiteAdmissionMutation,
@@ -25,6 +25,11 @@ export function Shell({ children }: { children: React.ReactNode }) {
       className={`website-public website-template-${settings.template.toLowerCase()}`}
       style={websiteTheme(settings)}
     >
+      <WebsiteMeta
+        title={settings.seo?.defaultTitle || settings.schoolName}
+        description={settings.seo?.defaultDescription || settings.tagline}
+        image={settings.seo?.defaultSocialImage}
+      />
       <header className="website-public-header">
         <Link className="website-wordmark" href="/">
           <span className="website-lettermark">{settings.schoolName.charAt(0)}</span>
@@ -47,6 +52,35 @@ export function Shell({ children }: { children: React.ReactNode }) {
       </footer>
     </div>
   );
+}
+
+function WebsiteMeta({
+  title,
+  description,
+  image,
+}: {
+  title: string;
+  description?: string;
+  image?: string;
+}) {
+  useEffect(() => {
+    document.title = title;
+    const set = (selector: string, attribute: 'name' | 'property', key: string, value?: string) => {
+      if (!value) return;
+      let node = document.querySelector<HTMLMetaElement>(selector);
+      if (!node) {
+        node = document.createElement('meta');
+        node.setAttribute(attribute, key);
+        document.head.appendChild(node);
+      }
+      node.content = value;
+    };
+    set('meta[name="description"]', 'name', 'description', description);
+    set('meta[property="og:title"]', 'property', 'og:title', title);
+    set('meta[property="og:description"]', 'property', 'og:description', description);
+    set('meta[property="og:image"]', 'property', 'og:image', image);
+  }, [title, description, image]);
+  return null;
 }
 
 export function PublicAdmissionsPage() {
@@ -238,10 +272,9 @@ export function PublicAdmissionsPage() {
     </Shell>
   );
 }
-function Heading({ eyebrow, title, copy }: { eyebrow: string; title: string; copy: string }) {
+function Heading({ title, copy }: { title: string; copy: string }) {
   return (
     <header className="website-index-heading">
-      <span>{eyebrow}</span>
       <h1>{title}</h1>
       <p>{copy}</p>
     </header>
@@ -254,7 +287,6 @@ export function NewsIndexPage() {
     <Shell>
       <main className="website-index">
         <Heading
-          eyebrow="School journal"
           title="News & announcements"
           copy="The latest stories, notices, and achievements from our school community."
         />
@@ -291,7 +323,6 @@ export function NewsIndexPage() {
         {content.data?.results.length ? (
           <section className="website-results-band">
             <Heading
-              eyebrow="Achievement"
               title="Recent result highlights"
               copy="Approved, school-level milestones from recent academic years."
             />
@@ -321,7 +352,6 @@ export function EventsIndexPage() {
     <Shell>
       <main className="website-index">
         <Heading
-          eyebrow="School calendar"
           title="Upcoming events"
           copy="Public holidays, celebrations, and important dates from the academic calendar."
         />
@@ -357,7 +387,6 @@ export function GalleryIndexPage() {
     <Shell>
       <main className="website-index">
         <Heading
-          eyebrow="Life at school"
           title="Gallery"
           copy="A curated look at learning, celebrations, and community moments."
         />
@@ -387,6 +416,11 @@ export function NewsArticlePage({ slug }: { slug: string }) {
       <main className="website-article">
         {article.data ? (
           <>
+            <WebsiteMeta
+              title={article.data.seoTitle || article.data.title}
+              description={article.data.seoDescription || article.data.excerpt}
+              image={article.data.coverImageUrl}
+            />
             <Link href="/news">← All news</Link>
             <header>
               <small>
@@ -420,7 +454,6 @@ export function GalleryAlbumPage({ slug }: { slug: string }) {
         {album.data ? (
           <>
             <Heading
-              eyebrow="Photo album"
               title={album.data.title}
               copy={album.data.description || `${album.data.images.length} approved images`}
             />

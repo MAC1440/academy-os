@@ -78,7 +78,20 @@ class HomepageDto {
   @ValidateNested() @Type(() => ToggleDto) programs!: ToggleDto;
   @ValidateNested() @Type(() => ToggleDto) facilities!: ToggleDto;
   @ValidateNested() @Type(() => ToggleDto) faculty!: ToggleDto;
+  @ValidateNested() @Type(() => ToggleDto) announcements!: ToggleDto;
+  @ValidateNested() @Type(() => ToggleDto) results!: ToggleDto;
+  @ValidateNested() @Type(() => ToggleDto) events!: ToggleDto;
+  @ValidateNested() @Type(() => ToggleDto) gallery!: ToggleDto;
   @ValidateNested() @Type(() => ToggleDto) contact!: ToggleDto;
+}
+
+class WebsiteSeoDto {
+  @IsString() @MaxLength(160) defaultTitle!: string;
+  @IsString() @MaxLength(320) defaultDescription!: string;
+  @IsOptional()
+  @IsUrl({ protocols: ['http', 'https'], require_protocol: true })
+  @MaxLength(500)
+  defaultSocialImage?: string;
 }
 
 class WebsiteProgramDto {
@@ -224,4 +237,8 @@ export class WebsiteSettingsDto {
   @ValidateNested()
   @Type(() => WebsiteAdmissionsDto)
   admissions!: WebsiteAdmissionsDto;
+
+  @ValidateNested()
+  @Type(() => WebsiteSeoDto)
+  seo!: WebsiteSeoDto;
 }

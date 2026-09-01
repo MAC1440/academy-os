@@ -6,6 +6,7 @@ import { useToast } from '@web/components/toast-provider';
 import { useSaveCalendarDayMutation } from '@web/features/calendar/calendar.api';
 import {
   useDeleteWebsiteContentMutation,
+  useDeleteWebsiteMediaMutation,
   useAddWebsiteAlbumImageMutation,
   useGetWebsiteContentQuery,
   useSaveWebsiteContentMutation,
@@ -36,6 +37,7 @@ export function WebsitePublishingStudio() {
   const [remove] = useDeleteWebsiteContentMutation();
   const [saveDay] = useSaveCalendarDayMutation();
   const [upload, uploadState] = useUploadWebsiteMediaMutation();
+  const [deleteMedia] = useDeleteWebsiteMediaMutation();
   const [addAlbumImage] = useAddWebsiteAlbumImageMutation();
   const [removeAlbumImage] = useRemoveWebsiteAlbumImageMutation();
 
@@ -86,7 +88,6 @@ export function WebsitePublishingStudio() {
     <section className="website-publishing-studio">
       <header>
         <div>
-          <span className="eyebrow">Publishing studio</span>
           <h2>Keep the public website current</h2>
           <p>
             Schedule updates, share calendar moments, and organize approved imagery in one place.
@@ -328,6 +329,21 @@ export function WebsitePublishingStudio() {
                   <span>
                     {media.category} · {(media.size / 1024).toFixed(0)} KB
                   </span>
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      if (!window.confirm(`Remove ${media.name} from ImageKit and this library?`))
+                        return;
+                      try {
+                        await deleteMedia(media.id).unwrap();
+                        toast.success('Image removed.');
+                      } catch {
+                        toast.error('Remove this image from any gallery albums first.');
+                      }
+                    }}
+                  >
+                    Remove
+                  </button>
                 </figcaption>
               </figure>
             ))}
@@ -398,8 +414,7 @@ function StudioCollection({
           event.currentTarget.reset();
         }}
       >
-        <span className="eyebrow">New</span>
-        <h3>{title}</h3>
+        <h3>New {title.toLowerCase()}</h3>
         <p>{intro}</p>
         <input className="field" name="title" placeholder="Title" required />
         {fields !== 'albums' && (

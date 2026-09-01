@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { FormEvent, useEffect, useState } from 'react';
 import { ExternalLink, Globe2, ImageIcon, Palette, Save, Send, Type } from 'lucide-react';
 import { useToast } from '@web/components/toast-provider';
+import { WebsiteContentManager } from './website-content-manager';
 import {
   type WebsiteFont,
   type WebsiteSettings,
@@ -30,6 +31,18 @@ const fallback: WebsiteSettings = {
   accentColor: '#0F766E',
   headingFont: 'Merriweather',
   bodyFont: 'Inter',
+  homepage: {
+    hero: { enabled: true, title: '' },
+    introduction: { enabled: false, heading: 'Welcome to our school', content: '' },
+    principalMessage: { enabled: false },
+    programs: { enabled: false },
+    facilities: { enabled: false },
+    faculty: { enabled: false },
+    contact: { enabled: true },
+  },
+  programs: [],
+  facilities: [],
+  faculty: [],
 };
 const templates: Array<{ value: WebsiteTemplate; name: string; description: string }> = [
   { value: 'CLASSIC', name: 'Classic', description: 'Formal, balanced and welcoming.' },
@@ -69,7 +82,16 @@ export function WebsiteManager() {
   const [saveDraft, saveState] = useSaveWebsiteDraftMutation();
   const [publish, publishState] = usePublishWebsiteMutation();
   useEffect(() => {
-    if (overview.data?.draft) setSettings({ ...fallback, ...overview.data.draft.data });
+    if (!overview.data?.draft) return;
+    const draft = overview.data.draft.data;
+    setSettings({
+      ...fallback,
+      ...draft,
+      homepage: { ...fallback.homepage, ...draft.homepage },
+      programs: draft.programs ?? [],
+      facilities: draft.facilities ?? [],
+      faculty: draft.faculty ?? [],
+    });
   }, [overview.data?.draft]);
   const update = <K extends keyof WebsiteSettings>(key: K, value: WebsiteSettings[K]) =>
     setSettings((current) => ({ ...current, [key]: value }));
@@ -373,13 +395,15 @@ export function WebsiteManager() {
         ))}
       </SettingSection>
 
+      <WebsiteContentManager settings={settings} onChange={setSettings} />
+
       <div className="website-manager-savebar">
         <p>Your edits stay private until you publish them.</p>
         <button
           className="button-primary inline-flex items-center gap-2"
           disabled={saveState.isLoading}
         >
-          <Save size={16} /> {saveState.isLoading ? 'Saving…' : 'Save branding draft'}
+          <Save size={16} /> {saveState.isLoading ? 'Saving…' : 'Save website draft'}
         </button>
       </div>
     </form>

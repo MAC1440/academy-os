@@ -31,6 +31,59 @@ export type WebsiteSettings = {
   facebookUrl?: string;
   instagramUrl?: string;
   youtubeUrl?: string;
+  homepage: {
+    hero: {
+      enabled: boolean;
+      title: string;
+      subtitle?: string;
+      imageUrl?: string;
+      ctaText?: string;
+      ctaLink?: string;
+    };
+    introduction: {
+      enabled: boolean;
+      heading: string;
+      content: string;
+      imageUrl?: string;
+    };
+    principalMessage: {
+      enabled: boolean;
+      name?: string;
+      designation?: string;
+      message?: string;
+      imageUrl?: string;
+    };
+    programs: { enabled: boolean };
+    facilities: { enabled: boolean };
+    faculty: { enabled: boolean };
+    contact: { enabled: boolean };
+  };
+  programs: Array<{
+    sourceId?: string;
+    name: string;
+    description?: string;
+    imageUrl?: string;
+    visible: boolean;
+    sortOrder: number;
+  }>;
+  facilities: Array<{
+    title: string;
+    description?: string;
+    imageUrl?: string;
+    visible: boolean;
+    sortOrder: number;
+  }>;
+  faculty: Array<{
+    sourceTeacherId?: string;
+    name: string;
+    designation: string;
+    qualification?: string;
+    subjects: string[];
+    bio?: string;
+    imageUrl?: string;
+    visible: boolean;
+    sortOrder: number;
+  }>;
 };
 
 @Injectable()
@@ -165,14 +218,99 @@ export class WebsiteService {
     };
   }
 
-  private async ensureConfig(actorUserId: string) {
+  async importPrograms(actorUserId: string) {
+    const organization = await this.organizationFor(actorUserId);
+    const [classes, courses] = await Promise.all([
+      this.prisma.schoolClass.findMany({
+        where: {
+          organizationId: organization.id,
+          deletedAt: null,
+          status: 'ACTIVE',
+        },
+        select: { id: true, name: true },
+        orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
+      }),
+      this.prisma.course.findMany({
+        where: {
+          organizationId: organization.id,
+          deletedAt: null,
+          status: 'ACTIVE',
+        },
+        select: { id: true, name: true, description: true },
+        orderBy: { name: 'asc' },
+      }),
+    ]);
+    return [
+      ...classes.map((item) => ({
+        sourceId: `class:${item.id}`,
+        name: item.name,
+        sourceType: 'CLASS' as const,
+      })),
+      ...courses.map((item) => ({
+        sourceId: `course:${item.id}`,
+        name: item.name,
+        description: item.description ?? undefined,
+        sourceType: 'COURSE' as const,
+      })),
+    ];
+  }
+
+  async importFaculty(actorUserId: string) {
+    const organization = await this.organizationFor(actorUserId);
+    const staff = await this.prisma.staffProfile.findMany({
+      where: {
+        user: {
+          deletedAt: null,
+          status: 'ACTIVE',
+          roleAssignments: {
+            some: { role: { organizationId: organization.id } },
+          },
+        },
+      },
+      select: {
+        id: true,
+        designation: true,
+        user: { select: { fullName: true } },
+        academicOfferingAssignments: {
+          select: {
+            academicOffering: {
+              select: {
+                subjects: { select: { subject: { select: { name: true } } } },
+              },
+            },
+          },
+        },
+      },
+      orderBy: { user: { fullName: 'asc' } },
+    });
+    return staff.map((item) => ({
+      sourceTeacherId: item.id,
+      name: item.user.fullName,
+      designation: item.designation || 'Teacher',
+      subjects: [
+        ...new Set(
+          item.academicOfferingAssignments.flatMap((assignment) =>
+            assignment.academicOffering.subjects.map(
+              (subject) => subject.subject.name,
+            ),
+          ),
+        ),
+      ].sort(),
+    }));
+  }
+
+  private async organizationFor(actorUserId: string) {
     const assignment = await this.prisma.roleAssignment.findFirst({
       where: { userId: actorUserId },
       select: { role: { select: { organization: true } } },
     });
-    const organization = assignment?.role.organization;
-    if (!organization)
+    if (!assignment?.role.organization)
       throw new NotFoundException('Organization access not found');
+    return assignment.role.organization;
+  }
+
+  private async ensureConfig(actorUserId: string) {
+    const organization = await this.organizationFor(actorUserId);
     const config = await this.prisma.websiteConfig.upsert({
       where: { organizationId: organization.id },
       update: {},
@@ -234,6 +372,33 @@ export class WebsiteService {
       ...(optional(dto.youtubeUrl)
         ? { youtubeUrl: optional(dto.youtubeUrl) }
         : {}),
+      homepage: dto.homepage,
+      programs: dto.programs.map((item, index) => ({
+        ...item,
+        name: item.name.trim(),
+        description: optional(item.description),
+        imageUrl: optional(item.imageUrl),
+        sortOrder: item.sortOrder ?? index,
+      })),
+      facilities: dto.facilities.map((item, index) => ({
+        ...item,
+        title: item.title.trim(),
+        description: optional(item.description),
+        imageUrl: optional(item.imageUrl),
+        sortOrder: item.sortOrder ?? index,
+      })),
+      faculty: dto.faculty.map((item, index) => ({
+        ...item,
+        name: item.name.trim(),
+        designation: item.designation.trim(),
+        qualification: optional(item.qualification),
+        bio: optional(item.bio),
+        imageUrl: optional(item.imageUrl),
+        subjects: item.subjects
+          .map((subject) => subject.trim())
+          .filter(Boolean),
+        sortOrder: item.sortOrder ?? index,
+      })),
     };
   }
 
@@ -246,6 +411,22 @@ export class WebsiteService {
       accentColor: '#0F766E',
       headingFont: 'Merriweather',
       bodyFont: 'Inter',
+      homepage: {
+        hero: { enabled: true, title: schoolName },
+        introduction: {
+          enabled: false,
+          heading: 'Welcome to our school',
+          content: '',
+        },
+        principalMessage: { enabled: false },
+        programs: { enabled: false },
+        facilities: { enabled: false },
+        faculty: { enabled: false },
+        contact: { enabled: true },
+      },
+      programs: [],
+      facilities: [],
+      faculty: [],
     };
   }
 

@@ -115,4 +115,69 @@ describe('WebsiteService publishing', () => {
     expect(result.published.status).toBe(WebsiteRevisionStatus.PUBLISHED);
     expect(result.draft.id).toBe('draft-b');
   });
+
+  it('copies only public-safe academic and faculty fields into import choices', async () => {
+    const prisma = {
+      roleAssignment: {
+        findFirst: jest.fn().mockResolvedValue({ role: { organization } }),
+      },
+      schoolClass: {
+        findMany: jest
+          .fn()
+          .mockResolvedValue([{ id: 'class-a', name: 'Grade 6' }]),
+      },
+      course: {
+        findMany: jest
+          .fn()
+          .mockResolvedValue([
+            {
+              id: 'course-a',
+              name: 'Robotics',
+              description: 'Practical robotics.',
+            },
+          ]),
+      },
+      staffProfile: {
+        findMany: jest.fn().mockResolvedValue([
+          {
+            id: 'staff-a',
+            designation: 'Science Teacher',
+            user: { fullName: 'Ayesha Khan' },
+            academicOfferingAssignments: [
+              {
+                academicOffering: {
+                  subjects: [
+                    { subject: { name: 'Science' } },
+                    { subject: { name: 'Science' } },
+                  ],
+                },
+              },
+            ],
+          },
+        ]),
+      },
+    };
+    const service = new WebsiteService(prisma as never, {} as never);
+
+    await expect(service.importPrograms('admin-a')).resolves.toEqual([
+      { sourceId: 'class:class-a', name: 'Grade 6', sourceType: 'CLASS' },
+      {
+        sourceId: 'course:course-a',
+        name: 'Robotics',
+        description: 'Practical robotics.',
+        sourceType: 'COURSE',
+      },
+    ]);
+    await expect(service.importFaculty('admin-a')).resolves.toEqual([
+      {
+        sourceTeacherId: 'staff-a',
+        name: 'Ayesha Khan',
+        designation: 'Science Teacher',
+        subjects: ['Science'],
+      },
+    ]);
+    expect(prisma.staffProfile.findMany.mock.calls[0][0].select.user).toEqual({
+      select: { fullName: true },
+    });
+  });
 });

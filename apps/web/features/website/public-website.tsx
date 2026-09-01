@@ -78,6 +78,24 @@ export function WebsiteSurface({
   settings: WebsiteSettings;
   preview?: boolean;
 }) {
+  const homepage = settings.homepage ?? {
+    hero: { enabled: true, title: settings.schoolName },
+    introduction: { enabled: false, heading: '', content: '' },
+    principalMessage: { enabled: false },
+    programs: { enabled: false },
+    facilities: { enabled: false },
+    faculty: { enabled: false },
+    contact: { enabled: true },
+  };
+  const programs = (settings.programs ?? [])
+    .filter((item) => item.visible && item.name.trim())
+    .sort((a, b) => a.sortOrder - b.sortOrder);
+  const facilities = (settings.facilities ?? [])
+    .filter((item) => item.visible && item.title.trim())
+    .sort((a, b) => a.sortOrder - b.sortOrder);
+  const faculty = (settings.faculty ?? [])
+    .filter((item) => item.visible && item.name.trim() && item.designation.trim())
+    .sort((a, b) => a.sortOrder - b.sortOrder);
   useEffect(() => {
     if (!settings.faviconUrl) return;
     let icon = document.querySelector<HTMLLinkElement>('link[rel="icon"]');
@@ -103,23 +121,165 @@ export function WebsiteSurface({
         <Brand settings={settings} preview={preview} />
         <nav aria-label="Primary navigation">
           <a href="#welcome">Welcome</a>
-          <a href="#contact">Contact</a>
+          {homepage.programs.enabled && programs.length ? <a href="#programs">Programs</a> : null}
+          {homepage.faculty.enabled && faculty.length ? <a href="#faculty">Faculty</a> : null}
+          {homepage.contact.enabled ? <a href="#contact">Contact</a> : null}
         </nav>
       </header>
-      <main id="welcome" className="website-foundation-hero">
-        <div className="website-foundation-copy">
-          <h1>{settings.schoolName}</h1>
-          {settings.tagline ? <p>{settings.tagline}</p> : null}
-          <a href="#contact" className="website-public-action">
-            Contact our school
-          </a>
-        </div>
-        <TemplateArtwork template={settings.template} />
+      <main>
+        {homepage.hero.enabled && homepage.hero.title.trim() ? (
+          <section id="welcome" className="website-foundation-hero">
+            <div className="website-foundation-copy">
+              <h1>{homepage.hero.title}</h1>
+              {homepage.hero.subtitle || settings.tagline ? (
+                <p>{homepage.hero.subtitle || settings.tagline}</p>
+              ) : null}
+              {homepage.hero.ctaText && homepage.hero.ctaLink ? (
+                <a href={homepage.hero.ctaLink} className="website-public-action">
+                  {homepage.hero.ctaText}
+                </a>
+              ) : null}
+            </div>
+            {homepage.hero.imageUrl ? (
+              <img className="website-hero-image" src={homepage.hero.imageUrl} alt="" />
+            ) : (
+              <TemplateArtwork template={settings.template} />
+            )}
+          </section>
+        ) : null}
+
+        {homepage.introduction.enabled &&
+        homepage.introduction.heading.trim() &&
+        homepage.introduction.content.trim() ? (
+          <section className="website-story-section">
+            <div>
+              <h2>{homepage.introduction.heading}</h2>
+              <p>{homepage.introduction.content}</p>
+            </div>
+            {homepage.introduction.imageUrl ? (
+              <img src={homepage.introduction.imageUrl} alt="" />
+            ) : null}
+          </section>
+        ) : null}
+
+        {homepage.principalMessage.enabled &&
+        homepage.principalMessage.name?.trim() &&
+        homepage.principalMessage.message?.trim() ? (
+          <section className="website-principal-section">
+            {homepage.principalMessage.imageUrl ? (
+              <img src={homepage.principalMessage.imageUrl} alt={homepage.principalMessage.name} />
+            ) : (
+              <div className="website-person-placeholder" aria-hidden="true">
+                {homepage.principalMessage.name.charAt(0)}
+              </div>
+            )}
+            <blockquote>
+              <p>{homepage.principalMessage.message}</p>
+              <footer>
+                <strong>{homepage.principalMessage.name}</strong>
+                {homepage.principalMessage.designation ? (
+                  <span>{homepage.principalMessage.designation}</span>
+                ) : null}
+              </footer>
+            </blockquote>
+          </section>
+        ) : null}
+
+        {homepage.programs.enabled && programs.length ? (
+          <PublicCollection
+            id="programs"
+            title="Programs"
+            intro="Learning pathways offered by our school."
+            items={programs.map((item) => ({
+              title: item.name,
+              description: item.description,
+              imageUrl: item.imageUrl,
+            }))}
+          />
+        ) : null}
+        {homepage.facilities.enabled && facilities.length ? (
+          <PublicCollection
+            title="Facilities"
+            intro="Spaces designed for learning, discovery and growth."
+            items={facilities.map((item) => ({
+              title: item.title,
+              description: item.description,
+              imageUrl: item.imageUrl,
+            }))}
+          />
+        ) : null}
+        {homepage.faculty.enabled && faculty.length ? (
+          <section id="faculty" className="website-faculty-section">
+            <header>
+              <h2>Meet our faculty</h2>
+              <p>The educators who guide our students every day.</p>
+            </header>
+            <div>
+              {faculty.map((person) => (
+                <article key={`${person.sourceTeacherId ?? person.name}-${person.sortOrder}`}>
+                  {person.imageUrl ? (
+                    <img src={person.imageUrl} alt={person.name} />
+                  ) : (
+                    <span aria-hidden="true">{person.name.charAt(0)}</span>
+                  )}
+                  <h3>{person.name}</h3>
+                  <strong>{person.designation}</strong>
+                  {person.qualification ? <p>{person.qualification}</p> : null}
+                  {person.subjects.length ? <small>{person.subjects.join(' · ')}</small> : null}
+                  {person.bio ? <p>{person.bio}</p> : null}
+                </article>
+              ))}
+            </div>
+          </section>
+        ) : null}
       </main>
-      <div id="contact">
-        <PublicFooter settings={settings} />
-      </div>
+      {homepage.contact.enabled ? (
+        <div id="contact">
+          <PublicFooter settings={settings} />
+        </div>
+      ) : (
+        <footer className="website-public-footer">
+          <strong>{settings.schoolName}</strong>
+          <Link href="/login" className="website-portal-link">
+            Staff Portal
+          </Link>
+        </footer>
+      )}
     </div>
+  );
+}
+
+function PublicCollection({
+  id,
+  title,
+  intro,
+  items,
+}: {
+  id?: string;
+  title: string;
+  intro: string;
+  items: Array<{ title: string; description?: string; imageUrl?: string }>;
+}) {
+  return (
+    <section id={id} className="website-collection-section">
+      <header>
+        <h2>{title}</h2>
+        <p>{intro}</p>
+      </header>
+      <div>
+        {items.map((item, index) => (
+          <article key={`${item.title}-${index}`}>
+            {item.imageUrl ? (
+              <img src={item.imageUrl} alt="" />
+            ) : (
+              <span className="website-collection-mark" aria-hidden="true" />
+            )}
+            <h3>{item.title}</h3>
+            {item.description ? <p>{item.description}</p> : null}
+          </article>
+        ))}
+      </div>
+    </section>
   );
 }
 

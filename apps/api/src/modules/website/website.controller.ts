@@ -48,6 +48,24 @@ export class WebsiteController {
     );
   }
 
+  @Get('imports/programs')
+  @RequirePermissions('website.manage')
+  async importPrograms(@CurrentUser() user: AuthenticatedUser) {
+    return successResponse(
+      'Academic programs retrieved',
+      await this.website.importPrograms(user.id),
+    );
+  }
+
+  @Get('imports/faculty')
+  @RequirePermissions('website.manage')
+  async importFaculty(@CurrentUser() user: AuthenticatedUser) {
+    return successResponse(
+      'Public-safe faculty sources retrieved',
+      await this.website.importFaculty(user.id),
+    );
+  }
+
   @Put('draft')
   @RequirePermissions('website.manage')
   async saveDraft(

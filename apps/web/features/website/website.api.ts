@@ -18,6 +18,71 @@ export type WebsiteSettings = {
   facebookUrl?: string;
   instagramUrl?: string;
   youtubeUrl?: string;
+  homepage: HomepageConfig;
+  programs: WebsiteProgram[];
+  facilities: WebsiteFacility[];
+  faculty: WebsiteFaculty[];
+};
+
+export type HomepageConfig = {
+  hero: {
+    enabled: boolean;
+    title: string;
+    subtitle?: string;
+    imageUrl?: string;
+    ctaText?: string;
+    ctaLink?: string;
+  };
+  introduction: { enabled: boolean; heading: string; content: string; imageUrl?: string };
+  principalMessage: {
+    enabled: boolean;
+    name?: string;
+    designation?: string;
+    message?: string;
+    imageUrl?: string;
+  };
+  programs: { enabled: boolean };
+  facilities: { enabled: boolean };
+  faculty: { enabled: boolean };
+  contact: { enabled: boolean };
+};
+export type WebsiteProgram = {
+  sourceId?: string;
+  name: string;
+  description?: string;
+  imageUrl?: string;
+  visible: boolean;
+  sortOrder: number;
+};
+export type WebsiteFacility = {
+  title: string;
+  description?: string;
+  imageUrl?: string;
+  visible: boolean;
+  sortOrder: number;
+};
+export type WebsiteFaculty = {
+  sourceTeacherId?: string;
+  name: string;
+  designation: string;
+  qualification?: string;
+  subjects: string[];
+  bio?: string;
+  imageUrl?: string;
+  visible: boolean;
+  sortOrder: number;
+};
+export type ProgramImport = {
+  sourceId: string;
+  name: string;
+  description?: string;
+  sourceType: 'CLASS' | 'COURSE';
+};
+export type FacultyImport = {
+  sourceTeacherId: string;
+  name: string;
+  designation: string;
+  subjects: string[];
 };
 export type WebsiteFont =
   'Inter' | 'Poppins' | 'Montserrat' | 'Roboto' | 'Open Sans' | 'Lato' | 'Merriweather';
@@ -59,6 +124,14 @@ export const websiteApi = baseApi.injectEndpoints({
       transformResponse: unwrap,
       providesTags: ['Website'],
     }),
+    getWebsiteProgramImports: build.query<ProgramImport[], void>({
+      query: () => '/website/imports/programs',
+      transformResponse: unwrap,
+    }),
+    getWebsiteFacultyImports: build.query<FacultyImport[], void>({
+      query: () => '/website/imports/faculty',
+      transformResponse: unwrap,
+    }),
     saveWebsiteDraft: build.mutation<WebsiteRevision, WebsiteSettings>({
       query: (body) => ({ url: '/website/draft', method: 'PUT', body }),
       transformResponse: unwrap,
@@ -76,6 +149,8 @@ export const {
   useGetPublicWebsiteQuery,
   useGetWebsiteOverviewQuery,
   useGetWebsitePreviewQuery,
+  useGetWebsiteProgramImportsQuery,
+  useGetWebsiteFacultyImportsQuery,
   useSaveWebsiteDraftMutation,
   usePublishWebsiteMutation,
 } = websiteApi;

@@ -310,6 +310,9 @@ describe('TimetableService profile targets', () => {
       where: { id: 'class-a', status: EntityStatus.ACTIVE },
       include: {
         branch: true,
+        schoolClass: true,
+        course: true,
+        academicGroup: true,
         subjects: { include: { subject: true } },
       },
     });

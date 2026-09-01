@@ -998,6 +998,9 @@ export class TimetableService {
       where: { id, status: EntityStatus.ACTIVE },
       include: {
         branch: true,
+        schoolClass: true,
+        course: true,
+        academicGroup: true,
         subjects: { include: { subject: true } },
       },
     });

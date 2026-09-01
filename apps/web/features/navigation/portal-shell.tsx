@@ -65,6 +65,7 @@ const navigationGroups = [
       { href: '/grades', label: 'Grades', icon: ChartNoAxesCombined, roles: ['ADMIN'] },
       { href: '/syllabus', label: 'Syllabus', icon: ScrollText, roles: ['ADMIN', 'STAFF'] },
       { href: '/notes', label: 'Notes', icon: NotebookPen, roles: ['ADMIN', 'STAFF'] },
+      { href: '/my-notes', label: 'My notebook', icon: NotebookPen, roles: ['STAFF'] },
     ],
   },
   {

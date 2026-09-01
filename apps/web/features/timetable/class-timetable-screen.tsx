@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import { useMemo, useState } from 'react';
 import { skipToken } from '@reduxjs/toolkit/query';
 import { ArrowLeft, Pencil } from 'lucide-react';
@@ -26,6 +27,9 @@ export function ClassTimetableScreen({
   editing?: boolean;
 }) {
   const timetable = useGetClassTimetableQuery(offeringId || skipToken);
+  const searchParams = useSearchParams();
+  const returnTo = searchParams.get('returnTo') || '/timetable';
+  const returnQuery = `?returnTo=${encodeURIComponent(returnTo)}`;
   const { data: subjects = [] } = useListSubjectsQuery();
   const { data: staff = [] } = useListStaffQuery();
   const offering = timetable.data?.offering;
@@ -49,7 +53,7 @@ export function ClassTimetableScreen({
   return (
     <div className="space-y-6">
       <Link
-        href="/timetable"
+        href={returnTo}
         className="inline-flex items-center gap-2 text-sm font-semibold text-muted-foreground hover:text-foreground"
       >
         <ArrowLeft size={16} /> All timetables
@@ -69,7 +73,7 @@ export function ClassTimetableScreen({
         </div>
         {!editing ? (
           <Link
-            href={`/timetable/classes/${offeringId}/edit`}
+            href={`/timetable/classes/${offeringId}/edit${returnQuery}`}
             className="button-primary inline-flex items-center gap-2"
           >
             <Pencil size={16} /> Assign periods

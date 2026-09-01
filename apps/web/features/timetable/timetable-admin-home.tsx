@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { useMemo, useState } from 'react';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { skipToken } from '@reduxjs/toolkit/query';
 import { ArrowRight, Eye, Pencil, Plus, Search } from 'lucide-react';
 import { DataTable, DataTableControls, TableEmpty } from '@web/components/data-table';
@@ -9,12 +10,15 @@ import { useConfirmation } from '@web/components/confirmation-dialog';
 import { useToast } from '@web/components/toast-provider';
 import { useListBranchesQuery } from '@web/features/organization/organization.api';
 import { useListOfferingsQuery } from '@web/features/academics/academics.api';
+import { useListStaffQuery } from '@web/features/staff/staff.api';
+import type { ApiRecord } from '@web/store/api/base-api';
 import {
   useDeleteTimetableProfileMutation,
   useListAllTimetableProfilesQuery,
   useSetTimetableProfileActiveMutation,
 } from './timetable.api';
 import { offeringTitle } from './timetable-utils';
+import { TeacherSchedulePanel } from './teacher-schedule-panel';
 
 function scopeLabel(scope: string) {
   return scope === 'ORGANIZATION'
@@ -27,11 +31,16 @@ function scopeLabel(scope: string) {
 export function TimetableAdminHome() {
   const toast = useToast();
   const { confirm } = useConfirmation();
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
   const { data: profiles = [], isLoading } = useListAllTimetableProfilesQuery();
   const { data: branches = [] } = useListBranchesQuery();
-  const [branchId, setBranchId] = useState('');
+  const branchId = searchParams.get('campus') ?? '';
   const { data: offerings = [] } = useListOfferingsQuery(branchId || skipToken);
   const [offeringSearch, setOfferingSearch] = useState('');
+  const teacherId = searchParams.get('teacher') ?? '';
+  const { data: staff = [] } = useListStaffQuery();
   const [search, setSearch] = useState('');
   const [sort, setSort] = useState('scope');
   const [setActive] = useSetTimetableProfileActiveMutation();
@@ -65,6 +74,17 @@ export function TimetableAdminHome() {
     );
   }, [offeringSearch, offerings]);
   const activeProfileCount = profiles.filter((profile) => profile.isActive).length;
+  const selectedTeacher = staff.find((item) => item.id === teacherId);
+  const teacherName = String((selectedTeacher?.user as ApiRecord | undefined)?.fullName ?? 'Teacher');
+
+  function setSelection(key: 'campus' | 'teacher', value: string) {
+    const next = new URLSearchParams(searchParams.toString());
+    if (value) next.set(key, value);
+    else next.delete(key);
+    router.replace(`${pathname}${next.size ? `?${next.toString()}` : ''}`, { scroll: false });
+  }
+
+  const returnTo = `${pathname}${searchParams.size ? `?${searchParams.toString()}` : ''}`;
 
   return (
     <div className="space-y-8">
@@ -95,7 +115,7 @@ export function TimetableAdminHome() {
               className="field"
               value={branchId}
               onChange={(event) => {
-                setBranchId(event.target.value);
+                setSelection('campus', event.target.value);
                 setOfferingSearch('');
               }}
             >
@@ -156,13 +176,13 @@ export function TimetableAdminHome() {
                   <div className="flex justify-end gap-2">
                     <Link
                       className="button-secondary px-3 py-2"
-                      href={`/timetable/classes/${offering.id}`}
+                      href={`/timetable/classes/${offering.id}?returnTo=${encodeURIComponent(returnTo)}`}
                     >
                       View
                     </Link>
                     <Link
                       className="button-primary inline-flex items-center gap-1.5 px-3 py-2"
-                      href={`/timetable/classes/${offering.id}/edit`}
+                      href={`/timetable/classes/${offering.id}/edit?returnTo=${encodeURIComponent(returnTo)}`}
                     >
                       Assign periods <ArrowRight aria-hidden="true" size={15} />
                     </Link>
@@ -181,6 +201,40 @@ export function TimetableAdminHome() {
             ) : null}
           </tbody>
         </DataTable>
+      </section>
+
+      <section className="space-y-5 rounded-2xl border border-border bg-card p-5 shadow-sm">
+        <div className="flex flex-wrap items-end justify-between gap-4">
+          <div className="max-w-2xl">
+            <h2 className="font-display text-2xl">Teacher timetable</h2>
+            <p className="mt-1 text-sm text-muted-foreground">
+              See one teacher&apos;s full school week across their assigned classes and campuses.
+            </p>
+          </div>
+          <label className="grid w-full gap-1.5 text-sm font-medium sm:w-80">
+            Teacher
+            <select
+              className="field"
+              value={teacherId}
+              onChange={(event) => setSelection('teacher', event.target.value)}
+            >
+              <option value="">Choose teacher</option>
+              {staff.map((item) => (
+                <option key={item.id} value={item.id}>
+                  {String((item.user as ApiRecord | undefined)?.fullName ?? 'Unnamed teacher')}
+                  {item.designation ? ` · ${String(item.designation)}` : ''}
+                </option>
+              ))}
+            </select>
+          </label>
+        </div>
+        {teacherId ? (
+          <TeacherSchedulePanel staffProfileId={teacherId} teacherName={teacherName} />
+        ) : (
+          <div className="rounded-xl bg-muted/45 px-5 py-8 text-center text-sm text-muted-foreground">
+            Choose a teacher to open their weekly timetable here.
+          </div>
+        )}
       </section>
 
       <section className="space-y-4 rounded-2xl border border-border bg-card p-5 shadow-sm">

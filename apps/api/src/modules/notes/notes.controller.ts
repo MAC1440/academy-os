@@ -19,6 +19,8 @@ import type { AuthenticatedUser } from '../auth/decorators/current-user.decorato
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CreateNoteDto } from './dto/create-note.dto';
 import { UpdateNoteDto } from './dto/update-note.dto';
+import { CreatePersonalNoteDto } from './dto/create-personal-note.dto';
+import { UpdatePersonalNoteDto } from './dto/update-personal-note.dto';
 import { NotesService } from './notes.service';
 
 @ApiTags('Shared Notes')
@@ -53,6 +55,54 @@ export class NotesController {
       'Shared notes retrieved',
       await this.notesService.listNotes(),
     );
+  }
+
+  @Get('personal/mine')
+  @UseGuards(JwtAuthGuard)
+  async personalNotes(@CurrentUser() user: AuthenticatedUser) {
+    this.requireAccountType(user, AccountType.STAFF);
+    return successResponse(
+      'Personal notes retrieved',
+      await this.notesService.listPersonalNotes(user.id),
+    );
+  }
+
+  @Post('personal')
+  @UseGuards(JwtAuthGuard)
+  async createPersonalNote(
+    @Body() dto: CreatePersonalNoteDto,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    this.requireAccountType(user, AccountType.STAFF);
+    return successResponse(
+      'Personal note created',
+      await this.notesService.createPersonalNote(dto, user.id),
+    );
+  }
+
+  @Patch('personal/:noteId')
+  @UseGuards(JwtAuthGuard)
+  async updatePersonalNote(
+    @Param('noteId') noteId: string,
+    @Body() dto: UpdatePersonalNoteDto,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    this.requireAccountType(user, AccountType.STAFF);
+    return successResponse(
+      'Personal note updated',
+      await this.notesService.updatePersonalNote(noteId, dto, user.id),
+    );
+  }
+
+  @Delete('personal/:noteId')
+  @UseGuards(JwtAuthGuard)
+  async deletePersonalNote(
+    @Param('noteId') noteId: string,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    this.requireAccountType(user, AccountType.STAFF);
+    await this.notesService.deletePersonalNote(noteId, user.id);
+    return successResponse('Personal note removed', { id: noteId });
   }
 
   @Get(':noteId')

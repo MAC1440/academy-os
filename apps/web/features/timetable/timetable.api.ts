@@ -162,6 +162,11 @@ export const timetableApi = baseApi.injectEndpoints({
       transformResponse: unwrap,
       providesTags: ['Academic'],
     }),
+    getTeacherTimetable: build.query<ApiRecord[], string>({
+      query: (staffProfileId) => `/staff/${staffProfileId}/timetable`,
+      transformResponse: unwrap,
+      providesTags: ['Academic'],
+    }),
   }),
 });
 export const {
@@ -179,4 +184,5 @@ export const {
   useCreateDailyTimetableOverrideMutation,
   useDeleteDailyTimetableOverrideMutation,
   useGetMyTimetableQuery,
+  useGetTeacherTimetableQuery,
 } = timetableApi;

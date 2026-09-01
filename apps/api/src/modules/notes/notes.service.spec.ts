@@ -63,3 +63,42 @@ describe('NotesService large content persistence', () => {
     );
   });
 });
+
+describe('NotesService personal note privacy', () => {
+  it('always scopes a teacher notebook query to its owner', async () => {
+    const prisma = {
+      teacherPersonalNote: { findMany: jest.fn().mockResolvedValue([]) },
+    };
+    const service = new NotesService(prisma as never, { record: jest.fn() } as never);
+
+    await service.listPersonalNotes('teacher-user');
+
+    expect(prisma.teacherPersonalNote.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { ownerUserId: 'teacher-user', deletedAt: null },
+      }),
+    );
+  });
+
+  it('does not update a personal note unless it belongs to the signed-in teacher', async () => {
+    const prisma = {
+      teacherPersonalNote: {
+        findFirst: jest.fn().mockResolvedValue(null),
+        update: jest.fn(),
+      },
+    };
+    const service = new NotesService(prisma as never, { record: jest.fn() } as never);
+
+    await expect(
+      service.updatePersonalNote('someone-elses-note', { title: 'Changed' }, 'teacher-user'),
+    ).rejects.toThrow('Personal note not found');
+    expect(prisma.teacherPersonalNote.findFirst).toHaveBeenCalledWith({
+      where: {
+        id: 'someone-elses-note',
+        ownerUserId: 'teacher-user',
+        deletedAt: null,
+      },
+    });
+    expect(prisma.teacherPersonalNote.update).not.toHaveBeenCalled();
+  });
+});

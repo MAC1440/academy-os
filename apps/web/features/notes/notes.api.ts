@@ -10,6 +10,21 @@ export type SharedNote = {
   author?: NotePerson;
   lastEditedBy?: NotePerson;
 };
+export type PersonalNote = {
+  id: string;
+  title: string;
+  content: string;
+  isPinned: boolean;
+  reminderAt?: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
+export type PersonalNoteInput = {
+  title: string;
+  content: string;
+  isPinned?: boolean;
+  reminderAt?: string | null;
+};
 
 export const notesApi = baseApi.injectEndpoints({
   endpoints: (build) => ({
@@ -41,6 +56,26 @@ export const notesApi = baseApi.injectEndpoints({
       transformResponse: unwrap,
       invalidatesTags: ['Academic'],
     }),
+    listPersonalNotes: build.query<PersonalNote[], void>({
+      query: () => '/notes/personal/mine',
+      transformResponse: unwrap,
+      providesTags: ['PersonalNotes'],
+    }),
+    createPersonalNote: build.mutation<PersonalNote, PersonalNoteInput>({
+      query: (body) => ({ url: '/notes/personal', method: 'POST', body }),
+      transformResponse: unwrap,
+      invalidatesTags: ['PersonalNotes'],
+    }),
+    updatePersonalNote: build.mutation<PersonalNote, { id: string; body: PersonalNoteInput }>({
+      query: ({ id, body }) => ({ url: `/notes/personal/${id}`, method: 'PATCH', body }),
+      transformResponse: unwrap,
+      invalidatesTags: ['PersonalNotes'],
+    }),
+    deletePersonalNote: build.mutation<{ id: string }, string>({
+      query: (id) => ({ url: `/notes/personal/${id}`, method: 'DELETE' }),
+      transformResponse: unwrap,
+      invalidatesTags: ['PersonalNotes'],
+    }),
   }),
 });
 export const {
@@ -49,4 +84,8 @@ export const {
   useCreateNoteMutation,
   useUpdateNoteMutation,
   useDeleteNoteMutation,
+  useListPersonalNotesQuery,
+  useCreatePersonalNoteMutation,
+  useUpdatePersonalNoteMutation,
+  useDeletePersonalNoteMutation,
 } = notesApi;

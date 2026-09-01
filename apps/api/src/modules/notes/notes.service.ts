@@ -4,6 +4,8 @@ import { AuditService } from '../audit/audit.service';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreateNoteDto } from './dto/create-note.dto';
 import { UpdateNoteDto } from './dto/update-note.dto';
+import { CreatePersonalNoteDto } from './dto/create-personal-note.dto';
+import { UpdatePersonalNoteDto } from './dto/update-personal-note.dto';
 
 @Injectable()
 export class NotesService {
@@ -83,6 +85,52 @@ export class NotesService {
     await this.audit(actorUserId, AuditAction.DELETE, note.id);
   }
 
+  async listPersonalNotes(ownerUserId: string) {
+    return this.prisma.teacherPersonalNote.findMany({
+      where: { ownerUserId, deletedAt: null },
+      orderBy: [{ isPinned: 'desc' }, { updatedAt: 'desc' }],
+    });
+  }
+
+  async createPersonalNote(dto: CreatePersonalNoteDto, ownerUserId: string) {
+    return this.prisma.teacherPersonalNote.create({
+      data: {
+        ownerUserId,
+        title: dto.title.trim(),
+        content: dto.content.trim(),
+        isPinned: dto.isPinned ?? false,
+        reminderAt: dto.reminderAt ? new Date(dto.reminderAt) : null,
+      },
+    });
+  }
+
+  async updatePersonalNote(
+    noteId: string,
+    dto: UpdatePersonalNoteDto,
+    ownerUserId: string,
+  ) {
+    const note = await this.personalNote(noteId, ownerUserId);
+    return this.prisma.teacherPersonalNote.update({
+      where: { id: note.id },
+      data: {
+        ...(dto.title !== undefined ? { title: dto.title.trim() } : {}),
+        ...(dto.content !== undefined ? { content: dto.content.trim() } : {}),
+        ...(dto.isPinned !== undefined ? { isPinned: dto.isPinned } : {}),
+        ...(dto.reminderAt !== undefined
+          ? { reminderAt: dto.reminderAt ? new Date(dto.reminderAt) : null }
+          : {}),
+      },
+    });
+  }
+
+  async deletePersonalNote(noteId: string, ownerUserId: string) {
+    const note = await this.personalNote(noteId, ownerUserId);
+    await this.prisma.teacherPersonalNote.update({
+      where: { id: note.id },
+      data: { deletedAt: new Date() },
+    });
+  }
+
   private async organization() {
     const organization = await this.prisma.organization.findFirst();
     if (!organization)
@@ -96,6 +144,14 @@ export class NotesService {
       where: { id: noteId, organizationId: organization.id, deletedAt: null },
     });
     if (!note) throw new NotFoundException('Shared note not found');
+    return note;
+  }
+
+  private async personalNote(noteId: string, ownerUserId: string) {
+    const note = await this.prisma.teacherPersonalNote.findFirst({
+      where: { id: noteId, ownerUserId, deletedAt: null },
+    });
+    if (!note) throw new NotFoundException('Personal note not found');
     return note;
   }
 

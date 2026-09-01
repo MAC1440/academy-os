@@ -179,9 +179,9 @@ model Organization {
 }
 
 model User {
-  id                         String            @id @default(cuid())
+  id                         String                @id @default(cuid())
   accountType                AccountType
-  username                   String?           @unique
+  username                   String?               @unique
   contactNumber              String?
   fullName                   String
   email                      String?
@@ -189,19 +189,20 @@ model User {
   pinHash                    String?
   temporaryPasswordEncrypted String?
   temporaryPinEncrypted      String?
-  mustCompleteProfile        Boolean           @default(true)
-  status                     AccountStatus     @default(ACTIVE)
-  createdAt                  DateTime          @default(now())
-  updatedAt                  DateTime          @updatedAt
+  mustCompleteProfile        Boolean               @default(true)
+  status                     AccountStatus         @default(ACTIVE)
+  createdAt                  DateTime              @default(now())
+  updatedAt                  DateTime              @updatedAt
   deletedAt                  DateTime?
   roleAssignments            RoleAssignment[]
   staffProfile               StaffProfile?
-  audits                     AuditLog[]        @relation("AuditActor")
-  createdNotes               SharedNote[]      @relation("SharedNoteAuthor")
-  lastEditedNotes            SharedNote[]      @relation("SharedNoteLastEditor")
-  guardianStudents           Student[]         @relation("GuardianPortalStudent")
-  createdWebsiteRevisions    WebsiteRevision[] @relation("WebsiteRevisionCreator")
-  publishedWebsiteRevisions  WebsiteRevision[] @relation("WebsiteRevisionPublisher")
+  audits                     AuditLog[]            @relation("AuditActor")
+  createdNotes               SharedNote[]          @relation("SharedNoteAuthor")
+  lastEditedNotes            SharedNote[]          @relation("SharedNoteLastEditor")
+  personalNotes              TeacherPersonalNote[]
+  guardianStudents           Student[]             @relation("GuardianPortalStudent")
+  createdWebsiteRevisions    WebsiteRevision[]     @relation("WebsiteRevisionCreator")
+  publishedWebsiteRevisions  WebsiteRevision[]     @relation("WebsiteRevisionPublisher")
 
   @@index([accountType, status])
 }
@@ -833,6 +834,22 @@ model SharedNote {
 
   @@index([organizationId, deletedAt])
   @@index([lastEditedByUserId])
+}
+
+model TeacherPersonalNote {
+  id          String    @id @default(cuid())
+  ownerUserId String
+  title       String
+  content     String
+  isPinned    Boolean   @default(false)
+  reminderAt  DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  deletedAt   DateTime?
+  owner       User      @relation(fields: [ownerUserId], references: [id], onDelete: Cascade)
+
+  @@index([ownerUserId, deletedAt, updatedAt])
+  @@index([ownerUserId, reminderAt])
 }
 
 model SessionSyllabus {

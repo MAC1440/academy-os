@@ -1,7 +1,7 @@
 'use client';
 
 import { ChangeEvent, RefObject, useRef, useState } from 'react';
-import { FileUp, LoaderCircle, Sigma } from 'lucide-react';
+import { CheckSquare, FileUp, LoaderCircle, Sigma, Table2 } from 'lucide-react';
 import { NoteRichText } from './note-rich-text';
 
 type NoteFields = { title: string; content: string };
@@ -109,6 +109,20 @@ export function NoteComposer({
           </button>
           <button type="button" className="button-secondary" onClick={() => insert('- ')}>
             List
+          </button>
+          <button
+            type="button"
+            className="button-secondary inline-flex items-center gap-1"
+            onClick={() => insert('- [ ] ')}
+          >
+            <CheckSquare size={14} /> To-do
+          </button>
+          <button
+            type="button"
+            className="button-secondary inline-flex items-center gap-1"
+            onClick={() => insert('| Item | Details |\n| --- | --- |\n| ', ' |  |')}
+          >
+            <Table2 size={14} /> Table
           </button>
           <button
             type="button"

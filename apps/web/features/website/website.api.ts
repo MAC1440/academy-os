@@ -106,6 +106,79 @@ export type PublicWebsite = {
   data: WebsiteSettings;
   publishedAt: string;
 };
+export type ScheduledContent = {
+  id: string;
+  title: string;
+  published: boolean;
+  publishAt?: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
+export type WebsiteAnnouncement = ScheduledContent & {
+  description: string;
+  pinned: boolean;
+  expireAt?: string | null;
+};
+export type WebsiteNews = ScheduledContent & {
+  slug: string;
+  coverImageUrl?: string;
+  excerpt: string;
+  body: string;
+  seoTitle?: string;
+  seoDescription?: string;
+};
+export type WebsiteResult = ScheduledContent & {
+  description: string;
+  academicYear: string;
+  highlights: string[];
+  imageUrl?: string;
+};
+export type WebsiteMedia = {
+  id: string;
+  providerFileId: string;
+  name: string;
+  url: string;
+  width?: number;
+  height?: number;
+  mimeType: string;
+  size: number;
+  category: string;
+  createdAt: string;
+};
+export type WebsiteEvent = {
+  id: string;
+  calendarDate: string;
+  dayType: 'HOLIDAY' | 'OFF_DAY';
+  label?: string;
+  description?: string;
+  visibility: 'INTERNAL' | 'PUBLIC';
+};
+export type WebsiteAlbum = {
+  id: string;
+  title: string;
+  slug: string;
+  description?: string;
+  coverImageUrl?: string;
+  academicCalendarDayId?: string;
+  published: boolean;
+  sortOrder: number;
+  images: Array<{
+    id: string;
+    mediaId: string;
+    caption?: string;
+    sortOrder: number;
+    media: WebsiteMedia;
+  }>;
+};
+export type WebsiteContentBundle = {
+  announcements: WebsiteAnnouncement[];
+  news: WebsiteNews[];
+  results: WebsiteResult[];
+  albums: WebsiteAlbum[];
+  media: WebsiteMedia[];
+  events: WebsiteEvent[];
+};
+export type PublicContentBundle = WebsiteContentBundle;
 
 export const websiteApi = baseApi.injectEndpoints({
   endpoints: (build) => ({
@@ -118,6 +191,69 @@ export const websiteApi = baseApi.injectEndpoints({
       query: () => '/website',
       transformResponse: unwrap,
       providesTags: ['Website'],
+    }),
+    getWebsiteContent: build.query<WebsiteContentBundle, void>({
+      query: () => '/website/content',
+      transformResponse: unwrap,
+      providesTags: ['Website'],
+    }),
+    getPublicWebsiteContent: build.query<PublicContentBundle, void>({
+      query: () => '/public/website/content',
+      transformResponse: unwrap,
+      providesTags: ['Website'],
+    }),
+    getPublicNewsArticle: build.query<WebsiteNews, string>({
+      query: (slug) => `/public/website/news/${slug}`,
+      transformResponse: unwrap,
+    }),
+    getPublicGalleryAlbum: build.query<WebsiteAlbum, string>({
+      query: (slug) => `/public/website/gallery/${slug}`,
+      transformResponse: unwrap,
+    }),
+    saveWebsiteContent: build.mutation<
+      unknown,
+      { kind: 'announcements' | 'news' | 'results' | 'albums'; id?: string; body: unknown }
+    >({
+      query: ({ kind, id, body }) => ({
+        url: `/website/${kind}${id ? `/${id}` : ''}`,
+        method: id ? 'PATCH' : 'POST',
+        body,
+      }),
+      transformResponse: unwrap,
+      invalidatesTags: ['Website'],
+    }),
+    deleteWebsiteContent: build.mutation<
+      unknown,
+      { kind: 'announcements' | 'news' | 'results' | 'albums'; id: string }
+    >({
+      query: ({ kind, id }) => ({ url: `/website/${kind}/${id}`, method: 'DELETE' }),
+      transformResponse: unwrap,
+      invalidatesTags: ['Website'],
+    }),
+    uploadWebsiteMedia: build.mutation<WebsiteMedia, FormData>({
+      query: (body) => ({ url: '/website/media/upload', method: 'POST', body }),
+      transformResponse: unwrap,
+      invalidatesTags: ['Website'],
+    }),
+    addWebsiteAlbumImage: build.mutation<
+      unknown,
+      { albumId: string; mediaId: string; caption?: string; sortOrder: number }
+    >({
+      query: ({ albumId, ...body }) => ({
+        url: `/website/albums/${albumId}/images`,
+        method: 'POST',
+        body,
+      }),
+      transformResponse: unwrap,
+      invalidatesTags: ['Website'],
+    }),
+    removeWebsiteAlbumImage: build.mutation<unknown, { albumId: string; mediaId: string }>({
+      query: ({ albumId, mediaId }) => ({
+        url: `/website/albums/${albumId}/images/${mediaId}`,
+        method: 'DELETE',
+      }),
+      transformResponse: unwrap,
+      invalidatesTags: ['Website'],
     }),
     getWebsitePreview: build.query<WebsiteRevision, void>({
       query: () => '/website/preview',
@@ -153,4 +289,13 @@ export const {
   useGetWebsiteFacultyImportsQuery,
   useSaveWebsiteDraftMutation,
   usePublishWebsiteMutation,
+  useGetWebsiteContentQuery,
+  useGetPublicWebsiteContentQuery,
+  useGetPublicNewsArticleQuery,
+  useGetPublicGalleryAlbumQuery,
+  useSaveWebsiteContentMutation,
+  useDeleteWebsiteContentMutation,
+  useUploadWebsiteMediaMutation,
+  useAddWebsiteAlbumImageMutation,
+  useRemoveWebsiteAlbumImageMutation,
 } = websiteApi;

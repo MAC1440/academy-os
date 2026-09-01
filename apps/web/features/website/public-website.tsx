@@ -124,6 +124,9 @@ export function WebsiteSurface({
           {homepage.programs.enabled && programs.length ? <a href="#programs">Programs</a> : null}
           {homepage.faculty.enabled && faculty.length ? <a href="#faculty">Faculty</a> : null}
           {homepage.contact.enabled ? <a href="#contact">Contact</a> : null}
+          <Link href="/news">News</Link>
+          <Link href="/events">Events</Link>
+          <Link href="/gallery">Gallery</Link>
         </nav>
       </header>
       <main>

@@ -8,10 +8,11 @@ import {
   WebsiteController,
 } from './website.controller';
 import { WebsiteService } from './website.service';
+import { WebsiteContentService } from './website-content.service';
 
 @Module({
   imports: [PrismaModule, AuthModule, AccessModule, AuditModule],
   controllers: [PublicWebsiteController, WebsiteController],
-  providers: [WebsiteService],
+  providers: [WebsiteService, WebsiteContentService],
 })
 export class WebsiteModule {}
